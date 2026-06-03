@@ -3,24 +3,24 @@
 Estado vivo del build del monorepo. Fuente del orden: plan maestro §2/§8 y el Build Order de cada blueprint.
 Marca `[x]` solo lo verificado. No empieces una fase sin cerrar el gate de la anterior.
 
-> 👉 SIGUIENTE: **Step 1 del chatbot** — Scaffolding en `apps/chatbot` + su `CLAUDE.md` (blueprint chatbot §9, Step 1).
+> 👉 SIGUIENTE: **Step 2 del chatbot** — Base de datos (Neon + pgvector): schema Drizzle con todas las tablas (§4), primera migración con `CREATE EXTENSION vector` + índice HNSW, y seed (`bot_config` id=1 + materiales demo). Requiere `DATABASE_URL` de Neon (Fase 0).
 
 ---
 
 ## Monorepo (init — una vez · plan maestro §1.5)
-- [ ] `pnpm-workspace.yaml`
-- [ ] `package.json` raíz con scripts dev:bot/dev:web/build:bot/build:web
-- [ ] `CLAUDE.md` raíz (mapa del monorepo)
-- [ ] `packages/shared` (@cqg/shared) con `chat-contract.ts` y `brand.ts`
-- [ ] `docs/` con los documentos
-- [ ] `docs/PROGRESS.md`
+- [x] `pnpm-workspace.yaml`
+- [x] `package.json` raíz con scripts dev:bot/dev:web/build:bot/build:web
+- [x] `CLAUDE.md` raíz (mapa del monorepo)
+- [x] `packages/shared` (@cqg/shared) con `chat-contract.ts` y `brand.ts`
+- [x] `docs/` con los documentos
+- [x] `docs/PROGRESS.md`
 
 ---
 
 ## FASE A — CHATBOT (el cerebro) · se construye primero
 Blueprint: `docs/ci-quality-group-chatbot-blueprint.md` §9 (Steps 1–16). Memoria: plan maestro §3.
 
-- [ ] **Step 1** — Scaffolding (`apps/chatbot`, Next.js 16 + TS + Tailwind, env Zod, shadcn/ui, su CLAUDE.md)
+- [x] **Step 1** — Scaffolding (`apps/chatbot`, Next.js 16 + TS + Tailwind, env Zod, shadcn/ui, su CLAUDE.md) — build verificado ✓
 - [ ] **Step 2** — Base de datos (Neon + pgvector): schema Drizzle, migración con `CREATE EXTENSION vector`, índice HNSW, seed
 - [ ] **Step 3** — Auth del panel (Clerk): middleware protege `(panel)/*` y `/api/panel/*`, layout con sidebar
 - [ ] **Step 4** — IA: embeddings + retrieval (RAG)
