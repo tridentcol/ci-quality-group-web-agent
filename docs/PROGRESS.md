@@ -3,9 +3,10 @@
 Estado vivo del build del monorepo. Fuente del orden: plan maestro §2/§8 y el Build Order de cada blueprint.
 Marca `[x]` solo lo verificado. No empieces una fase sin cerrar el gate de la anterior.
 
-> 👉 SIGUIENTE: **Step 3 del chatbot** — Auth del panel (Clerk): `middleware.ts` que proteja `(panel)/*` y `/api/panel/*` y deje públicos los webhooks; layout del panel con sidebar + guard; verificar login. Requiere claves de Clerk (Fase 0).
+> 👉 SIGUIENTE: **Step 4 del chatbot** — IA: embeddings + retrieval (RAG). `lib/ai/embed.ts` (text-embedding-3-small), `lib/ai/retrieve.ts` (embeber consulta → `ORDER BY embedding <=> $query LIMIT k`, cosine → top-K). Test: insertar un chunk y recuperarlo por similitud. Requiere `OPENAI_API_KEY` (Fase 0).
 >
-> Infra Neon: proyecto `quality-group-web`, branch `chatbot-dev` (PG18, sa-east-1). `DATABASE_URL` en `apps/chatbot/.env.local` (no versionado).
+> Infra Neon: proyecto `quality-group-web`, branch `chatbot-dev` (PG18, sa-east-1). `DATABASE_URL` en `apps/chatbot/.env.local`.
+> Clerk: Next 16 usa `proxy.ts` (no `middleware.ts`) y `<Show>` (no `<SignedIn/SignedOut>`). Pendiente: pegar `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` + `CLERK_SECRET_KEY` en `.env.local` y probar login real.
 
 ---
 
@@ -24,7 +25,7 @@ Blueprint: `docs/ci-quality-group-chatbot-blueprint.md` §9 (Steps 1–16). Memo
 
 - [x] **Step 1** — Scaffolding (`apps/chatbot`, Next.js 16 + TS + Tailwind, env Zod, shadcn/ui, su CLAUDE.md) — build verificado ✓
 - [x] **Step 2** — Base de datos (Neon + pgvector): schema Drizzle (10 tablas), migración con `CREATE EXTENSION vector` + índice HNSW, seed — aplicado y verificado en Neon ✓
-- [ ] **Step 3** — Auth del panel (Clerk): middleware protege `(panel)/*` y `/api/panel/*`, layout con sidebar
+- [x] **Step 3** — Auth del panel (Clerk): `proxy.ts` protege `(panel)/*` y `/api/panel/*`, layout con sidebar + guard, /sign-in — build OK · ⏳ falta probar login real con claves
 - [ ] **Step 4** — IA: embeddings + retrieval (RAG)
 - [ ] **Step 5** — Pipeline de ingesta (Inngest): parse/scrape/chunk + job ingest-source
 - [ ] **Step 6** — Panel: Conocimiento (subida a Blob, estado, borrado cascade)
