@@ -1,0 +1,17 @@
+{
+  "name": "ci-quality-group-web-agent",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Monorepo CI Quality Group: chatbot (Next.js) + website (Astro) + @cqg/shared",
+  "packageManager": "pnpm@11.3.0",
+  "engines": {
+    "node": ">=20",
+    "pnpm": ">=9"
+  },
+  "scripts": {
+    "dev:bot": "pnpm --filter chatbot dev",
+    "dev:web": "pnpm --filter website dev",
+    "build:bot": "pnpm --filter chatbot build",
+    "build:web": "pnpm --filter website build"
+  }
+}

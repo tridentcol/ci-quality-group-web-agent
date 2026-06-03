@@ -1,0 +1,16 @@
+packages:
+  - apps/*
+  - packages/*
+
+# Decisión explícita: ninguna dependencia ejecuta scripts de build en el scaffolding.
+# Una allowlist vacía evita el prompt interactivo de aprobación de pnpm 11.
+# Revisar 'sharp' en el Step 15 (deploy) si se usa optimización de imágenes en producción.
+onlyBuiltDependencies: []
+
+# Registro lento/inestable para tarballs grandes (next, @next/swc-*).
+# Serializamos descargas y ampliamos timeouts para evitar abortos.
+networkConcurrency: 1
+fetchTimeout: 1200000
+fetchRetries: 6
+fetchRetryMintimeout: 20000
+fetchRetryMaxtimeout: 180000

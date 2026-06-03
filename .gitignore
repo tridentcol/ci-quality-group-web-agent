@@ -1,0 +1,33 @@
+# dependencies
+node_modules/
+.pnpm-store/
+
+# builds / framework output
+dist/
+.next/
+out/
+build/
+.astro/
+.turbo/
+.vercel/
+
+# env & secrets
+.env
+.env.*
+!.env.example
+
+# logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# OS / editor
+.DS_Store
+*.pem
+coverage/
+.idea/
+.vscode/
+
+# Claude Code (estado de sesión local)
+.claude/scheduled_tasks.lock
+.claude/settings.local.json
