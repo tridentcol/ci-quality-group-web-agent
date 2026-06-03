@@ -55,8 +55,14 @@ Blueprint: `docs/ci-quality-group-chatbot-blueprint.md` §9 (Steps 1–16). Memo
 - [x] Repo en GitHub `tridentcol/ci-quality-group-web-agent` (`origin/main`)
 - [x] Proyecto Vercel `ci-quality-group-chatbot` (team daniels-projects) + repo conectado (auto-deploy en push)
 - [x] Env vars de **Production** en Vercel (DATABASE_URL, claves Clerk, URLs Clerk)
-- [ ] **Root Directory = `apps/chatbot`** en Vercel (manual, dashboard) — requerido para que el build del monorepo funcione
-- [ ] Primer deploy de producción verde + URL `*.vercel.app`
+- [x] **Root Directory = `apps/chatbot`** en Vercel
+- [x] **Primer deploy de producción VERDE** (commit a526322) — app renderiza, Clerk carga
+- [ ] (opcional) Desactivar **Vercel Deployment Protection** para URL pública, o usar enlace de bypass
+- [ ] (Step 15/16) Instancia de producción de Clerk + dominio `panel.<dominio>` + env vars de Preview
+
+> Aprendizaje pnpm 11.3: aprobar build scripts con `allowBuilds: {paquete: true}` en
+> pnpm-workspace.yaml (NO `onlyBuiltDependencies`/`ignoredBuiltDependencies`, que ya no
+> silencian ERR_PNPM_IGNORED_BUILDS). Sin esto, `pnpm install` sale 1 en CI/Vercel.
 
 ## FASE B — SITIO WEB (la cara) · se construye después
 Blueprint: `docs/ci-quality-group-website-blueprint.md` (Steps 1–12). Usa `@cqg/shared` para el contrato.
