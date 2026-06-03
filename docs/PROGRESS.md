@@ -51,6 +51,13 @@ Blueprint: `docs/ci-quality-group-chatbot-blueprint.md` §9 (Steps 1–16). Memo
 
 ---
 
+### Infra / Deploy (adelantado del Step 15)
+- [x] Repo en GitHub `tridentcol/ci-quality-group-web-agent` (`origin/main`)
+- [x] Proyecto Vercel `ci-quality-group-chatbot` (team daniels-projects) + repo conectado (auto-deploy en push)
+- [x] Env vars de **Production** en Vercel (DATABASE_URL, claves Clerk, URLs Clerk)
+- [ ] **Root Directory = `apps/chatbot`** en Vercel (manual, dashboard) — requerido para que el build del monorepo funcione
+- [ ] Primer deploy de producción verde + URL `*.vercel.app`
+
 ## FASE B — SITIO WEB (la cara) · se construye después
 Blueprint: `docs/ci-quality-group-website-blueprint.md` (Steps 1–12). Usa `@cqg/shared` para el contrato.
 
