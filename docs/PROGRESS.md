@@ -3,7 +3,9 @@
 Estado vivo del build del monorepo. Fuente del orden: plan maestro §2/§8 y el Build Order de cada blueprint.
 Marca `[x]` solo lo verificado. No empieces una fase sin cerrar el gate de la anterior.
 
-> 👉 SIGUIENTE: **Step 2 del chatbot** — Base de datos (Neon + pgvector): schema Drizzle con todas las tablas (§4), primera migración con `CREATE EXTENSION vector` + índice HNSW, y seed (`bot_config` id=1 + materiales demo). Requiere `DATABASE_URL` de Neon (Fase 0).
+> 👉 SIGUIENTE: **Step 3 del chatbot** — Auth del panel (Clerk): `middleware.ts` que proteja `(panel)/*` y `/api/panel/*` y deje públicos los webhooks; layout del panel con sidebar + guard; verificar login. Requiere claves de Clerk (Fase 0).
+>
+> Infra Neon: proyecto `quality-group-web`, branch `chatbot-dev` (PG18, sa-east-1). `DATABASE_URL` en `apps/chatbot/.env.local` (no versionado).
 
 ---
 
@@ -21,7 +23,7 @@ Marca `[x]` solo lo verificado. No empieces una fase sin cerrar el gate de la an
 Blueprint: `docs/ci-quality-group-chatbot-blueprint.md` §9 (Steps 1–16). Memoria: plan maestro §3.
 
 - [x] **Step 1** — Scaffolding (`apps/chatbot`, Next.js 16 + TS + Tailwind, env Zod, shadcn/ui, su CLAUDE.md) — build verificado ✓
-- [ ] **Step 2** — Base de datos (Neon + pgvector): schema Drizzle, migración con `CREATE EXTENSION vector`, índice HNSW, seed
+- [x] **Step 2** — Base de datos (Neon + pgvector): schema Drizzle (10 tablas), migración con `CREATE EXTENSION vector` + índice HNSW, seed — aplicado y verificado en Neon ✓
 - [ ] **Step 3** — Auth del panel (Clerk): middleware protege `(panel)/*` y `/api/panel/*`, layout con sidebar
 - [ ] **Step 4** — IA: embeddings + retrieval (RAG)
 - [ ] **Step 5** — Pipeline de ingesta (Inngest): parse/scrape/chunk + job ingest-source
