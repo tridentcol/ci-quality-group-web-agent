@@ -26,7 +26,7 @@ Blueprint: `docs/ci-quality-group-chatbot-blueprint.md` §9 (Steps 1–16). Memo
 - [x] **Step 1** — Scaffolding (`apps/chatbot`, Next.js 16 + TS + Tailwind, env Zod, shadcn/ui, su CLAUDE.md) — build verificado ✓
 - [x] **Step 2** — Base de datos (Neon + pgvector): schema Drizzle (10 tablas), migración con `CREATE EXTENSION vector` + índice HNSW, seed — aplicado y verificado en Neon ✓
 - [x] **Step 3** — Auth del panel (Clerk): `proxy.ts` protege `(panel)/*` y `/api/panel/*`, layout con sidebar + guard, /sign-in — build OK · ⏳ falta probar login real con claves
-- [ ] **Step 4** — IA: embeddings + retrieval (RAG)
+- [~] **Step 4** — IA: embeddings + retrieval (RAG): `lib/ai/{openai,embed,retrieve}.ts` + `scripts/rag-smoke.ts` — código listo, typecheck OK. ⏳ smoke test bloqueado por **`insufficient_quota`** de la cuenta OpenAI (falta crédito/billing)
 - [ ] **Step 5** — Pipeline de ingesta (Inngest): parse/scrape/chunk + job ingest-source
 - [ ] **Step 6** — Panel: Conocimiento (subida a Blob, estado, borrado cascade)
 - [ ] **Step 7** — Panel: Precios (tabla editable, COP)
