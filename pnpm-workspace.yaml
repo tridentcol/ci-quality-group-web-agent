@@ -2,17 +2,18 @@ packages:
   - apps/*
   - packages/*
 
-# Build scripts: allowlist explícita. pnpm 11 trata como error fatal cualquier
-# paquete con build script que quede "ignored" (ERR_PNPM_IGNORED_BUILDS → exit 1
-# en CI/Vercel). Al permitirlos aquí, pnpm ejecuta sus scripts (todos seguros:
-# binarios prebuilt) y no queda ninguno ignorado → `pnpm install` sale 0.
-onlyBuiltDependencies:
-  - '@clerk/shared'
-  - esbuild
-  - msw
-  - protobufjs
-  - sharp
-  - unrs-resolver
+# Build scripts: pnpm 11.3 usa el mapa `allowBuilds` (paquete: true|false), NO
+# onlyBuiltDependencies/ignoredBuiltDependencies. Cualquier paquete con build
+# script "sin decidir" provoca ERR_PNPM_IGNORED_BUILDS → exit 1 en CI/Vercel.
+# Permitimos (true) los 6 paquetes con script (binarios prebuilt seguros) para
+# que pnpm los ejecute y no quede ninguno ignorado → `pnpm install` sale 0.
+allowBuilds:
+  '@clerk/shared': true
+  esbuild: true
+  msw: true
+  protobufjs: true
+  sharp: true
+  unrs-resolver: true
 
 # Registro lento/inestable para tarballs grandes (next, @next/swc-*).
 # Serializamos descargas y ampliamos timeouts para evitar abortos.
