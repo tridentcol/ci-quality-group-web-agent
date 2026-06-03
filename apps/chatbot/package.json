@@ -9,7 +9,7 @@
     "lint": "eslint",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
-    "seed": "tsx src/lib/db/seed.ts"
+    "seed": "tsx --env-file=.env.local src/lib/db/seed.ts"
   },
   "dependencies": {
     "@clerk/nextjs": "^7.4.2",
