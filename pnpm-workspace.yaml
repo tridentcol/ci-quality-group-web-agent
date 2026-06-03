@@ -2,11 +2,11 @@ packages:
   - apps/*
   - packages/*
 
-# Build scripts: declaramos explícitamente los paquetes con script de build como
-# ignorados. En un install fresco (CI/Vercel) pnpm 11 trata los "ignored builds"
-# no declarados como error fatal; al listarlos aquí, la decisión está tomada y
-# `pnpm install` sale 0. (Vercel provee su propio sharp para Next image optimization.)
-ignoredBuiltDependencies:
+# Build scripts: allowlist explícita. pnpm 11 trata como error fatal cualquier
+# paquete con build script que quede "ignored" (ERR_PNPM_IGNORED_BUILDS → exit 1
+# en CI/Vercel). Al permitirlos aquí, pnpm ejecuta sus scripts (todos seguros:
+# binarios prebuilt) y no queda ninguno ignorado → `pnpm install` sale 0.
+onlyBuiltDependencies:
   - '@clerk/shared'
   - esbuild
   - msw
