@@ -2,10 +2,17 @@ packages:
   - apps/*
   - packages/*
 
-# Decisión explícita: ninguna dependencia ejecuta scripts de build en el scaffolding.
-# Una allowlist vacía evita el prompt interactivo de aprobación de pnpm 11.
-# Revisar 'sharp' en el Step 15 (deploy) si se usa optimización de imágenes en producción.
-onlyBuiltDependencies: []
+# Build scripts: declaramos explícitamente los paquetes con script de build como
+# ignorados. En un install fresco (CI/Vercel) pnpm 11 trata los "ignored builds"
+# no declarados como error fatal; al listarlos aquí, la decisión está tomada y
+# `pnpm install` sale 0. (Vercel provee su propio sharp para Next image optimization.)
+ignoredBuiltDependencies:
+  - '@clerk/shared'
+  - esbuild
+  - msw
+  - protobufjs
+  - sharp
+  - unrs-resolver
 
 # Registro lento/inestable para tarballs grandes (next, @next/swc-*).
 # Serializamos descargas y ampliamos timeouts para evitar abortos.
