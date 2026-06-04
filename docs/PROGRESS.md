@@ -3,7 +3,9 @@
 Estado vivo del build del monorepo. Fuente del orden: plan maestro §2/§8 y el Build Order de cada blueprint.
 Marca `[x]` solo lo verificado. No empieces una fase sin cerrar el gate de la anterior.
 
-> 👉 SIGUIENTE: **Step 14 del chatbot** — Testing (Vitest): unit de `lookup_price` (mayorista/umbral/inactivo), `chunkText`, `normalize` (3 canales + echo), `selectModel`; integración de `/api/webhooks/meta` (firma, idempotencia, echo). Instalar Vitest + config + `test` script.
+> 👉 SIGUIENTE: **Step 15 del chatbot** — Deploy: pasar a Vercel Production las claves que faltan (`BLOB_READ_WRITE_TOKEN`, `INNGEST_EVENT_KEY`/`INNGEST_SIGNING_KEY`, Meta reales), sync de la app Inngest Cloud a `…/api/inngest`, dominio `panel.<dominio>` (Cloudflare CNAME→Vercel), instancia de producción de Clerk, health check.
+>
+> ✅ Step 14 (Testing con Vitest) hecho (2026-06-03): Vitest instalado (config + setup + `test`/`test:watch`). 28 tests unitarios deterministas (sin red): `resolveLookup` (lógica de precios extraída a `lib/ai/pricing.ts`, mayorista/umbral/inactivo/exacto), `chunkText`, `normalize` (3 canales+echo+no-texto), `selectModel`, `verify` (firma HMAC + handshake). La integración con BD/OpenAI sigue en los scripts `*:smoke`. `pnpm --filter chatbot test` verde + build verde.
 >
 > ✅ Step 13 (Cumplimiento Habeas Data / Ley 1581) hecho (2026-06-03): página pública `/privacidad` (aviso de tratamiento de datos) enlazada desde Settings; job Inngest `compliance-retention` (cron diario `TZ=America/Bogota 0 3 * * *` + evento `compliance/retention.run`) borra conversaciones/perfiles/`webhook_events` vencidos según `bot_config.retention_months`; borrado bajo solicitud vía `DELETE /api/panel/conversations?id=&erase=customer` (cascade) con botones en el hilo (`conversation-view`). Verificado con `scripts/retention-smoke.ts` (`pnpm --filter chatbot retention:smoke`) + build verde.
 >
@@ -55,7 +57,7 @@ Blueprint: `docs/ci-quality-group-chatbot-blueprint.md` §9 (Steps 1–16). Memo
 - [x] **Step 11** — Panel: Leads + Conversaciones + Huecos — APIs `api/panel/{leads,conversations,gaps}` + páginas (`leads`, `gaps`, `conversations` + `[id]`). Leads (estado/descuento), Conversaciones (lista+hilo+toggle tomar/liberar/cerrar), Huecos (resolver inline → fuente `faq` embebida, recuperable por RAG). **Verificado** (`scripts/panel-smoke.ts`) + build ✓
 - [x] **Step 12** — Panel: Dashboard + Settings — `(panel)/dashboard` con KPIs reales (`db.$count`) + `(panel)/settings` + `settings-form` + `api/panel/config` (GET/PATCH `bot_config`: identidad/tono, mensajes, horario, canales, admin WhatsApp, descuento máx, retención). **Verificado** (`scripts/config-smoke.ts`) + build ✓
 - [x] **Step 13** — Cumplimiento (Habeas Data / Ley 1581/2012) — página pública `/privacidad`; job Inngest `compliance-retention` (cron + evento) borra conversaciones/perfiles vencidos por `retention_months`; borrado bajo solicitud (`DELETE /api/panel/conversations ?erase=customer`) + botones en el hilo. **Verificado** (`scripts/retention-smoke.ts`) + build ✓
-- [ ] **Step 14** — Testing (Vitest: lookup_price, chunk, normalize; integración webhook)
+- [x] **Step 14** — Testing (Vitest) — 28 tests unitarios: `resolveLookup` (precios, extraído a `lib/ai/pricing.ts`), `chunkText`, `normalize` (3 canales+echo), `selectModel`, `verify` (HMAC+handshake). `pnpm --filter chatbot test` verde. Integración BD/OpenAI en scripts `*:smoke`. **Verificado** + build ✓
 - [ ] **Step 15** — Deploy (Vercel + Blob + Inngest; subdominio `panel.<dominio>`)
 - [ ] **Step 16** — Conexión de canales Meta (webhook, suscripciones, prueba real por canal)
 

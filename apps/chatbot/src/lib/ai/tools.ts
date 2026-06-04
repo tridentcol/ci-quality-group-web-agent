@@ -5,6 +5,7 @@ import { db } from '@/lib/db'
 import { conversations, knowledgeGaps, leads, materials } from '@/lib/db/schema'
 import { notifyAdmin } from '@/lib/meta/notify'
 import { retrieve } from './retrieve'
+import { resolveLookup, type LookupPriceResult } from './pricing'
 
 /**
  * Tools del bot (blueprint §9 Step 8). Cada tool tiene:
@@ -23,8 +24,6 @@ export interface ToolContext {
   conversationId?: string
 }
 
-const num = (v: string | null | undefined) => (v == null ? null : Number(v))
-
 // ─── lookup_price ────────────────────────────────────────────────────────────
 
 const lookupPriceArgs = z.object({
@@ -32,58 +31,16 @@ const lookupPriceArgs = z.object({
   quantity: z.coerce.number().positive().optional(),
 })
 
-export type LookupPriceResult =
-  | { available: false; reason: 'not_found' | 'inactive'; material: string }
-  | {
-      available: true
-      material: string
-      unit: string
-      tier: 'retail' | 'wholesale'
-      unitPriceCop: number
-      quantity?: number
-      totalCop?: number
-    }
+export type { LookupPriceResult }
 
 export async function lookupPrice(
   args: z.infer<typeof lookupPriceArgs>,
 ): Promise<LookupPriceResult> {
-  const q = args.material.trim()
   const rows = await db
     .select()
     .from(materials)
-    .where(ilike(materials.name, `%${q}%`))
-
-  if (rows.length === 0) return { available: false, reason: 'not_found', material: q }
-
-  // Preferir coincidencia exacta (case-insensitive); si no, la primera.
-  const exact = rows.find((r) => r.name.toLowerCase() === q.toLowerCase())
-  const m = exact ?? rows[0]
-
-  if (!m.active) return { available: false, reason: 'inactive', material: m.name }
-
-  const retail = num(m.retailPriceCop)!
-  const wholesale = num(m.wholesalePriceCop)
-  const threshold = num(m.wholesaleThreshold)
-
-  const useWholesale =
-    args.quantity != null &&
-    wholesale != null &&
-    threshold != null &&
-    args.quantity >= threshold
-
-  const unitPriceCop = useWholesale ? wholesale! : retail
-  const tier: 'retail' | 'wholesale' = useWholesale ? 'wholesale' : 'retail'
-
-  return {
-    available: true,
-    material: m.name,
-    unit: m.unit,
-    tier,
-    unitPriceCop,
-    ...(args.quantity != null
-      ? { quantity: args.quantity, totalCop: unitPriceCop * args.quantity }
-      : {}),
-  }
+    .where(ilike(materials.name, `%${args.material.trim()}%`))
+  return resolveLookup(rows, args)
 }
 
 // ─── capture_lead ─────────────────────────────────────────────────────────────
