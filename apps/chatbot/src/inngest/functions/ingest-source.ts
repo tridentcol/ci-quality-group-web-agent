@@ -1,4 +1,5 @@
 import { eq } from 'drizzle-orm'
+import { get } from '@vercel/blob'
 import { inngest } from '@/inngest/client'
 import { db } from '@/lib/db'
 import { knowledgeChunks, knowledgeSources } from '@/lib/db/schema'
@@ -44,9 +45,12 @@ export const ingestSource = inngest.createFunction(
         if (!source.originalUrl) throw new Error('La fuente no tiene originalUrl')
         if (source.type === 'link') return scrapeUrl(source.originalUrl)
 
-        const res = await fetch(source.originalUrl)
-        if (!res.ok) throw new Error(`No se pudo descargar el Blob: HTTP ${res.status}`)
-        const buffer = Buffer.from(await res.arrayBuffer())
+        // Blob privado: se descarga autenticado con BLOB_READ_WRITE_TOKEN (del entorno).
+        const blob = await get(source.originalUrl, { access: 'private' })
+        if (!blob || blob.statusCode !== 200 || !blob.stream) {
+          throw new Error('No se pudo descargar el blob privado')
+        }
+        const buffer = Buffer.from(await new Response(blob.stream).arrayBuffer())
         return parseDocument(buffer, source.type as ParseableType)
       })
 
