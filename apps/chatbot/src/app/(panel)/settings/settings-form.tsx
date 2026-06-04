@@ -1,0 +1,194 @@
+"use client";
+
+import { useState } from "react";
+import { Loader2, Check } from "lucide-react";
+import { cn } from "@/lib/utils";
+
+export interface BusinessHours {
+  days: number[];
+  open: string;
+  close: string;
+}
+export interface Channels {
+  messenger: boolean;
+  whatsapp: boolean;
+  instagram: boolean;
+}
+export interface SettingsInitial {
+  botName: string;
+  tonePrompt: string;
+  welcomeMessage: string;
+  afterHoursMessage: string;
+  businessHours: BusinessHours | null;
+  channelsEnabled: Channels;
+  adminWhatsapp: string | null;
+  retentionMonths: number;
+  maxAutoDiscountPct: number;
+}
+
+const DAYS = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
+const DEFAULT_HOURS: BusinessHours = { days: [1, 2, 3, 4, 5], open: "07:00", close: "17:00" };
+
+const inputCls =
+  "w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring";
+
+export function SettingsForm({ initial }: { initial: SettingsInitial }) {
+  const [f, setF] = useState({
+    ...initial,
+    businessHours: initial.businessHours ?? DEFAULT_HOURS,
+    adminWhatsapp: initial.adminWhatsapp ?? "",
+  });
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
+
+  const set = <K extends keyof typeof f>(k: K, v: (typeof f)[K]) => setF((p) => ({ ...p, [k]: v }));
+  const toggleDay = (d: number) =>
+    set("businessHours", {
+      ...f.businessHours,
+      days: f.businessHours.days.includes(d)
+        ? f.businessHours.days.filter((x) => x !== d)
+        : [...f.businessHours.days, d].sort(),
+    });
+
+  async function save(e: React.FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    setMsg(null);
+    try {
+      const res = await fetch("/api/panel/config", {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          botName: f.botName,
+          tonePrompt: f.tonePrompt,
+          welcomeMessage: f.welcomeMessage,
+          afterHoursMessage: f.afterHoursMessage,
+          businessHours: f.businessHours,
+          channelsEnabled: f.channelsEnabled,
+          adminWhatsapp: f.adminWhatsapp,
+          retentionMonths: f.retentionMonths,
+          maxAutoDiscountPct: f.maxAutoDiscountPct,
+        }),
+      });
+      const json = await res.json();
+      if (!json.success) throw new Error(json.error?.message ?? "Error al guardar");
+      setMsg({ kind: "ok", text: "Cambios guardados." });
+    } catch (e2) {
+      setMsg({ kind: "err", text: e2 instanceof Error ? e2.message : "Error al guardar" });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <form onSubmit={save} className="space-y-6">
+      {/* Identidad */}
+      <Card title="Identidad y tono">
+        <Field label="Nombre del bot">
+          <input className={inputCls} value={f.botName} onChange={(e) => set("botName", e.target.value)} />
+        </Field>
+        <Field label="Tono (instrucciones de estilo)">
+          <textarea rows={3} className={inputCls} value={f.tonePrompt} onChange={(e) => set("tonePrompt", e.target.value)} />
+        </Field>
+        <Field label="Mensaje de bienvenida">
+          <textarea rows={2} className={inputCls} value={f.welcomeMessage} onChange={(e) => set("welcomeMessage", e.target.value)} />
+        </Field>
+        <Field label="Mensaje fuera de horario">
+          <textarea rows={2} className={inputCls} value={f.afterHoursMessage} onChange={(e) => set("afterHoursMessage", e.target.value)} />
+        </Field>
+      </Card>
+
+      {/* Horarios */}
+      <Card title="Horario de atención">
+        <div className="flex flex-wrap gap-1.5">
+          {DAYS.map((d, i) => (
+            <button
+              key={i}
+              type="button"
+              onClick={() => toggleDay(i)}
+              className={cn(
+                "rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
+                f.businessHours.days.includes(i)
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-accent text-muted-foreground hover:bg-accent/70",
+              )}
+            >
+              {d}
+            </button>
+          ))}
+        </div>
+        <div className="mt-3 flex items-center gap-3">
+          <Field label="Apertura">
+            <input type="time" className={inputCls} value={f.businessHours.open} onChange={(e) => set("businessHours", { ...f.businessHours, open: e.target.value })} />
+          </Field>
+          <Field label="Cierre">
+            <input type="time" className={inputCls} value={f.businessHours.close} onChange={(e) => set("businessHours", { ...f.businessHours, close: e.target.value })} />
+          </Field>
+        </div>
+      </Card>
+
+      {/* Canales */}
+      <Card title="Canales habilitados">
+        <div className="space-y-2">
+          {(["messenger", "whatsapp", "instagram"] as const).map((ch) => (
+            <label key={ch} className="flex items-center gap-2 text-sm capitalize text-foreground">
+              <input
+                type="checkbox"
+                checked={f.channelsEnabled[ch]}
+                onChange={(e) => set("channelsEnabled", { ...f.channelsEnabled, [ch]: e.target.checked })}
+              />
+              {ch}
+            </label>
+          ))}
+        </div>
+      </Card>
+
+      {/* Operación / privacidad */}
+      <Card title="Operación y privacidad">
+        <Field label="WhatsApp del administrador (avisos de leads/relevos)">
+          <input className={inputCls} placeholder="57300..." value={f.adminWhatsapp} onChange={(e) => set("adminWhatsapp", e.target.value)} />
+        </Field>
+        <div className="flex items-center gap-3">
+          <Field label="Descuento máximo automático (%)">
+            <input type="number" min={0} max={100} className={inputCls} value={f.maxAutoDiscountPct} onChange={(e) => set("maxAutoDiscountPct", Number(e.target.value))} />
+          </Field>
+          <Field label="Retención de datos (meses · Ley 1581)">
+            <input type="number" min={1} max={120} className={inputCls} value={f.retentionMonths} onChange={(e) => set("retentionMonths", Number(e.target.value))} />
+          </Field>
+        </div>
+      </Card>
+
+      <div className="flex items-center justify-end gap-3">
+        {msg && (
+          <p className={cn("text-sm", msg.kind === "ok" ? "text-success" : "text-destructive")}>{msg.text}</p>
+        )}
+        <button
+          type="submit"
+          disabled={busy}
+          className="inline-flex items-center gap-2 rounded-md bg-primary px-5 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-60"
+        >
+          {busy ? <Loader2 className="size-4 animate-spin" /> : <Check className="size-4" />}
+          Guardar cambios
+        </button>
+      </div>
+    </form>
+  );
+}
+
+function Card({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <section className="rounded-xl border border-border bg-card p-5 shadow-sm">
+      <h2 className="mb-4 text-sm font-semibold text-foreground">{title}</h2>
+      <div className="space-y-4">{children}</div>
+    </section>
+  );
+}
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <label className="block flex-1">
+      <span className="mb-1 block text-xs font-medium text-muted-foreground">{label}</span>
+      {children}
+    </label>
+  );
+}
