@@ -25,6 +25,8 @@ export interface GenerateInput {
   conversationId?: string
   /** Resumen de memoria de largo plazo del cliente, si existe. */
   customerSummary?: string | null
+  /** Resumen acumulado de la conversación larga (conversations.summary), si existe. */
+  conversationSummary?: string | null
 }
 
 export interface ExecutedTool {
@@ -79,6 +81,14 @@ export async function generateReply(input: GenerateInput): Promise<GenerateResul
 
   const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
     { role: 'system', content: system },
+    ...(input.conversationSummary?.trim()
+      ? [
+          {
+            role: 'system' as const,
+            content: `Resumen de lo conversado antes:\n${input.conversationSummary.trim()}`,
+          },
+        ]
+      : []),
     ...(input.history ?? []).map((m) => ({ role: m.role, content: m.content })),
     { role: 'user', content: input.message },
   ]
