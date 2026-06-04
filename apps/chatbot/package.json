@@ -12,7 +12,9 @@
     "seed": "tsx --env-file=.env.local src/lib/db/seed.ts",
     "rag:smoke": "tsx --env-file=.env.local scripts/rag-smoke.ts",
     "ingest:smoke": "tsx --env-file=.env.local scripts/ingest-smoke.ts",
-    "ingest:check": "tsx --env-file=.env.local scripts/ingest-check.ts"
+    "ingest:check": "tsx --env-file=.env.local scripts/ingest-check.ts",
+    "pricing:smoke": "tsx --env-file=.env.local scripts/pricing-smoke.ts",
+    "tools:smoke": "tsx --env-file=.env.local scripts/tools-smoke.ts"
   },
   "dependencies": {
     "@clerk/nextjs": "^7.4.2",
