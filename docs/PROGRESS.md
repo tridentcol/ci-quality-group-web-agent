@@ -3,7 +3,7 @@
 Estado vivo del build del monorepo. Fuente del orden: plan maestro §2/§8 y el Build Order de cada blueprint.
 Marca `[x]` solo lo verificado. No empieces una fase sin cerrar el gate de la anterior.
 
-> 👉 SIGUIENTE: **Step 5 del chatbot** — Pipeline de ingesta (Inngest): `lib/ingest/parse.ts` (PDF/DOCX/PPTX/TXT), `scrape.ts` (links), `chunk.ts` (~800 tokens, solapamiento 100); `inngest/functions/ingest-source.ts` (Blob → parse → chunk → embed → guardar chunks → status ready); `app/api/inngest/route.ts`. Requiere `INNGEST_*` y `BLOB_READ_WRITE_TOKEN` (Fase 0).
+> 👉 SIGUIENTE: **Step 6 del chatbot** — Panel: Conocimiento. `app/(panel)/knowledge/*` + `app/api/panel/knowledge`: subida a Vercel Blob → crea `knowledge_sources` (pending) → dispara evento Inngest `ingest/source.uploaded`; tabla con estado y polling; borrar fuente (cascade). Cierra el lazo de ingesta (Step 5). Requiere `BLOB_READ_WRITE_TOKEN` + `INNGEST_*` para la prueba real.
 >
 > Infra Neon: proyecto `quality-group-web`, branch `chatbot-dev` (PG18, sa-east-1). `DATABASE_URL` en `apps/chatbot/.env.local`.
 > Clerk: Next 16 usa `proxy.ts` (no `middleware.ts`) y `<Show>` (no `<SignedIn/SignedOut>`). Pendiente: pegar `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` + `CLERK_SECRET_KEY` en `.env.local` y probar login real.
@@ -27,7 +27,7 @@ Blueprint: `docs/ci-quality-group-chatbot-blueprint.md` §9 (Steps 1–16). Memo
 - [x] **Step 2** — Base de datos (Neon + pgvector): schema Drizzle (10 tablas), migración con `CREATE EXTENSION vector` + índice HNSW, seed — aplicado y verificado en Neon ✓
 - [x] **Step 3** — Auth del panel (Clerk): `proxy.ts` protege `(panel)/*` y `/api/panel/*`, layout con sidebar + guard, /sign-in — build OK · ⏳ falta probar login real con claves
 - [x] **Step 4** — IA: embeddings + retrieval (RAG): `lib/ai/{openai,embed,retrieve}.ts` + `scripts/rag-smoke.ts` — **smoke test verde** (insert→recupera por coseno, score 0.66). `OPENAI_API_KEY` en Vercel Production ✓
-- [ ] **Step 5** — Pipeline de ingesta (Inngest): parse/scrape/chunk + job ingest-source
+- [x] **Step 5** — Pipeline de ingesta (Inngest): `lib/ingest/{chunk,parse,scrape}.ts` + `inngest/{client,functions/ingest-source}.ts` + `/api/inngest` — chunking verificado + build OK. ⏳ end-to-end (subir→ready) pendiente de `INNGEST_*`/`BLOB` + Step 6 (UI)
 - [ ] **Step 6** — Panel: Conocimiento (subida a Blob, estado, borrado cascade)
 - [ ] **Step 7** — Panel: Precios (tabla editable, COP)
 - [ ] **Step 8** — Tools del bot (lookup_price, capture_lead, request_human_handoff, get_location, log_knowledge_gap)
