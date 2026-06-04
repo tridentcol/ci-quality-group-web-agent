@@ -29,6 +29,8 @@ export interface CustomerFacts {
 export interface ConversationMemory {
   conversationId: string
   customerId: string
+  /** Estado de la conversación: bot_active | human_controlled | closed. */
+  status: string
   /** Resumen de la memoria de largo plazo para el system prompt (o null). */
   customerSummary: string | null
   /** Resumen acumulado de la conversación larga (conversations.summary). */
@@ -213,6 +215,7 @@ export async function loadMemory(channel: string, externalId: string): Promise<C
   return {
     conversationId: conversation.id,
     customerId: profile.id,
+    status: conversation.status,
     customerSummary,
     summary: conversation.summary,
     history,

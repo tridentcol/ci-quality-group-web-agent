@@ -16,7 +16,8 @@
     "pricing:smoke": "tsx --env-file=.env.local scripts/pricing-smoke.ts",
     "tools:smoke": "tsx --env-file=.env.local scripts/tools-smoke.ts",
     "generate:smoke": "tsx --env-file=.env.local scripts/generate-smoke.ts",
-    "memory:smoke": "tsx --env-file=.env.local scripts/memory-smoke.ts"
+    "memory:smoke": "tsx --env-file=.env.local scripts/memory-smoke.ts",
+    "webhook:smoke": "tsx --env-file=.env.local scripts/webhook-smoke.ts"
   },
   "dependencies": {
     "@clerk/nextjs": "^7.4.2",
