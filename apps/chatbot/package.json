@@ -10,7 +10,9 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "seed": "tsx --env-file=.env.local src/lib/db/seed.ts",
-    "rag:smoke": "tsx --env-file=.env.local scripts/rag-smoke.ts"
+    "rag:smoke": "tsx --env-file=.env.local scripts/rag-smoke.ts",
+    "ingest:smoke": "tsx --env-file=.env.local scripts/ingest-smoke.ts",
+    "ingest:check": "tsx --env-file=.env.local scripts/ingest-check.ts"
   },
   "dependencies": {
     "@clerk/nextjs": "^7.4.2",
