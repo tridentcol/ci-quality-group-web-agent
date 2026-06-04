@@ -19,3 +19,9 @@ export type ConversationSummarize = {
   name: 'memory/conversation.summarize'
   data: { conversationId: string }
 }
+
+// Cumplimiento (Step 13): disparo manual del job de retención (también corre por cron).
+export type RetentionRun = {
+  name: 'compliance/retention.run'
+  data: Record<string, never>
+}

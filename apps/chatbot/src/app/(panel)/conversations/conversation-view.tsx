@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Loader2, Hand, Bot, XCircle } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { ArrowLeft, Loader2, Hand, Bot, XCircle, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ChannelBadge, ConversationStatusBadge } from "@/components/panel/channel-badge";
 
@@ -17,6 +18,7 @@ interface Conversation {
   channel: string;
   customerName: string | null;
   status: string;
+  customerId: string | null;
 }
 
 export function ConversationView({ id }: { id: string }) {
@@ -24,6 +26,7 @@ export function ConversationView({ id }: { id: string }) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
+  const router = useRouter();
 
   const load = useCallback(async () => {
     const res = await fetch(`/api/panel/conversations?id=${id}`);
@@ -49,6 +52,23 @@ export function ConversationView({ id }: { id: string }) {
       });
       const json = await res.json();
       if (json.success) setConv((c) => (c ? { ...c, status: json.data.status } : c));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function erase(scope: "conversation" | "customer") {
+    const label =
+      scope === "customer"
+        ? "¿Borrar el cliente y TODO su historial? (Habeas Data, irreversible)"
+        : "¿Borrar esta conversación y sus mensajes? (irreversible)";
+    if (!confirm(label)) return;
+    setBusy(true);
+    try {
+      const qs = scope === "customer" ? `?id=${id}&erase=customer` : `?id=${id}`;
+      const res = await fetch(`/api/panel/conversations${qs}`, { method: "DELETE" });
+      const json = await res.json();
+      if (json.success) router.push("/conversations");
     } finally {
       setBusy(false);
     }
@@ -93,6 +113,31 @@ export function ConversationView({ id }: { id: string }) {
         ) : (
           messages.map((m) => <Bubble key={m.id} message={m} />)
         )}
+      </div>
+
+      <div className="mt-8 rounded-xl border border-destructive/30 bg-destructive/5 p-4">
+        <p className="text-sm font-semibold text-foreground">Privacidad (Habeas Data · Ley 1581)</p>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Borrado de datos bajo solicitud del titular. Irreversible.
+        </p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <button
+            onClick={() => erase("conversation")}
+            disabled={busy}
+            className="inline-flex items-center gap-1.5 rounded-md border border-destructive/40 px-3 py-1.5 text-sm font-medium text-destructive transition-colors hover:bg-destructive/10 disabled:opacity-60"
+          >
+            <Trash2 className="size-4" /> Borrar conversación
+          </button>
+          {conv.customerId && (
+            <button
+              onClick={() => erase("customer")}
+              disabled={busy}
+              className="inline-flex items-center gap-1.5 rounded-md bg-destructive px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-destructive/90 disabled:opacity-60"
+            >
+              <Trash2 className="size-4" /> Borrar cliente y todo su historial
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );

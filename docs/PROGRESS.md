@@ -3,7 +3,9 @@
 Estado vivo del build del monorepo. Fuente del orden: plan maestro §2/§8 y el Build Order de cada blueprint.
 Marca `[x]` solo lo verificado. No empieces una fase sin cerrar el gate de la anterior.
 
-> 👉 SIGUIENTE: **Step 13 del chatbot** — Cumplimiento (Habeas Data / Ley 1581/2012): aviso de privacidad + job Inngest de retención que borra conversaciones/mensajes (y perfiles) vencidos según `bot_config.retention_months`; permitir borrado de perfil bajo solicitud.
+> 👉 SIGUIENTE: **Step 14 del chatbot** — Testing (Vitest): unit de `lookup_price` (mayorista/umbral/inactivo), `chunkText`, `normalize` (3 canales + echo), `selectModel`; integración de `/api/webhooks/meta` (firma, idempotencia, echo). Instalar Vitest + config + `test` script.
+>
+> ✅ Step 13 (Cumplimiento Habeas Data / Ley 1581) hecho (2026-06-03): página pública `/privacidad` (aviso de tratamiento de datos) enlazada desde Settings; job Inngest `compliance-retention` (cron diario `TZ=America/Bogota 0 3 * * *` + evento `compliance/retention.run`) borra conversaciones/perfiles/`webhook_events` vencidos según `bot_config.retention_months`; borrado bajo solicitud vía `DELETE /api/panel/conversations?id=&erase=customer` (cascade) con botones en el hilo (`conversation-view`). Verificado con `scripts/retention-smoke.ts` (`pnpm --filter chatbot retention:smoke`) + build verde.
 >
 > ✅ Step 12 (Panel: Dashboard + Settings) hecho (2026-06-03): `(panel)/dashboard` server con KPIs reales (conversaciones, relevos, leads nuevos, huecos, fuentes listas, materiales activos vía `db.$count`, tarjetas enlazadas). `(panel)/settings` (server carga `bot_config`) + `settings-form` cliente (nombre/tono, bienvenida, fuera de horario, horario con días+apertura/cierre, toggles de canal, WhatsApp admin, descuento máx, retención) + `api/panel/config` (GET/PATCH Zod). Verificado con `scripts/config-smoke.ts` (`pnpm --filter chatbot config:smoke`) + build verde.
 >
@@ -52,7 +54,7 @@ Blueprint: `docs/ci-quality-group-chatbot-blueprint.md` §9 (Steps 1–16). Memo
 - [x] **Step 10** — Integración Meta: webhook unificado — `lib/meta/{verify,normalize,send,notify}.ts` + `app/api/webhooks/meta/route.ts` (GET verify_token + POST firma HMAC, 200 <20s con `after()`). `normalize` 3 canales + echo; `handle.ts` pipeline (idempotencia `webhook_events`, echo→`human_controlled`, `loadMemory→generateReply→send`, dispara summarize); `notifyAdmin` envía WhatsApp real. **Verificado** (`scripts/webhook-smoke.ts` unit+e2e) + build ✓. Conexión real de canales → Step 16
 - [x] **Step 11** — Panel: Leads + Conversaciones + Huecos — APIs `api/panel/{leads,conversations,gaps}` + páginas (`leads`, `gaps`, `conversations` + `[id]`). Leads (estado/descuento), Conversaciones (lista+hilo+toggle tomar/liberar/cerrar), Huecos (resolver inline → fuente `faq` embebida, recuperable por RAG). **Verificado** (`scripts/panel-smoke.ts`) + build ✓
 - [x] **Step 12** — Panel: Dashboard + Settings — `(panel)/dashboard` con KPIs reales (`db.$count`) + `(panel)/settings` + `settings-form` + `api/panel/config` (GET/PATCH `bot_config`: identidad/tono, mensajes, horario, canales, admin WhatsApp, descuento máx, retención). **Verificado** (`scripts/config-smoke.ts`) + build ✓
-- [ ] **Step 13** — Cumplimiento (Habeas Data / Ley 1581/2012): privacidad + job de retención
+- [x] **Step 13** — Cumplimiento (Habeas Data / Ley 1581/2012) — página pública `/privacidad`; job Inngest `compliance-retention` (cron + evento) borra conversaciones/perfiles vencidos por `retention_months`; borrado bajo solicitud (`DELETE /api/panel/conversations ?erase=customer`) + botones en el hilo. **Verificado** (`scripts/retention-smoke.ts`) + build ✓
 - [ ] **Step 14** — Testing (Vitest: lookup_price, chunk, normalize; integración webhook)
 - [ ] **Step 15** — Deploy (Vercel + Blob + Inngest; subdominio `panel.<dominio>`)
 - [ ] **Step 16** — Conexión de canales Meta (webhook, suscripciones, prueba real por canal)

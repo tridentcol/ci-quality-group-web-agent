@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { asc, desc, eq, sql } from 'drizzle-orm'
 import { db } from '@/lib/db'
-import { conversations, messages } from '@/lib/db/schema'
+import { conversations, customerProfiles, messages } from '@/lib/db/schema'
 
 function ok(data: unknown) {
   return NextResponse.json({ success: true, data })
@@ -67,4 +67,29 @@ export async function PATCH(req: Request) {
     .returning({ id: conversations.id, status: conversations.status })
   if (!row) return fail('La conversación no existe.', 404, 'NOT_FOUND')
   return ok(row)
+}
+
+// DELETE — borrado bajo solicitud (Habeas Data / Ley 1581).
+//  ?id=<conv>             → borra la conversación (cascade: mensajes, leads).
+//  ?id=<conv>&erase=customer → borra el perfil del cliente y TODAS sus conversaciones.
+export async function DELETE(req: Request) {
+  const url = new URL(req.url)
+  const id = url.searchParams.get('id')
+  const erase = url.searchParams.get('erase')
+  if (!id) return fail('Falta el id de la conversación.')
+
+  const [conv] = await db
+    .select({ customerId: conversations.customerId })
+    .from(conversations)
+    .where(eq(conversations.id, id))
+  if (!conv) return fail('La conversación no existe.', 404, 'NOT_FOUND')
+
+  if (erase === 'customer' && conv.customerId) {
+    await db.delete(conversations).where(eq(conversations.customerId, conv.customerId)) // cascade
+    await db.delete(customerProfiles).where(eq(customerProfiles.id, conv.customerId))
+    return ok({ erased: 'customer' })
+  }
+
+  await db.delete(conversations).where(eq(conversations.id, id))
+  return ok({ erased: 'conversation' })
 }

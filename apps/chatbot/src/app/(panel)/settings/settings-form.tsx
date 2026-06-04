@@ -156,6 +156,13 @@ export function SettingsForm({ initial }: { initial: SettingsInitial }) {
             <input type="number" min={1} max={120} className={inputCls} value={f.retentionMonths} onChange={(e) => set("retentionMonths", Number(e.target.value))} />
           </Field>
         </div>
+        <p className="text-xs text-muted-foreground">
+          Las conversaciones más viejas que la retención se borran automáticamente cada noche.{" "}
+          <a href="/privacidad" target="_blank" rel="noreferrer" className="text-primary hover:underline">
+            Ver aviso de privacidad
+          </a>
+          .
+        </p>
       </Card>
 
       <div className="flex items-center justify-end gap-3">
