@@ -2,25 +2,25 @@
  * Extrae texto plano de un documento (blueprint §9 Step 5).
  * Tipos soportados: pdf | docx | pptx | txt.
  *
- * Los parsers (pdf-parse → @napi-rs/canvas, mammoth, officeparser) traen
- * dependencias NATIVAS. Importarlos a nivel de módulo hacía que /api/inngest
- * fallara al *registrar* las funciones (el binding nativo revienta al cargar
- * en el lambda de Vercel). Por eso se cargan con import() diferido DENTRO de
- * cada caso: solo se tocan cuando el job realmente parsea ese tipo de archivo.
+ * PDF: usamos `unpdf` (build de pdf.js para Node/serverless, SIN deps nativas
+ * ni globals de navegador). `pdf-parse` no sirve aquí: por dentro usa pdf.js que
+ * espera `DOMMatrix` y compañía → en el lambda lanza "DOMMatrix is not defined",
+ * y su polyfill natural (`@napi-rs/canvas`) es justo el binario nativo que no
+ * carga en Vercel.
+ *
+ * DOCX/PPTX (mammoth, officeparser) se cargan con import() diferido DENTRO de
+ * cada caso: así registrar el endpoint /api/inngest no toca esos módulos; solo
+ * se importan cuando el job realmente parsea ese tipo de archivo.
  */
 export type ParseableType = 'pdf' | 'docx' | 'pptx' | 'txt'
 
 export async function parseDocument(buffer: Buffer, type: ParseableType): Promise<string> {
   switch (type) {
     case 'pdf': {
-      const { PDFParse } = await import('pdf-parse')
-      const parser = new PDFParse({ data: new Uint8Array(buffer) })
-      try {
-        const result = await parser.getText()
-        return normalize(result.text)
-      } finally {
-        await parser.destroy()
-      }
+      const { extractText, getDocumentProxy } = await import('unpdf')
+      const pdf = await getDocumentProxy(new Uint8Array(buffer))
+      const { text } = await extractText(pdf, { mergePages: true })
+      return normalize(text)
     }
     case 'docx': {
       const { default: mammoth } = await import('mammoth')
