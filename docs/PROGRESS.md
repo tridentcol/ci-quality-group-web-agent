@@ -3,7 +3,9 @@
 Estado vivo del build del monorepo. Fuente del orden: plan maestro §2/§8 y el Build Order de cada blueprint.
 Marca `[x]` solo lo verificado. No empieces una fase sin cerrar el gate de la anterior.
 
-> 👉 SIGUIENTE: **Step 9 del chatbot** — Motor de generación: `lib/ai/system-prompt.ts` (identidad + tono desde `bot_config` + reglas estrictas), `lib/ai/router.ts` (heurística mini→GPT-4o) y `lib/ai/generate.ts` (system + RAG + historial + tools → OpenAI → ejecuta tools → respuesta). Las tools ya están en `lib/ai/tools.ts` (`executeTool`/`toolDefinitions`).
+> 👉 SIGUIENTE: **Step 9B del chatbot** — Memoria 3 capas: corto plazo (últimos N `messages`) ya cubierto por `generateReply(history)`; falta largo plazo (`customer_profiles` por `(channel, external_id)` → inyectar resumen de `facts` en `customerSummary`; vincular `conversations.customer_id`) + jobs Inngest `memory/update-profile` y `memory/summarize`.
+>
+> ✅ Step 9 (Motor de generación) hecho (2026-06-03): `lib/ai/system-prompt.ts` (puro: identidad+tono desde `bot_config`+reglas no negociables+memoria+contexto), `lib/ai/router.ts` (`selectModel`: mini→GPT-4o por longitud/tecnicismo/fallo RAG) y `lib/ai/generate.ts` (`generateReply`: RAG→router→system prompt→OpenAI con tool-calling en bucle→respuesta). Verificado end-to-end con `scripts/generate-smoke.ts` (`pnpm --filter chatbot generate:smoke`): pregunta de precio→`lookup_price`→mayorista 26.000 sin inventar + build verde.
 >
 > ✅ Step 8 (Tools del bot) hecho (2026-06-03): `lib/ai/tools.ts` con `lookup_price` (retail/mayorista por umbral, inactivo→no disponible), `capture_lead` (inserta lead + enlaza material + avisa admin), `request_human_handoff` (status `human_controlled` + aviso), `get_location` (RAG) y `log_knowledge_gap`. `toolDefinitions` para function-calling + `executeTool(name,args,ctx)`. Stub `lib/meta/notify.ts:notifyAdmin` (Step 10 hará el envío real). Verificado con `scripts/tools-smoke.ts` (`pnpm --filter chatbot tools:smoke`) + build verde.
 >
@@ -37,7 +39,7 @@ Blueprint: `docs/ci-quality-group-chatbot-blueprint.md` §9 (Steps 1–16). Memo
 - [x] **Step 6** — Panel: Conocimiento — UI (archivo/enlace/texto) + API (Blob privado, dispara Inngest, lista, borra cascade) + polling. **End-to-end verificado** vía Inngest Dev Server (`INNGEST_DEV=1`): texto → Blob → job `ingest-source` → chunk con embedding → `ready`; cascade OK ✓
 - [x] **Step 7** — Panel: Precios — `app/(panel)/pricing` (tabla editable: nombre/categoría/unidad/minorista/mayorista/umbral/activo) + `api/panel/pricing` (GET/POST/PATCH/DELETE, Zod, numeric COP↔string). **CRUD verificado** (`scripts/pricing-smoke.ts`) + typecheck ✓. ⏳ visual en navegador pendiente de login Clerk
 - [x] **Step 8** — Tools del bot — `lib/ai/tools.ts`: `lookup_price` (retail/mayorista por `wholesale_threshold`, inactivo→no disponible), `capture_lead` (+enlaza material +`notifyAdmin`), `request_human_handoff` (status `human_controlled`), `get_location` (RAG), `log_knowledge_gap`. `toolDefinitions` + `executeTool`. **Verificado** (`scripts/tools-smoke.ts`) + build ✓. notify real → Step 10
-- [ ] **Step 9** — Motor de generación (system-prompt + router mini→GPT-4o + generate)
+- [x] **Step 9** — Motor de generación — `lib/ai/system-prompt.ts` (puro, reglas no negociables) + `lib/ai/router.ts` (`selectModel` mini→GPT-4o) + `lib/ai/generate.ts` (`generateReply`: RAG+router+tool-calling en bucle). **Verificado** end-to-end (`scripts/generate-smoke.ts`) + build ✓
 - [ ] **Step 9B** — Memoria 3 capas (corto + customer_profiles + RAG; jobs update-profile/summarize)
 - [ ] **Step 10** — Integración Meta: webhook unificado (verify/normalize/send/notify, idempotencia, echo)
 - [ ] **Step 11** — Panel: Leads + Conversaciones + Huecos (toggle tomar/liberar, resolver hueco → faq)

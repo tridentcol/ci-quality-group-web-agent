@@ -14,7 +14,8 @@
     "ingest:smoke": "tsx --env-file=.env.local scripts/ingest-smoke.ts",
     "ingest:check": "tsx --env-file=.env.local scripts/ingest-check.ts",
     "pricing:smoke": "tsx --env-file=.env.local scripts/pricing-smoke.ts",
-    "tools:smoke": "tsx --env-file=.env.local scripts/tools-smoke.ts"
+    "tools:smoke": "tsx --env-file=.env.local scripts/tools-smoke.ts",
+    "generate:smoke": "tsx --env-file=.env.local scripts/generate-smoke.ts"
   },
   "dependencies": {
     "@clerk/nextjs": "^7.4.2",
