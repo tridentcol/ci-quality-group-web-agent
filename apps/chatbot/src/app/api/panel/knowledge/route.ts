@@ -44,44 +44,38 @@ export async function GET() {
   return ok(sources)
 }
 
-// POST — subir archivo (multipart) o link/texto (JSON)
+// POST — registra una fuente (JSON): archivo ya subido a Blob, link o texto.
+// El archivo se sube DIRECTO del navegador a Blob (ver /api/panel/knowledge/upload);
+// aquí solo llega su `blobUrl` para registrar la fuente y disparar la ingesta.
 export async function POST(req: Request) {
-  const contentType = req.headers.get('content-type') ?? ''
-
-  // 1) Archivo
-  if (contentType.includes('multipart/form-data')) {
-    const form = await req.formData()
-    const file = form.get('file')
-    if (!(file instanceof File)) return fail('Falta el archivo a subir.')
-
-    const ext = file.name.split('.').pop()?.toLowerCase() ?? ''
-    const type = EXT_TO_TYPE[ext]
-    if (!type) return fail(`Tipo no soportado: .${ext}. Usa PDF, DOCX, PPTX o TXT.`)
-
-    const blob = await put(`knowledge/${file.name}`, file, {
-      access: 'private',
-      addRandomSuffix: true,
-    })
-    const [source] = await db
-      .insert(knowledgeSources)
-      .values({ type, name: file.name, originalUrl: blob.url, status: 'pending' })
-      .returning({ id: knowledgeSources.id })
-    await triggerIngest(source.id)
-    return ok({ sourceId: source.id, status: 'pending' })
-  }
-
-  // 2) Link o texto (JSON)
   const body = await req.json().catch(() => null)
   const parsed = z
     .object({
+      blobUrl: z.string().url().optional(),
       url: z.string().url().optional(),
       text: z.string().trim().min(1).optional(),
       name: z.string().trim().min(1).optional(),
     })
     .safeParse(body)
   if (!parsed.success) return fail('Envía un archivo, una URL o texto.')
-  const { url, text, name } = parsed.data
+  const { blobUrl, url, text, name } = parsed.data
 
+  // 1) Archivo ya subido a Blob por el cliente
+  if (blobUrl) {
+    if (!name) return fail('Falta el nombre del archivo.')
+    const ext = name.split('.').pop()?.toLowerCase() ?? ''
+    const type = EXT_TO_TYPE[ext]
+    if (!type) return fail(`Tipo no soportado: .${ext}. Usa PDF, DOCX, PPTX o TXT.`)
+
+    const [source] = await db
+      .insert(knowledgeSources)
+      .values({ type, name, originalUrl: blobUrl, status: 'pending' })
+      .returning({ id: knowledgeSources.id })
+    await triggerIngest(source.id)
+    return ok({ sourceId: source.id, status: 'pending' })
+  }
+
+  // 2) Link o texto
   if (url) {
     const [source] = await db
       .insert(knowledgeSources)
