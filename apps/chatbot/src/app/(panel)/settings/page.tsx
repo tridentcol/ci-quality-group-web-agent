@@ -7,9 +7,9 @@ export default async function SettingsPage() {
   const [cfg] = await db.select().from(botConfig).where(eq(botConfig.id, 1));
 
   return (
-    <div className="mx-auto max-w-3xl p-8">
-      <header className="mb-8">
-        <h1 className="text-2xl font-semibold text-foreground">Ajustes</h1>
+    <div className="mx-auto max-w-3xl p-4 sm:p-6 lg:p-8">
+      <header className="mb-6 sm:mb-8">
+        <h1 className="text-xl font-semibold text-foreground sm:text-2xl">Ajustes</h1>
         <p className="mt-1 text-sm text-muted-foreground">
           Identidad y tono del bot, horarios, canales, privacidad y descuentos.
         </p>

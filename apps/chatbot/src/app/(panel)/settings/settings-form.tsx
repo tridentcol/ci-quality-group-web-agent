@@ -117,7 +117,7 @@ export function SettingsForm({ initial }: { initial: SettingsInitial }) {
             </button>
           ))}
         </div>
-        <div className="mt-3 flex items-center gap-3">
+        <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-end">
           <Field label="Apertura">
             <input type="time" className={inputCls} value={f.businessHours.open} onChange={(e) => set("businessHours", { ...f.businessHours, open: e.target.value })} />
           </Field>
@@ -148,7 +148,7 @@ export function SettingsForm({ initial }: { initial: SettingsInitial }) {
         <Field label="WhatsApp del administrador (avisos de leads/relevos)">
           <input className={inputCls} placeholder="57300..." value={f.adminWhatsapp} onChange={(e) => set("adminWhatsapp", e.target.value)} />
         </Field>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
           <Field label="Descuento máximo automático (%)">
             <input type="number" min={0} max={100} className={inputCls} value={f.maxAutoDiscountPct} onChange={(e) => set("maxAutoDiscountPct", Number(e.target.value))} />
           </Field>

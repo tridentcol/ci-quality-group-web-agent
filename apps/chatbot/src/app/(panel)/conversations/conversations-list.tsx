@@ -26,13 +26,47 @@ export function ConversationsList() {
       });
   }, []);
 
+  if (loading) {
+    return (
+      <div className="rounded-xl border border-border bg-card py-8 text-center text-sm text-muted-foreground shadow-sm">
+        Cargando…
+      </div>
+    );
+  }
+  if (items.length === 0) {
+    return (
+      <div className="rounded-xl border border-border bg-card py-8 text-center text-sm text-muted-foreground shadow-sm">
+        Aún no hay conversaciones.
+      </div>
+    );
+  }
+
+  const fmt = (d: string | null) => (d ? new Date(d).toLocaleString("es-CO") : "—");
+
   return (
-    <div className="overflow-x-auto rounded-xl border border-border bg-card shadow-sm">
-      {loading ? (
-        <p className="px-5 py-8 text-center text-sm text-muted-foreground">Cargando…</p>
-      ) : items.length === 0 ? (
-        <p className="px-5 py-8 text-center text-sm text-muted-foreground">Aún no hay conversaciones.</p>
-      ) : (
+    <>
+      {/* Cards en móvil */}
+      <div className="space-y-3 md:hidden">
+        {items.map((c) => (
+          <Link
+            key={c.id}
+            href={`/conversations/${c.id}`}
+            className="block rounded-xl border border-border bg-card p-4 shadow-sm transition-colors hover:border-primary"
+          >
+            <div className="flex items-center justify-between gap-2">
+              <ChannelBadge channel={c.channel} />
+              <ConversationStatusBadge status={c.status} />
+            </div>
+            <p className="mt-2 font-medium text-foreground">{c.customerName ?? "Cliente"}</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {c.messageCount} mensaje{c.messageCount === 1 ? "" : "s"} · {fmt(c.lastMessageAt)}
+            </p>
+          </Link>
+        ))}
+      </div>
+
+      {/* Tabla en escritorio */}
+      <div className="hidden overflow-x-auto rounded-xl border border-border bg-card shadow-sm md:block">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border text-left text-xs uppercase text-muted-foreground">
@@ -55,9 +89,7 @@ export function ConversationsList() {
                   <ConversationStatusBadge status={c.status} />
                 </td>
                 <td className="px-2 py-3 text-muted-foreground">{c.messageCount}</td>
-                <td className="px-2 py-3 text-muted-foreground">
-                  {c.lastMessageAt ? new Date(c.lastMessageAt).toLocaleString("es-CO") : "—"}
-                </td>
+                <td className="px-2 py-3 text-muted-foreground">{fmt(c.lastMessageAt)}</td>
                 <td className="px-4 py-3 text-right">
                   <Link href={`/conversations/${c.id}`} className="text-sm font-medium text-primary hover:underline">
                     Ver
@@ -67,7 +99,7 @@ export function ConversationsList() {
             ))}
           </tbody>
         </table>
-      )}
-    </div>
+      </div>
+    </>
   );
 }

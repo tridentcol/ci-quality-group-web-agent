@@ -3,32 +3,16 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { UserButton } from "@clerk/nextjs";
-import {
-  LayoutDashboard,
-  BookOpen,
-  Tags,
-  Users,
-  HelpCircle,
-  MessagesSquare,
-  Settings,
-} from "lucide-react";
 import { cn } from "@/lib/utils";
+import { NAV, isActive } from "@/components/panel/nav-items";
 
-const NAV = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/knowledge", label: "Conocimiento", icon: BookOpen },
-  { href: "/pricing", label: "Precios", icon: Tags },
-  { href: "/leads", label: "Leads", icon: Users },
-  { href: "/gaps", label: "Huecos", icon: HelpCircle },
-  { href: "/conversations", label: "Conversaciones", icon: MessagesSquare },
-  { href: "/settings", label: "Ajustes", icon: Settings },
-] as const;
-
+// Sidebar persistente de escritorio. En móvil/tablet se oculta y la navegación
+// la cubre <MobileNav /> (top bar + drawer).
 export function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="flex h-full w-60 shrink-0 flex-col border-r border-sidebar-border bg-sidebar">
+    <aside className="hidden h-full w-60 shrink-0 flex-col border-r border-sidebar-border bg-sidebar lg:flex">
       <div className="flex h-16 items-center gap-2 border-b border-sidebar-border px-5">
         <span className="size-2.5 rounded-full bg-primary" aria-hidden />
         <span className="text-sm font-semibold text-sidebar-foreground">
@@ -38,7 +22,7 @@ export function Sidebar() {
 
       <nav className="flex-1 space-y-1 p-3">
         {NAV.map(({ href, label, icon: Icon }) => {
-          const active = pathname === href || pathname.startsWith(`${href}/`);
+          const active = isActive(pathname, href);
           return (
             <Link
               key={href}

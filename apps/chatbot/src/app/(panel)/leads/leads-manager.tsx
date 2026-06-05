@@ -48,18 +48,37 @@ export function LeadsManager() {
     load();
   }, [load]);
 
-  return (
-    <div className="overflow-x-auto rounded-xl border border-border bg-card shadow-sm">
-      <div className="border-b border-border px-5 py-3 text-sm font-semibold text-foreground">
-        Solicitudes
+  const onChange = (u: Lead) => setItems((p) => p.map((x) => (x.id === u.id ? u : x)));
+
+  if (loading) {
+    return (
+      <div className="rounded-xl border border-border bg-card py-8 text-center text-sm text-muted-foreground shadow-sm">
+        Cargando…
       </div>
-      {loading ? (
-        <p className="px-5 py-8 text-center text-sm text-muted-foreground">Cargando…</p>
-      ) : items.length === 0 ? (
-        <p className="px-5 py-8 text-center text-sm text-muted-foreground">
-          Aún no hay leads. El bot los captura cuando hay intención de compra/venta.
-        </p>
-      ) : (
+    );
+  }
+  if (items.length === 0) {
+    return (
+      <div className="rounded-xl border border-border bg-card py-8 text-center text-sm text-muted-foreground shadow-sm">
+        Aún no hay leads. El bot los captura cuando hay intención de compra/venta.
+      </div>
+    );
+  }
+
+  return (
+    <>
+      {/* Cards en móvil */}
+      <div className="space-y-3 md:hidden">
+        {items.map((l) => (
+          <LeadCard key={l.id} lead={l} onChange={onChange} />
+        ))}
+      </div>
+
+      {/* Tabla en escritorio */}
+      <div className="hidden overflow-x-auto rounded-xl border border-border bg-card shadow-sm md:block">
+        <div className="border-b border-border px-5 py-3 text-sm font-semibold text-foreground">
+          Solicitudes
+        </div>
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border text-left text-xs uppercase text-muted-foreground">
@@ -73,21 +92,18 @@ export function LeadsManager() {
           </thead>
           <tbody>
             {items.map((l) => (
-              <LeadRow key={l.id} lead={l} onChange={(u) => setItems((p) => p.map((x) => (x.id === u.id ? u : x)))} />
+              <LeadRow key={l.id} lead={l} onChange={onChange} />
             ))}
           </tbody>
         </table>
-      )}
-    </div>
+      </div>
+    </>
   );
 }
 
-function LeadRow({ lead, onChange }: { lead: Lead; onChange: (l: Lead) => void }) {
-  const [discount, setDiscount] = useState(lead.discountApprovedPct ?? "");
+// Lógica de guardado compartida entre la fila (escritorio) y la tarjeta (móvil).
+function useLeadPatch(lead: Lead, onChange: (l: Lead) => void) {
   const [busy, setBusy] = useState(false);
-
-  useEffect(() => setDiscount(lead.discountApprovedPct ?? ""), [lead.discountApprovedPct]);
-
   async function patch(body: Record<string, unknown>) {
     setBusy(true);
     try {
@@ -102,11 +118,76 @@ function LeadRow({ lead, onChange }: { lead: Lead; onChange: (l: Lead) => void }
       setBusy(false);
     }
   }
+  return { busy, patch };
+}
 
-  const discountDirty = (discount || null) !== (lead.discountApprovedPct ?? null);
+function DiscountControl({ lead, onChange }: { lead: Lead; onChange: (l: Lead) => void }) {
+  const { busy, patch } = useLeadPatch(lead, onChange);
+  const [discount, setDiscount] = useState(lead.discountApprovedPct ?? "");
+
+  useEffect(() => setDiscount(lead.discountApprovedPct ?? ""), [lead.discountApprovedPct]);
+
+  const dirty = (discount || null) !== (lead.discountApprovedPct ?? null);
 
   return (
-    <tr className="border-b border-border/60 last:border-0 align-top">
+    <div className="flex items-center gap-1.5">
+      {lead.requestedDiscount && (
+        <span className="rounded-full bg-warning/15 px-2 py-0.5 text-xs font-medium text-warning">
+          pidió
+        </span>
+      )}
+      <input
+        type="number"
+        min={0}
+        max={100}
+        placeholder="%"
+        value={discount}
+        onChange={(e) => setDiscount(e.target.value)}
+        className={cn(inputCls, "w-16")}
+      />
+      {dirty && (
+        <button
+          onClick={() => patch({ discountApprovedPct: discount === "" ? null : Number(discount) })}
+          disabled={busy}
+          className="inline-flex items-center rounded-md bg-primary px-2 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
+          aria-label="Aprobar descuento"
+        >
+          {busy ? <Loader2 className="size-3.5 animate-spin" /> : <Check className="size-3.5" />}
+        </button>
+      )}
+    </div>
+  );
+}
+
+function StatusControl({
+  lead,
+  onChange,
+  className,
+}: {
+  lead: Lead;
+  onChange: (l: Lead) => void;
+  className?: string;
+}) {
+  const { busy, patch } = useLeadPatch(lead, onChange);
+  return (
+    <select
+      value={lead.status}
+      disabled={busy}
+      onChange={(e) => patch({ status: e.target.value })}
+      className={cn(inputCls, className)}
+    >
+      {(Object.keys(STATUS_LABEL) as Status[]).map((s) => (
+        <option key={s} value={s}>
+          {STATUS_LABEL[s]}
+        </option>
+      ))}
+    </select>
+  );
+}
+
+function LeadRow({ lead, onChange }: { lead: Lead; onChange: (l: Lead) => void }) {
+  return (
+    <tr className="border-b border-border/60 align-top last:border-0">
       <td className="px-4 py-3">
         <div className="font-medium text-foreground">{lead.name ?? "—"}</div>
         <div className="text-xs text-muted-foreground">{lead.contact ?? "sin contacto"}</div>
@@ -117,47 +198,49 @@ function LeadRow({ lead, onChange }: { lead: Lead; onChange: (l: Lead) => void }
       <td className="px-2 py-3 text-foreground">{lead.interest ?? lead.materialName ?? "—"}</td>
       <td className="px-2 py-3 text-muted-foreground">{lead.quantity ?? "—"}</td>
       <td className="px-2 py-3">
-        <div className="flex items-center gap-1.5">
-          {lead.requestedDiscount && (
-            <span className="rounded-full bg-warning/15 px-2 py-0.5 text-xs font-medium text-warning">
-              pidió
-            </span>
-          )}
-          <input
-            type="number"
-            min={0}
-            max={100}
-            placeholder="%"
-            value={discount}
-            onChange={(e) => setDiscount(e.target.value)}
-            className={cn(inputCls, "w-16")}
-          />
-          {discountDirty && (
-            <button
-              onClick={() => patch({ discountApprovedPct: discount === "" ? null : Number(discount) })}
-              disabled={busy}
-              className="inline-flex items-center rounded-md bg-primary px-2 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
-              aria-label="Aprobar descuento"
-            >
-              {busy ? <Loader2 className="size-3.5 animate-spin" /> : <Check className="size-3.5" />}
-            </button>
-          )}
-        </div>
+        <DiscountControl lead={lead} onChange={onChange} />
       </td>
       <td className="px-2 py-3">
-        <select
-          value={lead.status}
-          disabled={busy}
-          onChange={(e) => patch({ status: e.target.value })}
-          className={inputCls}
-        >
-          {(Object.keys(STATUS_LABEL) as Status[]).map((s) => (
-            <option key={s} value={s}>
-              {STATUS_LABEL[s]}
-            </option>
-          ))}
-        </select>
+        <StatusControl lead={lead} onChange={onChange} />
       </td>
     </tr>
+  );
+}
+
+function LeadCard({ lead, onChange }: { lead: Lead; onChange: (l: Lead) => void }) {
+  return (
+    <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <div className="truncate font-medium text-foreground">{lead.name ?? "—"}</div>
+          <div className="truncate text-xs text-muted-foreground">
+            {lead.contact ?? "sin contacto"}
+          </div>
+        </div>
+        <ChannelBadge channel={lead.channel} />
+      </div>
+
+      <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 text-sm">
+        <div>
+          <dt className="text-xs text-muted-foreground">Interés</dt>
+          <dd className="text-foreground">{lead.interest ?? lead.materialName ?? "—"}</dd>
+        </div>
+        <div>
+          <dt className="text-xs text-muted-foreground">Cantidad</dt>
+          <dd className="text-foreground">{lead.quantity ?? "—"}</dd>
+        </div>
+      </dl>
+
+      <div className="mt-3 space-y-2">
+        <div>
+          <span className="mb-1 block text-xs text-muted-foreground">Descuento</span>
+          <DiscountControl lead={lead} onChange={onChange} />
+        </div>
+        <div>
+          <span className="mb-1 block text-xs text-muted-foreground">Estado</span>
+          <StatusControl lead={lead} onChange={onChange} className="w-full" />
+        </div>
+      </div>
+    </div>
   );
 }

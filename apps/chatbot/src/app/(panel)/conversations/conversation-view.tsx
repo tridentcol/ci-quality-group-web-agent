@@ -78,7 +78,7 @@ export function ConversationView({ id }: { id: string }) {
   if (!conv) return <p className="p-8 text-center text-sm text-muted-foreground">Conversación no encontrada.</p>;
 
   return (
-    <div className="mx-auto max-w-3xl p-8">
+    <div className="mx-auto max-w-3xl p-4 sm:p-6 lg:p-8">
       <Link href="/conversations" className="mb-4 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
         <ArrowLeft className="size-4" /> Conversaciones
       </Link>
@@ -183,7 +183,7 @@ function Bubble({ message }: { message: Message }) {
     <div className={cn("flex", fromCustomer ? "justify-start" : "justify-end")}>
       <div
         className={cn(
-          "max-w-[75%] rounded-2xl px-4 py-2 text-sm",
+          "max-w-[85%] rounded-2xl px-4 py-2 text-sm sm:max-w-[75%]",
           fromCustomer ? "bg-muted text-foreground" : "bg-primary text-primary-foreground",
         )}
       >

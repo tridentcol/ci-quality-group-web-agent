@@ -138,53 +138,86 @@ export function KnowledgeManager() {
             Aún no hay fuentes. Sube un documento, pega un enlace o texto.
           </p>
         ) : (
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-border text-left text-xs uppercase text-muted-foreground">
-                <th className="px-5 py-2 font-medium">Nombre</th>
-                <th className="px-3 py-2 font-medium">Tipo</th>
-                <th className="px-3 py-2 font-medium">Estado</th>
-                <th className="px-5 py-2" />
-              </tr>
-            </thead>
-            <tbody>
-              {sources.map((s) => {
-                const st = STATUS[s.status] ?? STATUS.pending;
-                return (
-                  <tr key={s.id} className="border-b border-border/60 last:border-0">
-                    <td className="max-w-xs truncate px-5 py-3 text-foreground" title={s.name}>
+          <>
+            {/* Cards en móvil */}
+            <ul className="divide-y divide-border/60 md:hidden">
+              {sources.map((s) => (
+                <li key={s.id} className="flex items-start gap-3 px-4 py-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-medium text-foreground" title={s.name}>
                       {s.name}
-                    </td>
-                    <td className="px-3 py-3 uppercase text-muted-foreground">{s.type}</td>
-                    <td className="px-3 py-3">
-                      <span
-                        className={cn(
-                          "inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium",
-                          st.cls,
-                        )}
-                        title={s.error ?? undefined}
-                      >
-                        <st.Icon className={cn("size-3.5", s.status === "processing" && "animate-spin")} />
-                        {st.label}
-                      </span>
-                    </td>
-                    <td className="px-5 py-3 text-right">
-                      <button
-                        onClick={() => remove(s.id)}
-                        className="text-muted-foreground transition-colors hover:text-destructive"
-                        aria-label="Borrar fuente"
-                      >
-                        <Trash2 className="size-4" />
-                      </button>
-                    </td>
+                    </p>
+                    <div className="mt-1.5 flex items-center gap-2">
+                      <SourceStatus status={s.status} error={s.error} />
+                      <span className="text-xs uppercase text-muted-foreground">{s.type}</span>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => remove(s.id)}
+                    className="shrink-0 text-muted-foreground transition-colors hover:text-destructive"
+                    aria-label="Borrar fuente"
+                  >
+                    <Trash2 className="size-4" />
+                  </button>
+                </li>
+              ))}
+            </ul>
+
+            {/* Tabla en escritorio */}
+            <div className="hidden overflow-x-auto md:block">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border text-left text-xs uppercase text-muted-foreground">
+                    <th className="px-5 py-2 font-medium">Nombre</th>
+                    <th className="px-3 py-2 font-medium">Tipo</th>
+                    <th className="px-3 py-2 font-medium">Estado</th>
+                    <th className="px-5 py-2" />
                   </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                </thead>
+                <tbody>
+                  {sources.map((s) => (
+                    <tr key={s.id} className="border-b border-border/60 last:border-0">
+                      <td className="max-w-xs truncate px-5 py-3 text-foreground" title={s.name}>
+                        {s.name}
+                      </td>
+                      <td className="px-3 py-3 uppercase text-muted-foreground">{s.type}</td>
+                      <td className="px-3 py-3">
+                        <SourceStatus status={s.status} error={s.error} />
+                      </td>
+                      <td className="px-5 py-3 text-right">
+                        <button
+                          onClick={() => remove(s.id)}
+                          className="text-muted-foreground transition-colors hover:text-destructive"
+                          aria-label="Borrar fuente"
+                        >
+                          <Trash2 className="size-4" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </div>
     </div>
+  );
+}
+
+function SourceStatus({ status, error }: { status: Source["status"]; error: string | null }) {
+  const st = STATUS[status] ?? STATUS.pending;
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium",
+        st.cls,
+      )}
+      title={error ?? undefined}
+    >
+      <st.Icon className={cn("size-3.5", status === "processing" && "animate-spin")} />
+      {st.label}
+    </span>
   );
 }
 
