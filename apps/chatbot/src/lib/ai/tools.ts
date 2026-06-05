@@ -6,6 +6,7 @@ import { conversations, images, knowledgeGaps, leads, materials } from '@/lib/db
 import { notifyAdmin } from '@/lib/meta/notify'
 import { embed } from './embed'
 import { retrieve } from './retrieve'
+import { RAG_MIN_SCORE } from './rag-config'
 import { resolveLookup, type LookupPriceResult } from './pricing'
 
 /**
@@ -124,7 +125,7 @@ const getLocationArgs = z.object({}).optional()
 export async function getLocation(): Promise<
   { found: true; context: string } | { found: false }
 > {
-  const chunks = await retrieve('ubicación dirección sede oficina dónde están ciudad', 3, 0.2)
+  const chunks = await retrieve('ubicación dirección sede oficina dónde están ciudad', 3, RAG_MIN_SCORE)
   if (chunks.length === 0) return { found: false }
   return { found: true, context: chunks.map((c) => c.content).join('\n\n') }
 }

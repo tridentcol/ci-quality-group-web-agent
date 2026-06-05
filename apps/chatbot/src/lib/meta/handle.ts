@@ -51,9 +51,15 @@ export async function handleEvent(e: NormalizedEvent): Promise<void> {
     conversationSummary: mem.summary,
   })
 
-  // 6) Enviar y persistir la respuesta del bot.
+  // 6) Enviar y persistir la respuesta del bot (con trazabilidad del turno).
   if (res.reply.trim()) {
-    await appendMessage(mem.conversationId, 'assistant', res.reply)
+    await appendMessage(mem.conversationId, 'assistant', res.reply, undefined, {
+      model: res.model,
+      routerReason: res.routerReason,
+      contextUsed: res.contextUsed,
+      topScores: res.retrieved.slice(0, 3).map((r) => Number(r.similarity.toFixed(3))),
+      tools: res.toolCalls.map((t) => t.name),
+    })
     await sendText(e.channel, e.externalId, res.reply)
   }
 

@@ -68,8 +68,21 @@ export function KnowledgeManager() {
     const res = await fetch(`/api/panel/knowledge?id=${id}`);
     const json = await res.json();
     if (!json.success) return;
-    const s = json.data as { id: string; name: string; type: string; content: string | null };
-    setEditor({ mode: "edit", sourceId: s.id, name: s.name, type: s.type, content: s.content ?? "" });
+    const s = json.data as {
+      id: string;
+      name: string;
+      type: string;
+      content: string | null;
+      priority: number;
+    };
+    setEditor({
+      mode: "edit",
+      sourceId: s.id,
+      name: s.name,
+      type: s.type,
+      content: s.content ?? "",
+      priority: s.priority,
+    });
   }
 
   async function remove(id: string) {

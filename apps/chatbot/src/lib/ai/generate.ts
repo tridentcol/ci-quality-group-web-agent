@@ -7,6 +7,7 @@ import { retrieve } from './retrieve'
 import { buildSystemPrompt } from './system-prompt'
 import { selectModel } from './router'
 import { executeTool, toolDefinitions, type ToolContext } from './tools'
+import { RAG_K, RAG_MIN_SCORE } from './rag-config'
 
 /**
  * Motor de generación (blueprint §9 Step 9): arma el system prompt (tono +
@@ -56,8 +57,6 @@ export interface GenerateResult {
 
 const TEMPERATURE = 0.3
 const MAX_TOOL_ROUNDS = 5
-const RAG_K = 5
-const RAG_MIN_SCORE = 0.2
 
 const safeParse = (s: string): unknown => {
   try {

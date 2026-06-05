@@ -25,6 +25,7 @@ export async function GET(req: Request) {
         id: messages.id,
         role: messages.role,
         content: messages.content,
+        metadata: messages.metadata,
         createdAt: messages.createdAt,
       })
       .from(messages)

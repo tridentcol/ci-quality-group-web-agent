@@ -1,0 +1,1 @@
+ALTER TABLE "knowledge_sources" ADD COLUMN "priority" integer DEFAULT 0 NOT NULL;

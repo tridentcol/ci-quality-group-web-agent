@@ -19,6 +19,7 @@
     "tools:smoke": "tsx --env-file=.env.local scripts/tools-smoke.ts",
     "generate:smoke": "tsx --env-file=.env.local scripts/generate-smoke.ts",
     "chat": "tsx --env-file=.env.local scripts/chat.ts",
+    "eval": "tsx --env-file=.env.local scripts/eval.ts",
     "memory:smoke": "tsx --env-file=.env.local scripts/memory-smoke.ts",
     "webhook:smoke": "tsx --env-file=.env.local scripts/webhook-smoke.ts",
     "panel:smoke": "tsx --env-file=.env.local scripts/panel-smoke.ts",

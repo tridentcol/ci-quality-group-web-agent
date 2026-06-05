@@ -22,6 +22,20 @@
       "when": 1780686591065,
       "tag": "0002_lethal_proudstar",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1780687519976,
+      "tag": "0003_gifted_marrow",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1780688192673,
+      "tag": "0004_deep_young_avengers",
+      "breakpoints": true
     }
   ]
 }

@@ -49,6 +49,7 @@ export async function GET(req: Request) {
         name: knowledgeSources.name,
         content: knowledgeSources.content,
         status: knowledgeSources.status,
+        priority: knowledgeSources.priority,
       })
       .from(knowledgeSources)
       .where(eq(knowledgeSources.id, id))
@@ -80,13 +81,14 @@ export async function POST(req: Request) {
       name: z.string().trim().min(1),
       type: z.enum(SOURCE_TYPES),
       content: z.string().trim().min(1),
+      priority: z.coerce.number().int().min(0).max(10).optional(),
       // Para links guardamos la URL como referencia; para archivos llega el
       // blobUrl solo para borrarlo (no se persiste: la verdad es `content`).
       originalUrl: z.string().url().nullish(),
     })
     .safeParse(body)
   if (!parsed.success) return fail('Faltan datos: name, type y content son obligatorios.')
-  const { name, type, content, originalUrl } = parsed.data
+  const { name, type, content, priority, originalUrl } = parsed.data
 
   const [source] = await db
     .insert(knowledgeSources)
@@ -94,6 +96,7 @@ export async function POST(req: Request) {
       type,
       name,
       content,
+      priority: priority ?? 0,
       // Solo conservamos URL para links; los archivos guardan solo texto plano.
       originalUrl: type === 'link' ? (originalUrl ?? null) : null,
       status: 'pending',
@@ -115,11 +118,13 @@ export async function PATCH(req: Request) {
       id: z.string().uuid(),
       name: z.string().trim().min(1).optional(),
       content: z.string().trim().min(1).optional(),
+      priority: z.coerce.number().int().min(0).max(10).optional(),
     })
     .safeParse(body)
-  if (!parsed.success) return fail('Envía id y al menos name o content.')
-  const { id, name, content } = parsed.data
-  if (name === undefined && content === undefined) return fail('Nada que actualizar.')
+  if (!parsed.success) return fail('Envía id y al menos name, content o priority.')
+  const { id, name, content, priority } = parsed.data
+  if (name === undefined && content === undefined && priority === undefined)
+    return fail('Nada que actualizar.')
 
   const [src] = await db
     .select({ id: knowledgeSources.id })
@@ -131,6 +136,7 @@ export async function PATCH(req: Request) {
     .update(knowledgeSources)
     .set({
       ...(name !== undefined ? { name } : {}),
+      ...(priority !== undefined ? { priority } : {}),
       // Cambiar el texto → re-ingerir (el job re-trocea desde `content`).
       ...(content !== undefined ? { content, status: 'pending', error: null } : {}),
       updatedAt: new Date(),

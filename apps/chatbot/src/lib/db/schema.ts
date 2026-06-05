@@ -47,6 +47,9 @@ export const knowledgeSources = pgTable('knowledge_sources', {
   status: text('status').notNull().default('pending'), // pending|processing|ready|failed
   error: text('error'),
   chunkCount: integer('chunk_count').notNull().default(0),
+  // Prioridad de la fuente: ante similitud parecida, gana la de mayor prioridad
+  // (info nueva/autoritativa por encima de la vieja). 0 = normal.
+  priority: integer('priority').notNull().default(0),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
 })
@@ -145,6 +148,8 @@ export const messages = pgTable('messages', {
   role: text('role').notNull(), // user|assistant|human_agent|system
   content: text('content').notNull(),
   channelMessageId: text('channel_message_id'), // ID del mensaje en Meta (idempotencia)
+  // Trazabilidad del turno del bot: { model, routerReason, contextUsed, topScores, tools }.
+  metadata: jsonb('metadata'),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
 })
 

@@ -180,10 +180,17 @@ export async function appendMessage(
   role: 'user' | 'assistant' | 'human_agent' | 'system',
   content: string,
   channelMessageId?: string,
+  metadata?: unknown,
 ) {
   const [row] = await db
     .insert(messages)
-    .values({ conversationId, role, content, channelMessageId: channelMessageId ?? null })
+    .values({
+      conversationId,
+      role,
+      content,
+      channelMessageId: channelMessageId ?? null,
+      metadata: metadata ?? null,
+    })
     .returning({ id: messages.id })
   await db
     .update(conversations)

@@ -11,6 +11,8 @@ export interface EditorDraft {
   name: string;
   type: string;
   content: string;
+  /** Prioridad de la fuente (0–10): ante similitud pareja, gana la mayor. */
+  priority?: number;
   /** Solo en alta de archivo: blob a borrar tras guardar (la verdad es el texto). */
   originalUrl?: string | null;
 }
@@ -32,6 +34,7 @@ export function SourceEditor({
 }) {
   const [name, setName] = useState(draft.name);
   const [content, setContent] = useState(draft.content);
+  const [priority, setPriority] = useState(draft.priority ?? 0);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
@@ -48,8 +51,8 @@ export function SourceEditor({
         headers: { "content-type": "application/json" },
         body: JSON.stringify(
           draft.mode === "edit"
-            ? { id: draft.sourceId, name: name.trim(), content }
-            : { name: name.trim(), type: draft.type, content, originalUrl: draft.originalUrl ?? null },
+            ? { id: draft.sourceId, name: name.trim(), content, priority }
+            : { name: name.trim(), type: draft.type, content, priority, originalUrl: draft.originalUrl ?? null },
         ),
       });
       const json = await res.json();
@@ -73,10 +76,26 @@ export function SourceEditor({
         </span>
       </div>
 
-      <label className="block">
-        <span className="mb-1 block text-xs font-medium text-muted-foreground">Nombre</span>
-        <input className={inputCls} value={name} onChange={(e) => setName(e.target.value)} />
-      </label>
+      <div className="flex flex-col gap-3 sm:flex-row">
+        <label className="block flex-1">
+          <span className="mb-1 block text-xs font-medium text-muted-foreground">Nombre</span>
+          <input className={inputCls} value={name} onChange={(e) => setName(e.target.value)} />
+        </label>
+        <label className="block sm:w-40">
+          <span className="mb-1 block text-xs font-medium text-muted-foreground">Prioridad (0–10)</span>
+          <input
+            type="number"
+            min={0}
+            max={10}
+            className={inputCls}
+            value={priority}
+            onChange={(e) => setPriority(Math.max(0, Math.min(10, Number(e.target.value))))}
+          />
+        </label>
+      </div>
+      <p className="mt-1 text-xs text-muted-foreground">
+        Prioridad alta = el bot prefiere esta fuente ante info parecida (útil para lo más actualizado).
+      </p>
 
       <label className="mt-3 block">
         <span className="mb-1 flex items-center justify-between text-xs font-medium text-muted-foreground">

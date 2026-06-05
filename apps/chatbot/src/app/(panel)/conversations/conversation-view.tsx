@@ -3,14 +3,22 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Loader2, Hand, Bot, XCircle, Trash2 } from "lucide-react";
+import { ArrowLeft, Loader2, Hand, Bot, XCircle, Trash2, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ChannelBadge, ConversationStatusBadge } from "@/components/panel/channel-badge";
 
+interface MessageMeta {
+  model?: string;
+  routerReason?: string;
+  contextUsed?: boolean;
+  topScores?: number[];
+  tools?: string[];
+}
 interface Message {
   id: string;
   role: string;
   content: string;
+  metadata?: MessageMeta | null;
   createdAt: string | null;
 }
 interface Conversation {
@@ -174,13 +182,17 @@ function ToggleBtn({
 }
 
 function Bubble({ message }: { message: Message }) {
+  const [showMeta, setShowMeta] = useState(false);
   const fromCustomer = message.role === "user";
   if (message.role === "system") {
     return <p className="text-center text-xs text-muted-foreground">{message.content}</p>;
   }
   const who = message.role === "human_agent" ? "Agente" : message.role === "assistant" ? "Bot" : null;
+  const meta = message.role === "assistant" ? message.metadata ?? null : null;
+  const hasMeta = !!meta && Object.keys(meta).length > 0;
+
   return (
-    <div className={cn("flex", fromCustomer ? "justify-start" : "justify-end")}>
+    <div className={cn("flex flex-col", fromCustomer ? "items-start" : "items-end")}>
       <div
         className={cn(
           "max-w-[85%] rounded-2xl px-4 py-2 text-sm sm:max-w-[75%]",
@@ -190,6 +202,37 @@ function Bubble({ message }: { message: Message }) {
         {who && <div className="mb-0.5 text-xs opacity-70">{who}</div>}
         <div className="whitespace-pre-wrap">{message.content}</div>
       </div>
+
+      {hasMeta && (
+        <button
+          onClick={() => setShowMeta((v) => !v)}
+          className="mt-1 inline-flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
+        >
+          <Info className="size-3" /> {showMeta ? "ocultar" : "por qué respondió esto"}
+        </button>
+      )}
+      {hasMeta && showMeta && meta && (
+        <div className="mt-1 max-w-[85%] rounded-lg border border-border bg-card p-2 text-xs text-muted-foreground sm:max-w-[75%]">
+          <div>
+            <span className="font-medium text-foreground">Modelo:</span> {meta.model ?? "—"}
+          </div>
+          <div>
+            <span className="font-medium text-foreground">Contexto:</span>{" "}
+            {meta.contextUsed ? "sí" : "no"}
+            {meta.topScores?.length ? ` (scores: ${meta.topScores.join(", ")})` : ""}
+          </div>
+          {meta.tools?.length ? (
+            <div>
+              <span className="font-medium text-foreground">Tools:</span> {meta.tools.join(", ")}
+            </div>
+          ) : null}
+          {meta.routerReason ? (
+            <div>
+              <span className="font-medium text-foreground">Router:</span> {meta.routerReason}
+            </div>
+          ) : null}
+        </div>
+      )}
     </div>
   );
 }
