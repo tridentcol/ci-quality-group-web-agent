@@ -27,6 +27,8 @@ export interface GenerateInput {
   customerSummary?: string | null
   /** Resumen acumulado de la conversación larga (conversations.summary), si existe. */
   conversationSummary?: string | null
+  /** Modo prueba: las tools con efectos no escriben (playground/eval). */
+  dryRun?: boolean
 }
 
 export interface ExecutedTool {
@@ -35,12 +37,21 @@ export interface ExecutedTool {
   result: unknown
 }
 
+export interface RetrievedChunkPreview {
+  content: string
+  similarity: number
+}
+
 export interface GenerateResult {
   reply: string
   model: string
   routerReason: string
   contextUsed: boolean
   toolCalls: ExecutedTool[]
+  /** Chunks recuperados por RAG (para depurar cobertura en el playground). */
+  retrieved: RetrievedChunkPreview[]
+  /** Imágenes a adjuntar elegidas por el bot (tool find_image). */
+  attachments: { url: string; caption: string }[]
 }
 
 const TEMPERATURE = 0.3
@@ -61,6 +72,10 @@ export async function generateReply(input: GenerateInput): Promise<GenerateResul
   const chunks = await retrieve(input.message, RAG_K, RAG_MIN_SCORE)
   const contextUsed = chunks.length > 0
   const context = chunks.map((c) => c.content).join('\n\n---\n\n')
+  const retrieved: RetrievedChunkPreview[] = chunks.map((c) => ({
+    content: c.content,
+    similarity: c.similarity,
+  }))
 
   // 2) Router: elegir modelo.
   const { model, reason } = selectModel({
@@ -93,8 +108,18 @@ export async function generateReply(input: GenerateInput): Promise<GenerateResul
     { role: 'user', content: input.message },
   ]
 
-  const ctx: ToolContext = { conversationId: input.conversationId }
+  const ctx: ToolContext = { conversationId: input.conversationId, dryRun: input.dryRun }
   const executed: ExecutedTool[] = []
+  const attachments: { url: string; caption: string }[] = []
+
+  // Recolecta imágenes que el bot decidió adjuntar (resultado de find_image).
+  const collectAttachment = (name: string, result: unknown) => {
+    if (name !== 'find_image' || !result || typeof result !== 'object') return
+    const r = result as { found?: boolean; url?: string; caption?: string }
+    if (r.found && r.url && !attachments.some((a) => a.url === r.url)) {
+      attachments.push({ url: r.url, caption: r.caption ?? '' })
+    }
+  }
 
   // 4) Bucle de tool-calling.
   for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
@@ -111,7 +136,15 @@ export async function generateReply(input: GenerateInput): Promise<GenerateResul
 
     const toolCalls = msg.tool_calls ?? []
     if (toolCalls.length === 0) {
-      return { reply: msg.content ?? '', model, routerReason: reason, contextUsed, toolCalls: executed }
+      return {
+        reply: msg.content ?? '',
+        model,
+        routerReason: reason,
+        contextUsed,
+        toolCalls: executed,
+        retrieved,
+        attachments,
+      }
     }
 
     for (const call of toolCalls) {
@@ -122,6 +155,7 @@ export async function generateReply(input: GenerateInput): Promise<GenerateResul
       } catch (e) {
         result = { error: e instanceof Error ? e.message : String(e) }
       }
+      collectAttachment(call.function.name, result)
       executed.push({ name: call.function.name, args: safeParse(call.function.arguments), result })
       messages.push({ role: 'tool', tool_call_id: call.id, content: JSON.stringify(result) })
     }
@@ -135,5 +169,7 @@ export async function generateReply(input: GenerateInput): Promise<GenerateResul
     routerReason: reason,
     contextUsed,
     toolCalls: executed,
+    retrieved,
+    attachments,
   }
 }

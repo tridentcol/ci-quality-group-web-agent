@@ -40,9 +40,15 @@ export const knowledgeSources = pgTable('knowledge_sources', {
   type: text('type').notNull(), // pdf|docx|pptx|txt|link|faq
   name: text('name').notNull(),
   originalUrl: text('original_url'),
+  // Texto plano canónico ya revisado por el admin: es la fuente de verdad de la
+  // que se trocea/embebe. Permite editar y re-ingerir en sitio sin re-parsear, y
+  // guardar solo texto (se borra el blob original tras revisar) — menos storage.
+  content: text('content'),
   status: text('status').notNull().default('pending'), // pending|processing|ready|failed
   error: text('error'),
+  chunkCount: integer('chunk_count').notNull().default(0),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
 })
 
 // knowledge_chunks — vectores RAG (text-embedding-3-small, 1536 dim, índice HNSW cosine)

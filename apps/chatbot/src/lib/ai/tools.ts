@@ -22,6 +22,8 @@ import { resolveLookup, type LookupPriceResult } from './pricing'
 export interface ToolContext {
   /** Conversación actual; requerido por capture_lead, handoff y log_knowledge_gap. */
   conversationId?: string
+  /** Modo prueba (playground/eval): las tools con efectos NO escriben en BD. */
+  dryRun?: boolean
 }
 
 // ─── lookup_price ────────────────────────────────────────────────────────────
@@ -57,6 +59,7 @@ export async function captureLead(
   args: z.infer<typeof captureLeadArgs>,
   ctx: ToolContext,
 ): Promise<{ leadId: string; status: 'captured' }> {
+  if (ctx.dryRun) return { leadId: 'dry-run', status: 'captured' }
   if (!ctx.conversationId) throw new Error('capture_lead requiere conversationId')
 
   // Intentar enlazar el material de interés (best-effort).
@@ -100,6 +103,7 @@ export async function requestHumanHandoff(
   args: z.infer<typeof handoffArgs>,
   ctx: ToolContext,
 ): Promise<{ status: 'human_controlled' }> {
+  if (ctx.dryRun) return { status: 'human_controlled' }
   if (!ctx.conversationId) throw new Error('request_human_handoff requiere conversationId')
 
   await db
@@ -132,6 +136,7 @@ export async function logKnowledgeGap(
   args: z.infer<typeof logGapArgs>,
   ctx: ToolContext,
 ): Promise<{ logged: true; gapId: string }> {
+  if (ctx.dryRun) return { logged: true, gapId: 'dry-run' }
   const [gap] = await db
     .insert(knowledgeGaps)
     .values({
