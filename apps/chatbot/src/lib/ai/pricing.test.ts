@@ -47,4 +47,29 @@ describe('resolveLookup', () => {
     const r = resolveLookup([otro, cobre], { material: 'cobre #1' })
     expect(r).toMatchObject({ available: true, material: 'Cobre #1', unitPriceCop: 28000 })
   })
+
+  const kingspan: MaterialRow = {
+    name: 'Kingspan',
+    category: 'lámina',
+    active: true,
+    unit: 'unidad',
+    retailPriceCop: '90000',
+    wholesalePriceCop: null,
+    wholesaleThreshold: null,
+  }
+
+  it('encuentra por nombre dentro de una frase ("laminas tipo kingspan" → Kingspan)', () => {
+    const r = resolveLookup([cobre, kingspan], { material: 'laminas tipo kingspan' })
+    expect(r).toMatchObject({ available: true, material: 'Kingspan', unitPriceCop: 90000 })
+  })
+
+  it('encuentra por categoría con plural y acento ("laminas" → categoría "lámina")', () => {
+    const r = resolveLookup([cobre, kingspan], { material: 'láminas' })
+    expect(r).toMatchObject({ available: true, material: 'Kingspan' })
+  })
+
+  it('no coincide con nada → not_found', () => {
+    const r = resolveLookup([cobre, kingspan], { material: 'oro de 24 quilates' })
+    expect(r).toEqual({ available: false, reason: 'not_found', material: 'oro de 24 quilates' })
+  })
 })

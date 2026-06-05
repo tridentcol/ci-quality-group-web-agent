@@ -8,6 +8,7 @@ import { buildSystemPrompt } from './system-prompt'
 import { selectModel } from './router'
 import { executeTool, toolDefinitions, type ToolContext } from './tools'
 import { RAG_K, RAG_MIN_SCORE } from './rag-config'
+import { isAfterHours, type BusinessHours } from './hours'
 
 /**
  * Motor de generación (blueprint §9 Step 9): arma el system prompt (tono +
@@ -83,14 +84,21 @@ export async function generateReply(input: GenerateInput): Promise<GenerateResul
     topSimilarity: chunks[0]?.similarity,
   })
 
-  // 3) System prompt con identidad/tono (bot_config) + memoria + contexto.
+  // 3) System prompt con identidad/tono (bot_config) + memoria + contexto +
+  //    bienvenida (en el primer mensaje) y aviso fuera de horario.
   const [cfg] = await db.select().from(botConfig).where(eq(botConfig.id, 1))
+  const isFirstMessage = !(input.history && input.history.length > 0)
+  const afterHours = isAfterHours((cfg?.businessHours as BusinessHours | null) ?? null)
   const system = buildSystemPrompt({
     botName: cfg?.botName ?? 'Asistente de CI Quality Group',
     tonePrompt: cfg?.tonePrompt ?? '',
     maxAutoDiscountPct: Number(cfg?.maxAutoDiscountPct ?? 0),
     context,
     customerSummary: input.customerSummary ?? null,
+    welcomeMessage: cfg?.welcomeMessage ?? null,
+    afterHoursMessage: cfg?.afterHoursMessage ?? null,
+    isFirstMessage,
+    afterHours,
   })
 
   const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [

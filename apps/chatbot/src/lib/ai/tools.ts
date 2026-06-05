@@ -40,10 +40,11 @@ export type { LookupPriceResult }
 export async function lookupPrice(
   args: z.infer<typeof lookupPriceArgs>,
 ): Promise<LookupPriceResult> {
-  const rows = await db
-    .select()
-    .from(materials)
-    .where(ilike(materials.name, `%${args.material.trim()}%`))
+  // La lista de materiales es curada y pequeña: traemos todo y dejamos que
+  // resolveLookup haga el match por nombre Y categoría (tolerante a frases como
+  // "láminas tipo kingspan" y a plurales/acentos). Filtrar con ILIKE por nombre
+  // fallaba cuando el cliente describe el material con otras palabras.
+  const rows = await db.select().from(materials)
   return resolveLookup(rows, args)
 }
 
