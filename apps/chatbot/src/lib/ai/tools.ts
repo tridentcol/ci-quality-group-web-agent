@@ -135,8 +135,9 @@ export async function getLocation(): Promise<
 
 const findImageArgs = z.object({ query: z.string().trim().min(1) })
 
-// Umbral de similitud para adjuntar (evita imágenes irrelevantes).
-const IMAGE_MIN_SCORE = 0.3
+// Umbral de similitud para adjuntar (evita imágenes irrelevantes). Coseno sobre
+// nombre+descripción+etiquetas; 0.38 deja fuera coincidencias tangenciales.
+const IMAGE_MIN_SCORE = 0.38
 
 export type FindImageResult =
   | { found: true; url: string; caption: string; similarity: number }

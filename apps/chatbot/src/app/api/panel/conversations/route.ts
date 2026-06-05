@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { asc, desc, eq, sql } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import { conversations, customerProfiles, messages } from '@/lib/db/schema'
+import { inngest } from '@/inngest/client'
 
 function ok(data: unknown) {
   return NextResponse.json({ success: true, data })
@@ -67,6 +68,13 @@ export async function PATCH(req: Request) {
     .where(eq(conversations.id, parsed.data.id))
     .returning({ id: conversations.id, status: conversations.status })
   if (!row) return fail('La conversación no existe.', 404, 'NOT_FOUND')
+
+  // Cerrar o tomar el control = fin del turno del bot → actualizar el perfil de
+  // largo plazo del cliente (extrae hechos duraderos). Sin esto la memoria de
+  // largo plazo nunca se llenaba.
+  if (parsed.data.status === 'closed' || parsed.data.status === 'human_controlled') {
+    await inngest.send({ name: 'memory/conversation.ended', data: { conversationId: row.id } })
+  }
   return ok(row)
 }
 

@@ -231,10 +231,5 @@ export async function loadMemory(channel: string, externalId: string): Promise<C
 
 /** Cuenta mensajes de una conversación (para decidir si toca resumir). */
 export async function countMessages(conversationId: string): Promise<number> {
-  const rows = await db
-    .select({ id: messages.id })
-    .from(messages)
-    .where(eq(messages.conversationId, conversationId))
-    .orderBy(asc(messages.createdAt))
-  return rows.length
+  return db.$count(messages, eq(messages.conversationId, conversationId))
 }
