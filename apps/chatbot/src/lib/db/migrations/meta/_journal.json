@@ -15,6 +15,13 @@
       "when": 1780679132429,
       "tag": "0001_tranquil_zzzax",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1780686591065,
+      "tag": "0002_lethal_proudstar",
+      "breakpoints": true
     }
   ]
 }

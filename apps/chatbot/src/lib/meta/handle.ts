@@ -4,7 +4,7 @@ import { conversations, webhookEvents } from '@/lib/db/schema'
 import { generateReply } from '@/lib/ai/generate'
 import { appendMessage, countMessages, loadMemory } from '@/lib/ai/memory'
 import { inngest } from '@/inngest/client'
-import { sendText } from './send'
+import { sendText, sendImage } from './send'
 import type { NormalizedEvent } from './normalize'
 
 /** A partir de cuántos mensajes pedir un resumen de la conversación. */
@@ -55,6 +55,15 @@ export async function handleEvent(e: NormalizedEvent): Promise<void> {
   if (res.reply.trim()) {
     await appendMessage(mem.conversationId, 'assistant', res.reply)
     await sendText(e.channel, e.externalId, res.reply)
+  }
+
+  // 6b) Imágenes ilustrativas que el bot decidió adjuntar (find_image).
+  for (const att of res.attachments) {
+    try {
+      await sendImage(e.channel, e.externalId, att.url, att.caption)
+    } catch {
+      // si falla el envío de una imagen, no rompemos la conversación
+    }
   }
 
   // 7) Resumen periódico para acotar tokens en conversaciones largas.

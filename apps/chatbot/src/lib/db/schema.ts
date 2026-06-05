@@ -69,6 +69,24 @@ export const knowledgeChunks = pgTable(
   ],
 )
 
+// images — banco de imágenes ilustrativas. El bot adjunta SOLO imágenes de aquí
+// (tool find_image), nunca inventa URLs. Se buscan por similitud sobre el
+// embedding de nombre+descripción+etiquetas. La URL es pública (Meta la descarga).
+export const images = pgTable(
+  'images',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    name: text('name').notNull(),
+    description: text('description').notNull().default(''),
+    tags: jsonb('tags').notNull().default([]), // string[]
+    url: text('url').notNull(), // blob público
+    embedding: vector('embedding', { dimensions: 1536 }).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
+  },
+  (t) => [index('images_embedding_idx').using('hnsw', t.embedding.op('vector_cosine_ops'))],
+)
+
 // materials — precios minorista/mayorista en COP
 export const materials = pgTable('materials', {
   id: uuid('id').defaultRandom().primaryKey(),

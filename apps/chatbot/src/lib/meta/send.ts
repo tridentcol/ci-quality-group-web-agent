@@ -84,6 +84,39 @@ export async function sendText(
   }
 }
 
+/** Envía una imagen por URL pública (con pie opcional). Meta descarga la URL. */
+export async function sendImage(
+  channel: Channel,
+  to: string,
+  url: string,
+  caption?: string,
+): Promise<unknown> {
+  switch (channel) {
+    case 'whatsapp': {
+      if (!env.WHATSAPP_PHONE_NUMBER_ID || !env.WHATSAPP_ACCESS_TOKEN)
+        throw new Error('WhatsApp no configurado')
+      return post(`${GRAPH}/${env.WHATSAPP_PHONE_NUMBER_ID}/messages`, env.WHATSAPP_ACCESS_TOKEN, {
+        messaging_product: 'whatsapp',
+        to,
+        type: 'image',
+        image: { link: url, caption: caption || undefined },
+      })
+    }
+    case 'messenger':
+    case 'instagram': {
+      const id = channel === 'messenger' ? env.MESSENGER_PAGE_ID : env.IG_ACCOUNT_ID
+      const token =
+        channel === 'messenger' ? env.MESSENGER_PAGE_ACCESS_TOKEN : env.INSTAGRAM_ACCESS_TOKEN
+      if (!id || !token) throw new Error(`${channel} no configurado`)
+      return post(`${GRAPH}/${id}/messages`, token, {
+        recipient: { id: to },
+        messaging_type: 'RESPONSE',
+        message: { attachment: { type: 'image', payload: { url, is_reusable: true } } },
+      })
+    }
+  }
+}
+
 /** Tarjeta de ubicación nativa en WhatsApp; en los demás canales cae a texto. */
 export async function sendLocation(channel: Channel, to: string, loc: Location): Promise<unknown> {
   if (channel === 'whatsapp') {

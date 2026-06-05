@@ -1,9 +1,10 @@
 import type OpenAI from 'openai'
 import { z } from 'zod'
-import { and, eq, ilike, sql } from 'drizzle-orm'
+import { cosineDistance, desc, eq, ilike, sql } from 'drizzle-orm'
 import { db } from '@/lib/db'
-import { conversations, knowledgeGaps, leads, materials } from '@/lib/db/schema'
+import { conversations, images, knowledgeGaps, leads, materials } from '@/lib/db/schema'
 import { notifyAdmin } from '@/lib/meta/notify'
+import { embed } from './embed'
 import { retrieve } from './retrieve'
 import { resolveLookup, type LookupPriceResult } from './pricing'
 
@@ -128,6 +129,42 @@ export async function getLocation(): Promise<
   return { found: true, context: chunks.map((c) => c.content).join('\n\n') }
 }
 
+// ─── find_image ───────────────────────────────────────────────────────────────
+
+const findImageArgs = z.object({ query: z.string().trim().min(1) })
+
+// Umbral de similitud para adjuntar (evita imágenes irrelevantes).
+const IMAGE_MIN_SCORE = 0.3
+
+export type FindImageResult =
+  | { found: true; url: string; caption: string; similarity: number }
+  | { found: false }
+
+export async function findImage(
+  args: z.infer<typeof findImageArgs>,
+): Promise<FindImageResult> {
+  const queryEmbedding = await embed(args.query)
+  const similarity = sql<number>`1 - (${cosineDistance(images.embedding, queryEmbedding)})`
+  const [img] = await db
+    .select({
+      url: images.url,
+      name: images.name,
+      description: images.description,
+      similarity,
+    })
+    .from(images)
+    .orderBy(desc(similarity))
+    .limit(1)
+
+  if (!img || img.similarity < IMAGE_MIN_SCORE) return { found: false }
+  return {
+    found: true,
+    url: img.url,
+    caption: img.description?.trim() || img.name,
+    similarity: img.similarity,
+  }
+}
+
 // ─── log_knowledge_gap ────────────────────────────────────────────────────────
 
 const logGapArgs = z.object({ question: z.string().trim().min(1) })
@@ -217,6 +254,25 @@ export const toolDefinitions: OpenAI.Chat.Completions.ChatCompletionTool[] = [
   {
     type: 'function',
     function: {
+      name: 'find_image',
+      description:
+        'Busca una imagen ilustrativa en el banco de imágenes aprobado para adjuntarla a la ' +
+        'respuesta (p. ej. foto de un material, diagrama de un proceso, una sede). Úsala cuando una ' +
+        'imagen ayude a explicar. Solo adjunta lo que esta herramienta devuelva; NUNCA inventes URLs. ' +
+        'Si devuelve found:false, no hay imagen adecuada: responde solo con texto.',
+      parameters: {
+        type: 'object',
+        properties: {
+          query: { type: 'string', description: 'Qué ilustrar (ej. "cobre #1", "proceso de chatarrización")' },
+        },
+        required: ['query'],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
       name: 'log_knowledge_gap',
       description:
         'Registra una pregunta que el conocimiento no pudo responder, para que el admin la ' +
@@ -254,6 +310,8 @@ export async function executeTool(
     case 'get_location':
       getLocationArgs.parse(parsed)
       return getLocation()
+    case 'find_image':
+      return findImage(findImageArgs.parse(parsed))
     case 'log_knowledge_gap':
       return logKnowledgeGap(logGapArgs.parse(parsed), ctx)
     default:
