@@ -27,6 +27,7 @@ export default async function SettingsPage() {
             adminWhatsapp: cfg.adminWhatsapp,
             retentionMonths: cfg.retentionMonths,
             maxAutoDiscountPct: Number(cfg.maxAutoDiscountPct),
+            qaGenerationEnabled: cfg.qaGenerationEnabled,
           }}
         />
       ) : (

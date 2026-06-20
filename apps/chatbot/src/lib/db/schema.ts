@@ -31,6 +31,9 @@ export const botConfig = pgTable('bot_config', {
   adminWhatsapp: text('admin_whatsapp'),
   retentionMonths: integer('retention_months').notNull().default(12), // Habeas Data
   maxAutoDiscountPct: numeric('max_auto_discount_pct').notNull().default('0'),
+  // Generar preguntas frecuentes (Q&A) al ingerir documentos (gpt-4o-mini).
+  // Toggle de costo: el admin puede apagarlo desde Ajustes.
+  qaGenerationEnabled: boolean('qa_generation_enabled').notNull().default(true),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
 })
 
@@ -47,12 +50,34 @@ export const knowledgeSources = pgTable('knowledge_sources', {
   status: text('status').notNull().default('pending'), // pending|processing|ready|failed
   error: text('error'),
   chunkCount: integer('chunk_count').notNull().default(0),
+  // Nº de preguntas frecuentes (Q&A) generadas a partir de esta fuente.
+  qaCount: integer('qa_count').notNull().default(0),
   // Prioridad de la fuente: ante similitud parecida, gana la de mayor prioridad
   // (info nueva/autoritativa por encima de la vieja). 0 = normal.
   priority: integer('priority').notNull().default(0),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
 })
+
+// knowledge_qa — preguntas frecuentes generadas (gpt-4o-mini) por documento.
+// Doble valor: (1) visibilidad del conocimiento que aporta cada fuente en el
+// panel; (2) mejor recuperación — se embebe la PREGUNTA y el RAG también busca
+// aquí (los clientes escriben preguntas → mejor match). La respuesta se deriva
+// EXCLUSIVAMENTE del texto de la fuente; el bot no inventa.
+export const knowledgeQa = pgTable(
+  'knowledge_qa',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    sourceId: uuid('source_id')
+      .notNull()
+      .references(() => knowledgeSources.id, { onDelete: 'cascade' }),
+    question: text('question').notNull(),
+    answer: text('answer').notNull(),
+    embedding: vector('embedding', { dimensions: 1536 }).notNull(), // de la pregunta
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+  },
+  (t) => [index('qa_embedding_idx').using('hnsw', t.embedding.op('vector_cosine_ops'))],
+)
 
 // knowledge_chunks — vectores RAG (text-embedding-3-small, 1536 dim, índice HNSW cosine)
 export const knowledgeChunks = pgTable(

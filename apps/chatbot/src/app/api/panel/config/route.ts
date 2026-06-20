@@ -44,6 +44,7 @@ const patchSchema = z
     adminWhatsapp: z.string().trim().nullable().optional(),
     retentionMonths: z.coerce.number().int().min(1).max(120).optional(),
     maxAutoDiscountPct: z.coerce.number().min(0).max(100).optional(),
+    qaGenerationEnabled: z.boolean().optional(),
   })
   .refine((d) => Object.keys(d).length > 0, 'Nada que actualizar.')
 
@@ -64,6 +65,7 @@ export async function PATCH(req: Request) {
   if (d.adminWhatsapp !== undefined) set.adminWhatsapp = d.adminWhatsapp || null
   if (d.retentionMonths !== undefined) set.retentionMonths = d.retentionMonths
   if (d.maxAutoDiscountPct !== undefined) set.maxAutoDiscountPct = String(d.maxAutoDiscountPct)
+  if (d.qaGenerationEnabled !== undefined) set.qaGenerationEnabled = d.qaGenerationEnabled
 
   const [row] = await db.update(botConfig).set(set).where(eq(botConfig.id, 1)).returning()
   if (!row) return fail('bot_config no inicializado (corre el seed).', 404, 'NOT_FOUND')

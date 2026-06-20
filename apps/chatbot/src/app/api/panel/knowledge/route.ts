@@ -65,6 +65,7 @@ export async function GET(req: Request) {
       status: knowledgeSources.status,
       error: knowledgeSources.error,
       chunkCount: knowledgeSources.chunkCount,
+      qaCount: knowledgeSources.qaCount,
       createdAt: knowledgeSources.createdAt,
       updatedAt: knowledgeSources.updatedAt,
     })

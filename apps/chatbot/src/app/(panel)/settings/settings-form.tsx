@@ -24,6 +24,7 @@ export interface SettingsInitial {
   adminWhatsapp: string | null;
   retentionMonths: number;
   maxAutoDiscountPct: number;
+  qaGenerationEnabled: boolean;
 }
 
 const DAYS = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
@@ -68,6 +69,7 @@ export function SettingsForm({ initial }: { initial: SettingsInitial }) {
           adminWhatsapp: f.adminWhatsapp,
           retentionMonths: f.retentionMonths,
           maxAutoDiscountPct: f.maxAutoDiscountPct,
+          qaGenerationEnabled: f.qaGenerationEnabled,
         }),
       });
       const json = await res.json();
@@ -163,6 +165,26 @@ export function SettingsForm({ initial }: { initial: SettingsInitial }) {
           </a>
           .
         </p>
+      </Card>
+
+      {/* Conocimiento */}
+      <Card title="Conocimiento">
+        <label className="flex items-start gap-3 text-sm text-foreground">
+          <input
+            type="checkbox"
+            className="mt-0.5"
+            checked={f.qaGenerationEnabled}
+            onChange={(e) => set("qaGenerationEnabled", e.target.checked)}
+          />
+          <span>
+            Generar preguntas frecuentes al subir documentos
+            <span className="mt-0.5 block text-xs text-muted-foreground">
+              Al ingerir un documento, analiza su contenido y extrae las preguntas que permite
+              responder (con gpt-4o-mini, ~½ centavo por documento). Mejora la búsqueda y deja ver el
+              valor de cada fuente. Desactívalo para no usar la API en la ingesta.
+            </span>
+          </span>
+        </label>
       </Card>
 
       <div className="flex items-center justify-end gap-3">

@@ -1,6 +1,6 @@
 import { cosineDistance, desc, eq, gt, sql } from 'drizzle-orm'
 import { db } from '@/lib/db'
-import { knowledgeChunks, knowledgeSources } from '@/lib/db/schema'
+import { knowledgeChunks, knowledgeQa, knowledgeSources } from '@/lib/db/schema'
 import { embed } from './embed'
 import { PRIORITY_BOOST, PRIORITY_BOOST_MAX } from './rag-config'
 
@@ -11,15 +11,22 @@ export interface RetrievedChunk {
   metadata: unknown
 }
 
+// Boost por prioridad de la fuente (literal SQL para no dejar params sin tipo).
+const boost = sql.raw(String(PRIORITY_BOOST))
+const boostMax = sql.raw(String(PRIORITY_BOOST_MAX))
+const rankedBy = (similarity: ReturnType<typeof sql<number>>) =>
+  sql<number>`${similarity} + ${boost} * LEAST(GREATEST(${knowledgeSources.priority}, 0), ${boostMax})`
+
 /**
  * Búsqueda vectorial (RAG) — blueprint §9 Step 4.
- * Embebe la consulta y recupera los top-K chunks por similitud coseno (índice
- * HNSW `vector_cosine_ops`). El filtro usa la similitud cruda; el ORDEN aplica un
- * pequeño boost por `priority` de la fuente para que, ante similitud parecida,
- * gane la info más autoritativa/reciente.
+ * Embebe la consulta una vez y busca en DOS lugares: los fragmentos del documento
+ * (`knowledge_chunks`) y las preguntas frecuentes generadas (`knowledge_qa`, donde
+ * el embedding es de la pregunta → mejor match para consultas de clientes). El
+ * filtro usa la similitud cruda; el ORDEN aplica un boost por `priority` de la
+ * fuente. Se mezclan ambos conjuntos y se devuelven los top-K.
  *
  * @param query     texto de la consulta del usuario
- * @param k         nº de chunks a devolver (default 5)
+ * @param k         nº de resultados a devolver (default 5)
  * @param minScore  umbral de similitud [0..1] para descartar ruido (default 0)
  */
 export async function retrieve(
@@ -29,25 +36,59 @@ export async function retrieve(
 ): Promise<RetrievedChunk[]> {
   const queryEmbedding = await embed(query)
 
-  // similitud coseno = 1 - distancia coseno
-  const similarity = sql<number>`1 - (${cosineDistance(knowledgeChunks.embedding, queryEmbedding)})`
-  // score efectivo solo para ordenar: similitud + boost acotado por prioridad.
-  // Las constantes van como literales SQL (no bind params) para que Postgres no
-  // se quede sin tipo en la aritmética ("could not determine data type").
-  const boost = sql.raw(String(PRIORITY_BOOST))
-  const boostMax = sql.raw(String(PRIORITY_BOOST_MAX))
-  const ranked = sql<number>`${similarity} + ${boost} * LEAST(GREATEST(${knowledgeSources.priority}, 0), ${boostMax})`
-
-  return db
+  // 1) Fragmentos del documento.
+  const chunkSim = sql<number>`1 - (${cosineDistance(knowledgeChunks.embedding, queryEmbedding)})`
+  const chunksP = db
     .select({
       id: knowledgeChunks.id,
       content: knowledgeChunks.content,
       metadata: knowledgeChunks.metadata,
-      similarity,
+      similarity: chunkSim,
+      ranked: rankedBy(chunkSim),
     })
     .from(knowledgeChunks)
     .innerJoin(knowledgeSources, eq(knowledgeChunks.sourceId, knowledgeSources.id))
-    .where(gt(similarity, minScore))
-    .orderBy(desc(ranked))
+    .where(gt(chunkSim, minScore))
+    .orderBy(desc(rankedBy(chunkSim)))
     .limit(k)
+
+  // 2) Preguntas frecuentes generadas (P/R). Se devuelve el par como contenido.
+  const qaSim = sql<number>`1 - (${cosineDistance(knowledgeQa.embedding, queryEmbedding)})`
+  const qaP = db
+    .select({
+      id: knowledgeQa.id,
+      content: sql<string>`'Pregunta: ' || ${knowledgeQa.question} || E'\nRespuesta: ' || ${knowledgeQa.answer}`,
+      sourceId: knowledgeQa.sourceId,
+      similarity: qaSim,
+      ranked: rankedBy(qaSim),
+    })
+    .from(knowledgeQa)
+    .innerJoin(knowledgeSources, eq(knowledgeQa.sourceId, knowledgeSources.id))
+    .where(gt(qaSim, minScore))
+    .orderBy(desc(rankedBy(qaSim)))
+    .limit(k)
+
+  const [chunkRows, qaRows] = await Promise.all([chunksP, qaP])
+
+  const merged: (RetrievedChunk & { ranked: number })[] = [
+    ...chunkRows.map((r) => ({
+      id: r.id,
+      content: r.content,
+      similarity: r.similarity,
+      metadata: r.metadata,
+      ranked: r.ranked,
+    })),
+    ...qaRows.map((r) => ({
+      id: r.id,
+      content: r.content,
+      similarity: r.similarity,
+      metadata: { qa: true, sourceId: r.sourceId },
+      ranked: r.ranked,
+    })),
+  ]
+
+  return merged
+    .sort((a, b) => b.ranked - a.ranked)
+    .slice(0, k)
+    .map(({ ranked: _ranked, ...rest }) => rest)
 }

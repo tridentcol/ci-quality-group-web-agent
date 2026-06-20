@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { upload } from "@vercel/blob/client";
 import {
   Upload,
@@ -12,9 +12,12 @@ import {
   CheckCircle2,
   AlertCircle,
   Clock,
+  ChevronDown,
+  ChevronRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SourceEditor, type EditorDraft } from "./source-editor";
+import { SourceQaList } from "./source-qa-list";
 
 interface Source {
   id: string;
@@ -23,6 +26,7 @@ interface Source {
   status: "pending" | "processing" | "ready" | "failed";
   error: string | null;
   chunkCount: number;
+  qaCount: number;
   createdAt: string | null;
   updatedAt: string | null;
 }
@@ -42,7 +46,10 @@ const fmtDate = (d: string | null) =>
 export function KnowledgeManager() {
   const [sources, setSources] = useState<Source[]>([]);
   const [editor, setEditor] = useState<EditorDraft | null>(null);
+  const [expanded, setExpanded] = useState<string | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const toggleQa = (id: string) => setExpanded((cur) => (cur === id ? null : id));
 
   const load = useCallback(async () => {
     const res = await fetch("/api/panel/knowledge");
@@ -129,10 +136,16 @@ export function KnowledgeManager() {
                         <SourceStatus status={s.status} error={s.error} />
                         <span className="text-xs uppercase text-muted-foreground">{s.type}</span>
                         <span className="text-xs text-muted-foreground">· {s.chunkCount} frag.</span>
+                        <QaToggle count={s.qaCount} open={expanded === s.id} onClick={() => toggleQa(s.id)} />
                       </div>
                     </div>
                     <RowActions onEdit={() => editExisting(s.id)} onDelete={() => remove(s.id)} />
                   </div>
+                  {expanded === s.id && s.qaCount > 0 && (
+                    <div className="mt-2 rounded-lg border border-border bg-background/50">
+                      <SourceQaList sourceId={s.id} />
+                    </div>
+                  )}
                 </li>
               ))}
             </ul>
@@ -145,6 +158,7 @@ export function KnowledgeManager() {
                     <th className="px-5 py-2 font-medium">Nombre</th>
                     <th className="px-3 py-2 font-medium">Tipo</th>
                     <th className="px-3 py-2 font-medium">Fragmentos</th>
+                    <th className="px-3 py-2 font-medium">Preguntas</th>
                     <th className="px-3 py-2 font-medium">Estado</th>
                     <th className="px-3 py-2 font-medium">Actualizada</th>
                     <th className="px-5 py-2" />
@@ -152,22 +166,34 @@ export function KnowledgeManager() {
                 </thead>
                 <tbody>
                   {sources.map((s) => (
-                    <tr key={s.id} className="border-b border-border/60 last:border-0">
-                      <td className="max-w-xs truncate px-5 py-3 text-foreground" title={s.name}>
-                        {s.name}
-                      </td>
-                      <td className="px-3 py-3 uppercase text-muted-foreground">{s.type}</td>
-                      <td className="px-3 py-3 text-muted-foreground">{s.chunkCount}</td>
-                      <td className="px-3 py-3">
-                        <SourceStatus status={s.status} error={s.error} />
-                      </td>
-                      <td className="px-3 py-3 text-muted-foreground">{fmtDate(s.updatedAt)}</td>
-                      <td className="px-5 py-3">
-                        <div className="flex items-center justify-end">
-                          <RowActions onEdit={() => editExisting(s.id)} onDelete={() => remove(s.id)} />
-                        </div>
-                      </td>
-                    </tr>
+                    <React.Fragment key={s.id}>
+                      <tr className="border-b border-border/60 last:border-0">
+                        <td className="max-w-xs truncate px-5 py-3 text-foreground" title={s.name}>
+                          {s.name}
+                        </td>
+                        <td className="px-3 py-3 uppercase text-muted-foreground">{s.type}</td>
+                        <td className="px-3 py-3 text-muted-foreground">{s.chunkCount}</td>
+                        <td className="px-3 py-3">
+                          <QaToggle count={s.qaCount} open={expanded === s.id} onClick={() => toggleQa(s.id)} />
+                        </td>
+                        <td className="px-3 py-3">
+                          <SourceStatus status={s.status} error={s.error} />
+                        </td>
+                        <td className="px-3 py-3 text-muted-foreground">{fmtDate(s.updatedAt)}</td>
+                        <td className="px-5 py-3">
+                          <div className="flex items-center justify-end">
+                            <RowActions onEdit={() => editExisting(s.id)} onDelete={() => remove(s.id)} />
+                          </div>
+                        </td>
+                      </tr>
+                      {expanded === s.id && s.qaCount > 0 && (
+                        <tr className="border-b border-border/60">
+                          <td colSpan={7} className="bg-background/50 p-0">
+                            <SourceQaList sourceId={s.id} />
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
                   ))}
                 </tbody>
               </table>
@@ -176,6 +202,25 @@ export function KnowledgeManager() {
         )}
       </div>
     </div>
+  );
+}
+
+// Chip que muestra cuántas preguntas aporta la fuente y expande la lista.
+function QaToggle({ count, open, onClick }: { count: number; open: boolean; onClick: () => void }) {
+  if (count === 0) {
+    return <span className="text-xs text-muted-foreground">—</span>;
+  }
+  return (
+    <button
+      onClick={onClick}
+      className={cn(
+        "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium transition-colors",
+        open ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground hover:text-foreground",
+      )}
+    >
+      {open ? <ChevronDown className="size-3.5" /> : <ChevronRight className="size-3.5" />}
+      {count} {count === 1 ? "pregunta" : "preguntas"}
+    </button>
   );
 }
 

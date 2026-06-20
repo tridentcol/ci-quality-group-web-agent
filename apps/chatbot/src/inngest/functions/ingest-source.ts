@@ -2,11 +2,12 @@ import { eq } from 'drizzle-orm'
 import { get } from '@vercel/blob'
 import { inngest } from '@/inngest/client'
 import { db } from '@/lib/db'
-import { knowledgeChunks, knowledgeSources } from '@/lib/db/schema'
+import { botConfig, knowledgeChunks, knowledgeQa, knowledgeSources } from '@/lib/db/schema'
 import { parseDocument, type ParseableType } from '@/lib/ingest/parse'
 import { scrapeUrl } from '@/lib/ingest/scrape'
 import { chunkText } from '@/lib/ingest/chunk'
 import { embedBatch } from '@/lib/ai/embed'
+import { generateQa } from '@/lib/ai/qa-extract'
 
 const EMBED_BATCH = 96 // tamaño de lote para embeddings
 
@@ -30,6 +31,15 @@ export const ingestSource = inngest.createFunction(
         .where(eq(knowledgeSources.id, sourceId))
       if (!row) throw new Error(`knowledge_source ${sourceId} no existe`)
       return row
+    })
+
+    // ¿Generar preguntas frecuentes (Q&A)? Toggle de costo en bot_config.
+    const qaEnabled = await step.run('load-qa-flag', async () => {
+      const [cfg] = await db
+        .select({ on: botConfig.qaGenerationEnabled })
+        .from(botConfig)
+        .where(eq(botConfig.id, 1))
+      return cfg?.on ?? true
     })
 
     await step.run('mark-processing', async () => {
@@ -91,14 +101,44 @@ export const ingestSource = inngest.createFunction(
         }
       })
 
+      // 4) Q&A: generar preguntas frecuentes del documento, embeber las preguntas
+      //    y reemplazar (idempotente). No es crítico: si falla, la fuente queda
+      //    igualmente `ready` con sus chunks; solo se pierde el extra de Q&A.
+      const qaCount = await step.run('extract-qa', async () => {
+        await db.delete(knowledgeQa).where(eq(knowledgeQa.sourceId, sourceId))
+        if (!qaEnabled) return 0
+        try {
+          const pairs = await generateQa(text)
+          if (pairs.length === 0) return 0
+          const embeddings = await embedBatch(pairs.map((p) => p.question))
+          await db.insert(knowledgeQa).values(
+            pairs.map((p, i) => ({
+              sourceId,
+              question: p.question,
+              answer: p.answer,
+              embedding: embeddings[i],
+            })),
+          )
+          return pairs.length
+        } catch (e) {
+          console.error(`extract-qa falló para ${sourceId}:`, e)
+          return 0
+        }
+      })
+
       await step.run('mark-ready', async () => {
         await db
           .update(knowledgeSources)
-          .set({ status: 'ready', chunkCount: chunks.length, updatedAt: new Date() })
+          .set({
+            status: 'ready',
+            chunkCount: chunks.length,
+            qaCount,
+            updatedAt: new Date(),
+          })
           .where(eq(knowledgeSources.id, sourceId))
       })
 
-      return { sourceId, chunks: chunks.length, status: 'ready' as const }
+      return { sourceId, chunks: chunks.length, qa: qaCount, status: 'ready' as const }
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err)
       await step.run('mark-failed', async () => {
