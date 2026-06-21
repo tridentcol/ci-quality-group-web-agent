@@ -9,6 +9,7 @@ import { useConfirm } from "@/components/panel/confirm-dialog";
 
 interface Img {
   id: string;
+  type: "image" | "video";
   name: string;
   description: string;
   tags: string[];
@@ -47,7 +48,7 @@ export function ImagesManager() {
         </p>
       ) : items.length === 0 ? (
         <p className="rounded-xl border border-border bg-card py-8 text-center text-sm text-muted-foreground shadow-sm">
-          Aún no hay imágenes. Sube la primera arriba.
+          Aún no hay medios. Sube la primera imagen o video arriba.
         </p>
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -67,6 +68,7 @@ export function ImagesManager() {
 
 function AddImage({ onAdded }: { onAdded: () => void }) {
   const [url, setUrl] = useState<string | null>(null);
+  const [mediaType, setMediaType] = useState<"image" | "video">("image");
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [tags, setTags] = useState("");
@@ -76,6 +78,7 @@ function AddImage({ onAdded }: { onAdded: () => void }) {
 
   function reset() {
     setUrl(null);
+    setMediaType("image");
     setName("");
     setDescription("");
     setTags("");
@@ -90,12 +93,14 @@ function AddImage({ onAdded }: { onAdded: () => void }) {
       const blob = await upload(`images/${file.name}`, file, {
         access: "public",
         handleUploadUrl: "/api/panel/images/upload",
+        multipart: file.size > 8 * 1024 * 1024,
         onUploadProgress: (p) => setProgress(p.percentage),
       });
       setUrl(blob.url);
+      setMediaType(file.type.startsWith("video") ? "video" : "image");
       setName(file.name.replace(/\.[^.]+$/, ""));
     } catch (e) {
-      setErr(e instanceof Error ? e.message : "Error al subir la imagen");
+      setErr(e instanceof Error ? e.message : "Error al subir el medio");
     } finally {
       setBusy(false);
       setProgress(null);
@@ -111,13 +116,13 @@ function AddImage({ onAdded }: { onAdded: () => void }) {
       const res = await fetch("/api/panel/images", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ url, name: name.trim(), description: description.trim(), tags: parseTags(tags) }),
+        body: JSON.stringify({ url, type: mediaType, name: name.trim(), description: description.trim(), tags: parseTags(tags) }),
       });
       const json = await res.json();
       if (!json.success) throw new Error(json.error?.message ?? "Error al guardar");
       reset();
       onAdded();
-      toast.success("Imagen agregada.");
+      toast.success(mediaType === "video" ? "Video agregado." : "Imagen agregada.");
     } catch (e) {
       const m = e instanceof Error ? e.message : "Error al guardar";
       setErr(m);
@@ -129,7 +134,7 @@ function AddImage({ onAdded }: { onAdded: () => void }) {
 
   return (
     <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
-      <div className="mb-3 text-sm font-semibold text-foreground">Agregar imagen</div>
+      <div className="mb-3 text-sm font-semibold text-foreground">Agregar medio</div>
 
       {!url ? (
         <label
@@ -148,12 +153,12 @@ function AddImage({ onAdded }: { onAdded: () => void }) {
               ? progress !== null
                 ? `Subiendo… ${Math.round(progress)}%`
                 : "Subiendo…"
-              : "Haz clic para subir una imagen (JPG, PNG, WEBP, GIF)"}
+              : "Haz clic para subir una imagen (JPG/PNG/WEBP/GIF) o un video corto (MP4)"}
           </span>
-          <span className="text-xs text-muted-foreground">Hasta 10 MB</span>
+          <span className="text-xs text-muted-foreground">Hasta 16 MB · el video debe ser corto</span>
           <input
             type="file"
-            accept="image/jpeg,image/png,image/webp,image/gif"
+            accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/quicktime,video/3gpp"
             className="hidden"
             disabled={busy}
             onChange={async (e) => {
@@ -166,8 +171,12 @@ function AddImage({ onAdded }: { onAdded: () => void }) {
         </label>
       ) : (
         <div className="flex flex-col gap-4 sm:flex-row">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={url} alt="" className="h-40 w-40 shrink-0 rounded-lg border border-border object-cover" />
+          {mediaType === "video" ? (
+            <video src={url} controls className="h-40 w-40 shrink-0 rounded-lg border border-border object-cover" />
+          ) : (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={url} alt="" className="h-40 w-40 shrink-0 rounded-lg border border-border object-cover" />
+          )}
           <div className="flex-1 space-y-2">
             <input className={inputCls} placeholder="Nombre (ej. Cobre #1)" value={name} onChange={(e) => setName(e.target.value)} />
             <textarea
@@ -242,8 +251,17 @@ function ImageCard({
 
   return (
     <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={img.url} alt={img.name} className="h-40 w-full object-cover" />
+      <div className="relative">
+        {img.type === "video" ? (
+          <video src={img.url} controls className="h-40 w-full object-cover" />
+        ) : (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={img.url} alt={img.name} className="h-40 w-full object-cover" />
+        )}
+        <span className="absolute left-2 top-2 rounded-full bg-black/60 px-2 py-0.5 text-xs font-medium text-white">
+          {img.type === "video" ? "Video" : "Imagen"}
+        </span>
+      </div>
       <div className="p-4">
         {editing ? (
           <div className="space-y-2">

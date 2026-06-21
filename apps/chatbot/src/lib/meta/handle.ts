@@ -4,7 +4,7 @@ import { botConfig, conversations, customerProfiles, webhookEvents } from '@/lib
 import { generateReply } from '@/lib/ai/generate'
 import { appendMessage, countMessages, loadMemory } from '@/lib/ai/memory'
 import { inngest } from '@/inngest/client'
-import { sendText, sendImage } from './send'
+import { sendText, sendMedia } from './send'
 import type { Channel, NormalizedEvent } from './normalize'
 
 /** A partir de cuántos mensajes pedir un resumen de la conversación. */
@@ -94,12 +94,12 @@ export async function handleEvent(e: NormalizedEvent): Promise<void> {
     })
   }
 
-  // 6b) Imágenes ilustrativas que el bot decidió adjuntar (find_image).
+  // 6b) Medios ilustrativos (imagen/video) que acompañan la respuesta.
   for (const att of res.attachments) {
     try {
-      await sendImage(e.channel, e.externalId, att.url, att.caption)
+      await sendMedia(e.channel, e.externalId, att)
     } catch {
-      // si falla el envío de una imagen, no rompemos la conversación
+      // si falla el envío de un medio, no rompemos la conversación
     }
   }
 

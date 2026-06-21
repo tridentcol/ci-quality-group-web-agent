@@ -117,6 +117,50 @@ export async function sendImage(
   }
 }
 
+/** Envía un video por URL pública (mp4 corto, ≤16 MB). Meta descarga la URL. */
+export async function sendVideo(
+  channel: Channel,
+  to: string,
+  url: string,
+  caption?: string,
+): Promise<unknown> {
+  switch (channel) {
+    case 'whatsapp': {
+      if (!env.WHATSAPP_PHONE_NUMBER_ID || !env.WHATSAPP_ACCESS_TOKEN)
+        throw new Error('WhatsApp no configurado')
+      return post(`${GRAPH}/${env.WHATSAPP_PHONE_NUMBER_ID}/messages`, env.WHATSAPP_ACCESS_TOKEN, {
+        messaging_product: 'whatsapp',
+        to,
+        type: 'video',
+        video: { link: url, caption: caption || undefined },
+      })
+    }
+    case 'messenger':
+    case 'instagram': {
+      const id = channel === 'messenger' ? env.MESSENGER_PAGE_ID : env.IG_ACCOUNT_ID
+      const token =
+        channel === 'messenger' ? env.MESSENGER_PAGE_ACCESS_TOKEN : env.INSTAGRAM_ACCESS_TOKEN
+      if (!id || !token) throw new Error(`${channel} no configurado`)
+      return post(`${GRAPH}/${id}/messages`, token, {
+        recipient: { id: to },
+        messaging_type: 'RESPONSE',
+        message: { attachment: { type: 'video', payload: { url, is_reusable: true } } },
+      })
+    }
+  }
+}
+
+/** Envía un medio (imagen o video) por su tipo. */
+export async function sendMedia(
+  channel: Channel,
+  to: string,
+  media: { url: string; caption?: string; type: 'image' | 'video' },
+): Promise<unknown> {
+  return media.type === 'video'
+    ? sendVideo(channel, to, media.url, media.caption)
+    : sendImage(channel, to, media.url, media.caption)
+}
+
 /** Tarjeta de ubicación nativa en WhatsApp; en los demás canales cae a texto. */
 export async function sendLocation(channel: Channel, to: string, loc: Location): Promise<unknown> {
   if (channel === 'whatsapp') {

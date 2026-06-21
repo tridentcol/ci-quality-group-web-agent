@@ -24,11 +24,12 @@ function embedText(name: string, description: string, tags: string[]): string {
   return [name, description, tags.join(', ')].filter(Boolean).join('. ')
 }
 
-// GET — lista de imágenes (sin el embedding)
+// GET — lista de medios (sin el embedding)
 export async function GET() {
   const rows = await db
     .select({
       id: images.id,
+      type: images.type,
       name: images.name,
       description: images.description,
       tags: images.tags,
@@ -42,21 +43,22 @@ export async function GET() {
 
 const createSchema = z.object({
   url: z.string().url(),
+  type: z.enum(['image', 'video']).default('image'),
   name: z.string().trim().min(1),
   description: z.string().trim().default(''),
   tags: z.array(z.string().trim().min(1)).default([]),
 })
 
-// POST — registra una imagen ya subida a Blob (la embebe)
+// POST — registra un medio ya subido a Blob (lo embebe por su texto)
 export async function POST(req: Request) {
   const parsed = createSchema.safeParse(await req.json().catch(() => null))
   if (!parsed.success) return fail('Faltan datos: url y name son obligatorios.')
-  const { url, name, description, tags } = parsed.data
+  const { url, type, name, description, tags } = parsed.data
 
   const embedding = await embed(embedText(name, description, tags))
   const [row] = await db
     .insert(images)
-    .values({ url, name, description, tags, embedding })
+    .values({ url, type, name, description, tags, embedding })
     .returning({ id: images.id })
   return ok({ id: row.id })
 }

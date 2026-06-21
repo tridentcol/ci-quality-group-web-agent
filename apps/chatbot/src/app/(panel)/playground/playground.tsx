@@ -19,7 +19,7 @@ interface Diag {
   contextUsed: boolean;
   retrieved: Retrieved[];
   toolCalls: ToolCall[];
-  attachments: { url: string; caption: string }[];
+  attachments: { url: string; caption: string; type: "image" | "video" }[];
 }
 interface Turn {
   role: "user" | "assistant";
@@ -161,15 +161,24 @@ function Bubble({ turn }: { turn: Turn }) {
         <div className="whitespace-pre-wrap">{turn.content}</div>
         {turn.diag?.attachments && turn.diag.attachments.length > 0 && (
           <div className="mt-2 flex flex-wrap gap-2">
-            {turn.diag.attachments.map((a) => (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                key={a.url}
-                src={a.url}
-                alt={a.caption}
-                className="h-20 w-20 rounded-md border border-border object-cover"
-              />
-            ))}
+            {turn.diag.attachments.map((a) =>
+              a.type === "video" ? (
+                <video
+                  key={a.url}
+                  src={a.url}
+                  controls
+                  className="h-24 w-32 rounded-md border border-border object-cover"
+                />
+              ) : (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  key={a.url}
+                  src={a.url}
+                  alt={a.caption}
+                  className="h-20 w-20 rounded-md border border-border object-cover"
+                />
+              ),
+            )}
           </div>
         )}
       </div>

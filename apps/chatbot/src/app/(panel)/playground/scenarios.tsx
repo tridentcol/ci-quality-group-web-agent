@@ -12,7 +12,7 @@ const TOOL_OPTIONS = [
   { id: "capture_lead", label: "capture_lead" },
   { id: "request_human_handoff", label: "handoff" },
   { id: "get_location", label: "get_location" },
-  { id: "find_image", label: "find_image" },
+  { id: "find_media", label: "find_media" },
   { id: "log_knowledge_gap", label: "log_gap" },
 ];
 

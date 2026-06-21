@@ -172,40 +172,42 @@ export async function getLocation(): Promise<
   return { found: true, context: chunks.map((c) => c.content).join('\n\n') }
 }
 
-// ─── find_image ───────────────────────────────────────────────────────────────
+// ─── find_media ───────────────────────────────────────────────────────────────
 
-const findImageArgs = z.object({ query: z.string().trim().min(1) })
+const findMediaArgs = z.object({ query: z.string().trim().min(1) })
 
-// Umbral de similitud para adjuntar (evita imágenes irrelevantes). Coseno sobre
+// Umbral de similitud para adjuntar (evita medios irrelevantes). Coseno sobre
 // nombre+descripción+etiquetas; 0.38 deja fuera coincidencias tangenciales.
-const IMAGE_MIN_SCORE = 0.38
+const MEDIA_MIN_SCORE = 0.38
 
-export type FindImageResult =
-  | { found: true; url: string; caption: string; similarity: number }
+export type FindMediaResult =
+  | { found: true; url: string; caption: string; type: 'image' | 'video'; similarity: number }
   | { found: false }
 
-export async function findImage(
-  args: z.infer<typeof findImageArgs>,
-): Promise<FindImageResult> {
+export async function findMedia(
+  args: z.infer<typeof findMediaArgs>,
+): Promise<FindMediaResult> {
   const queryEmbedding = await embed(args.query)
   const similarity = sql<number>`1 - (${cosineDistance(images.embedding, queryEmbedding)})`
-  const [img] = await db
+  const [m] = await db
     .select({
       url: images.url,
       name: images.name,
       description: images.description,
+      type: images.type,
       similarity,
     })
     .from(images)
     .orderBy(desc(similarity))
     .limit(1)
 
-  if (!img || img.similarity < IMAGE_MIN_SCORE) return { found: false }
+  if (!m || m.similarity < MEDIA_MIN_SCORE) return { found: false }
   return {
     found: true,
-    url: img.url,
-    caption: img.description?.trim() || img.name,
-    similarity: img.similarity,
+    url: m.url,
+    caption: m.description?.trim() || m.name,
+    type: m.type === 'video' ? 'video' : 'image',
+    similarity: m.similarity,
   }
 }
 
@@ -324,12 +326,12 @@ export const toolDefinitions: OpenAI.Chat.Completions.ChatCompletionTool[] = [
   {
     type: 'function',
     function: {
-      name: 'find_image',
+      name: 'find_media',
       description:
-        'Busca una imagen ilustrativa en el banco de imágenes aprobado para adjuntarla a la ' +
-        'respuesta (p. ej. foto de un material, diagrama de un proceso, una sede). Úsala cuando una ' +
-        'imagen ayude a explicar. Solo adjunta lo que esta herramienta devuelva; NUNCA inventes URLs. ' +
-        'Si devuelve found:false, no hay imagen adecuada: responde solo con texto.',
+        'Busca un medio ilustrativo (imagen o video corto) en el banco aprobado para adjuntarlo a la ' +
+        'respuesta (p. ej. foto de un material, diagrama o clip de un proceso, una sede). Úsalo cuando ' +
+        'un medio ayude a explicar. Solo adjunta lo que esta herramienta devuelva; NUNCA inventes URLs. ' +
+        'Si devuelve found:false, no hay medio adecuado: responde solo con texto.',
       parameters: {
         type: 'object',
         properties: {
@@ -382,8 +384,8 @@ export async function executeTool(
     case 'get_location':
       getLocationArgs.parse(parsed)
       return getLocation()
-    case 'find_image':
-      return findImage(findImageArgs.parse(parsed))
+    case 'find_media':
+      return findMedia(findMediaArgs.parse(parsed))
     case 'log_knowledge_gap':
       return logKnowledgeGap(logGapArgs.parse(parsed), ctx)
     default:

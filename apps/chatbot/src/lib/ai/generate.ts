@@ -52,12 +52,19 @@ export interface GenerateResult {
   toolCalls: ExecutedTool[]
   /** Chunks recuperados por RAG (para depurar cobertura en el playground). */
   retrieved: RetrievedChunkPreview[]
-  /** Imágenes a adjuntar elegidas por el bot (tool find_image). */
-  attachments: { url: string; caption: string }[]
+  /** Medios (imagen/video) a adjuntar: material-vinculado, Q&A-vinculado o semántico. */
+  attachments: MediaAttachment[]
+}
+
+export interface MediaAttachment {
+  url: string
+  caption: string
+  type: 'image' | 'video'
 }
 
 const TEMPERATURE = 0.3
 const MAX_TOOL_ROUNDS = 5
+const MAX_ATTACHMENTS = 2 // tope de medios por respuesta (evita spam)
 
 const safeParse = (s: string): unknown => {
   try {
@@ -139,15 +146,19 @@ export async function generateReply(input: GenerateInput): Promise<GenerateResul
 
   const ctx: ToolContext = { conversationId: input.conversationId, mode: input.mode ?? 'live' }
   const executed: ExecutedTool[] = []
-  const attachments: { url: string; caption: string }[] = []
+  const attachments: MediaAttachment[] = []
 
-  // Recolecta imágenes que el bot decidió adjuntar (resultado de find_image).
-  const collectAttachment = (name: string, result: unknown) => {
-    if (name !== 'find_image' || !result || typeof result !== 'object') return
-    const r = result as { found?: boolean; url?: string; caption?: string }
-    if (r.found && r.url && !attachments.some((a) => a.url === r.url)) {
-      attachments.push({ url: r.url, caption: r.caption ?? '' })
+  const pushAttachment = (a: MediaAttachment) => {
+    if (a.url && !attachments.some((x) => x.url === a.url) && attachments.length < MAX_ATTACHMENTS) {
+      attachments.push(a)
     }
+  }
+
+  // Recolecta el medio que el bot decidió adjuntar (resultado de find_media).
+  const collectAttachment = (name: string, result: unknown) => {
+    if (name !== 'find_media' || !result || typeof result !== 'object') return
+    const r = result as { found?: boolean; url?: string; caption?: string; type?: 'image' | 'video' }
+    if (r.found && r.url) pushAttachment({ url: r.url, caption: r.caption ?? '', type: r.type ?? 'image' })
   }
 
   // 4) Bucle de tool-calling.

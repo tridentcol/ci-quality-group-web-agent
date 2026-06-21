@@ -19,7 +19,7 @@ const TOOLS = [
   'capture_lead',
   'request_human_handoff',
   'get_location',
-  'find_image',
+  'find_media',
   'log_knowledge_gap',
 ] as const
 

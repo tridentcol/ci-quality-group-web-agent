@@ -74,6 +74,8 @@ export const knowledgeQa = pgTable(
     question: text('question').notNull(),
     answer: text('answer').notNull(),
     embedding: vector('embedding', { dimensions: 1536 }).notNull(), // de la pregunta
+    // Medio fijo de esta FAQ: el bot lo adjunta cuando esta pregunta se recupera.
+    imageId: uuid('image_id').references(() => images.id, { onDelete: 'set null' }),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
   },
   (t) => [index('qa_embedding_idx').using('hnsw', t.embedding.op('vector_cosine_ops'))],
@@ -104,6 +106,7 @@ export const images = pgTable(
   'images',
   {
     id: uuid('id').defaultRandom().primaryKey(),
+    type: text('type').notNull().default('image'), // image | video
     name: text('name').notNull(),
     description: text('description').notNull().default(''),
     tags: jsonb('tags').notNull().default([]), // string[]
@@ -125,6 +128,8 @@ export const materials = pgTable('materials', {
   wholesalePriceCop: numeric('wholesale_price_cop'),
   wholesaleThreshold: numeric('wholesale_threshold'),
   active: boolean('active').notNull().default(true),
+  // Medio fijo del material (foto/clip): el bot lo adjunta al cotizarlo.
+  imageId: uuid('image_id').references(() => images.id, { onDelete: 'set null' }),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
 })
 
