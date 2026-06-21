@@ -181,9 +181,11 @@ export const messages = pgTable('messages', {
 // leads — solicitudes capturadas para cotización
 export const leads = pgTable('leads', {
   id: uuid('id').defaultRandom().primaryKey(),
-  conversationId: uuid('conversation_id')
-    .notNull()
-    .references(() => conversations.id, { onDelete: 'cascade' }),
+  // Nullable: un lead del playground (o de la web sin hilo) puede no tener
+  // conversación asociada.
+  conversationId: uuid('conversation_id').references(() => conversations.id, {
+    onDelete: 'cascade',
+  }),
   name: text('name'),
   contact: text('contact'), // teléfono/email capturado
   interest: text('interest'), // material/servicio de interés
@@ -193,6 +195,9 @@ export const leads = pgTable('leads', {
   discountApprovedPct: numeric('discount_approved_pct'),
   status: text('status').notNull().default('new'), // new|contacted|quoted|won|lost
   notes: text('notes'),
+  // Lead de PRUEBA (capturado desde el playground): visible pero claramente
+  // marcado, no notifica al admin. Para ver el flujo como en producción.
+  test: boolean('test').notNull().default(false),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
 })
 

@@ -27,6 +27,7 @@ export async function GET() {
       discountApprovedPct: leads.discountApprovedPct,
       status: leads.status,
       notes: leads.notes,
+      test: leads.test,
       channel: conversations.channel,
       createdAt: leads.createdAt,
     })
@@ -35,6 +36,15 @@ export async function GET() {
     .leftJoin(conversations, eq(leads.conversationId, conversations.id))
     .orderBy(desc(leads.createdAt))
   return ok(rows)
+}
+
+// DELETE — borrar un lead (útil para limpiar leads de prueba del playground)
+export async function DELETE(req: Request) {
+  const id = new URL(req.url).searchParams.get('id')
+  if (!id) return fail('Falta el id del lead.')
+  const [row] = await db.delete(leads).where(eq(leads.id, id)).returning({ id: leads.id })
+  if (!row) return fail('El lead no existe.', 404, 'NOT_FOUND')
+  return ok({ deleted: id })
 }
 
 const patchSchema = z

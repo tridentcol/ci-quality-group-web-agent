@@ -1,6 +1,6 @@
 /**
  * Set de regresión del comportamiento del bot (Fase 5). Cada caso ejercita el
- * motor real (`generateReply`) en modo dryRun y verifica SEÑALES de comportamiento
+ * motor real (`generateReply`) en modo eval (sin escribir) y verifica SEÑALES de comportamiento
  * —qué herramientas dispara, si usó contexto— no la redacción exacta (que varía).
  * Sirve para detectar regresiones tras cambiar prompts, router, tools o RAG.
  *

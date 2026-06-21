@@ -4,10 +4,11 @@ import { generateReply } from '@/lib/ai/generate'
 
 /**
  * Banco de pruebas del bot desde el panel (equivalente web de scripts/chat.ts).
- * Ejecuta el motor real (RAG + router + tools) en modo `dryRun` —no crea leads,
- * huecos ni cambia el estado de conversaciones— y devuelve la respuesta junto con
- * el detalle para depurar: modelo, razón del router, chunks recuperados con score
- * y tools llamadas. Bajo /api/panel/* → protegido por Clerk.
+ * Ejecuta el motor real (RAG + router + tools) en modo `test` (playground): SÍ
+ * captura leads y registra huecos para ver el flujo como en producción, pero los
+ * leads quedan marcados como prueba (lead.test) y NO se notifica al admin ni se
+ * cambian conversaciones reales. Devuelve la respuesta + el detalle para depurar
+ * (modelo, router, chunks con score, tools). Bajo /api/panel/* → protegido por Clerk.
  */
 export async function POST(req: Request) {
   const body = await req.json().catch(() => null)
@@ -33,7 +34,7 @@ export async function POST(req: Request) {
     const res = await generateReply({
       message: parsed.data.message,
       history: parsed.data.history,
-      dryRun: true,
+      mode: 'test',
     })
     return NextResponse.json({ success: true, data: res })
   } catch (e) {

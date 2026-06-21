@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { Loader2, Check } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Loader2, Check, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ChannelBadge } from "@/components/panel/channel-badge";
 
@@ -18,6 +18,7 @@ interface Lead {
   discountApprovedPct: string | null;
   status: Status;
   notes: string | null;
+  test: boolean;
   channel: string | null;
   createdAt: string | null;
 }
@@ -36,6 +37,7 @@ const inputCls =
 export function LeadsManager() {
   const [items, setItems] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
+  const [hideTest, setHideTest] = useState(false);
 
   const load = useCallback(async () => {
     const res = await fetch("/api/panel/leads");
@@ -49,6 +51,15 @@ export function LeadsManager() {
   }, [load]);
 
   const onChange = (u: Lead) => setItems((p) => p.map((x) => (x.id === u.id ? u : x)));
+
+  const onDelete = async (id: string) => {
+    if (!confirm("¿Borrar este lead?")) return;
+    await fetch(`/api/panel/leads?id=${id}`, { method: "DELETE" });
+    setItems((p) => p.filter((x) => x.id !== id));
+  };
+
+  const testCount = useMemo(() => items.filter((l) => l.test).length, [items]);
+  const visible = hideTest ? items.filter((l) => !l.test) : items;
 
   if (loading) {
     return (
@@ -67,10 +78,17 @@ export function LeadsManager() {
 
   return (
     <>
+      {testCount > 0 && (
+        <label className="mb-3 flex items-center gap-2 text-sm text-muted-foreground">
+          <input type="checkbox" checked={hideTest} onChange={(e) => setHideTest(e.target.checked)} />
+          Ocultar leads de prueba ({testCount})
+        </label>
+      )}
+
       {/* Cards en móvil */}
       <div className="space-y-3 md:hidden">
-        {items.map((l) => (
-          <LeadCard key={l.id} lead={l} onChange={onChange} />
+        {visible.map((l) => (
+          <LeadCard key={l.id} lead={l} onChange={onChange} onDelete={() => onDelete(l.id)} />
         ))}
       </div>
 
@@ -88,16 +106,26 @@ export function LeadsManager() {
               <th className="px-2 py-2 font-medium">Cant.</th>
               <th className="px-2 py-2 font-medium">Descuento</th>
               <th className="px-2 py-2 font-medium">Estado</th>
+              <th className="px-2 py-2" />
             </tr>
           </thead>
           <tbody>
-            {items.map((l) => (
-              <LeadRow key={l.id} lead={l} onChange={onChange} />
+            {visible.map((l) => (
+              <LeadRow key={l.id} lead={l} onChange={onChange} onDelete={() => onDelete(l.id)} />
             ))}
           </tbody>
         </table>
       </div>
     </>
+  );
+}
+
+// Etiqueta de lead de prueba (capturado desde el playground).
+function TestBadge() {
+  return (
+    <span className="rounded-full bg-warning/15 px-2 py-0.5 text-xs font-medium text-warning">
+      Prueba
+    </span>
   );
 }
 
@@ -185,11 +213,22 @@ function StatusControl({
   );
 }
 
-function LeadRow({ lead, onChange }: { lead: Lead; onChange: (l: Lead) => void }) {
+function LeadRow({
+  lead,
+  onChange,
+  onDelete,
+}: {
+  lead: Lead;
+  onChange: (l: Lead) => void;
+  onDelete: () => void;
+}) {
   return (
-    <tr className="border-b border-border/60 align-top last:border-0">
+    <tr className={cn("border-b border-border/60 align-top last:border-0", lead.test && "bg-warning/5")}>
       <td className="px-4 py-3">
-        <div className="font-medium text-foreground">{lead.name ?? "—"}</div>
+        <div className="flex items-center gap-2">
+          <span className="font-medium text-foreground">{lead.name ?? "—"}</span>
+          {lead.test && <TestBadge />}
+        </div>
         <div className="text-xs text-muted-foreground">{lead.contact ?? "sin contacto"}</div>
       </td>
       <td className="px-2 py-3">
@@ -203,21 +242,50 @@ function LeadRow({ lead, onChange }: { lead: Lead; onChange: (l: Lead) => void }
       <td className="px-2 py-3">
         <StatusControl lead={lead} onChange={onChange} />
       </td>
+      <td className="px-2 py-3 text-right">
+        <button
+          onClick={onDelete}
+          className="text-muted-foreground transition-colors hover:text-destructive"
+          aria-label="Borrar lead"
+        >
+          <Trash2 className="size-4" />
+        </button>
+      </td>
     </tr>
   );
 }
 
-function LeadCard({ lead, onChange }: { lead: Lead; onChange: (l: Lead) => void }) {
+function LeadCard({
+  lead,
+  onChange,
+  onDelete,
+}: {
+  lead: Lead;
+  onChange: (l: Lead) => void;
+  onDelete: () => void;
+}) {
   return (
-    <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
+    <div className={cn("rounded-xl border border-border bg-card p-4 shadow-sm", lead.test && "bg-warning/5")}>
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
-          <div className="truncate font-medium text-foreground">{lead.name ?? "—"}</div>
+          <div className="flex items-center gap-2">
+            <span className="truncate font-medium text-foreground">{lead.name ?? "—"}</span>
+            {lead.test && <TestBadge />}
+          </div>
           <div className="truncate text-xs text-muted-foreground">
             {lead.contact ?? "sin contacto"}
           </div>
         </div>
-        <ChannelBadge channel={lead.channel} />
+        <div className="flex items-center gap-2">
+          <ChannelBadge channel={lead.channel} />
+          <button
+            onClick={onDelete}
+            className="text-muted-foreground transition-colors hover:text-destructive"
+            aria-label="Borrar lead"
+          >
+            <Trash2 className="size-4" />
+          </button>
+        </div>
       </div>
 
       <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 text-sm">

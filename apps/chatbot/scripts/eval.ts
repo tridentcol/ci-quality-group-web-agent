@@ -42,7 +42,7 @@ async function main() {
 
   for (const kase of cases) {
     try {
-      const res = await generateReply({ message: kase.message, dryRun: true })
+      const res = await generateReply({ message: kase.message, mode: 'eval' })
       const fails = check(kase, res)
       const tools = res.toolCalls.map((t) => t.name).join(', ') || '—'
       if (fails.length === 0) {

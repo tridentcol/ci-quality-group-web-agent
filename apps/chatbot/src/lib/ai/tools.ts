@@ -21,11 +21,20 @@ import { resolveLookup, type LookupPriceResult } from './pricing'
  * el bot: captura el lead y avisa al admin.
  */
 
+/**
+ * Modo de ejecución de las tools con efectos:
+ *  - live: producción (webhook). Escribe y notifica al admin.
+ *  - test: playground. Escribe pero marcado como prueba (lead.test), SIN notificar
+ *    al admin ni cambiar conversaciones reales → ver el flujo como en producción.
+ *  - eval: batería de regresión. No escribe nada (solo comprueba comportamiento).
+ */
+export type ToolMode = 'live' | 'test' | 'eval'
+
 export interface ToolContext {
   /** Conversación actual; requerido por capture_lead, handoff y log_knowledge_gap. */
   conversationId?: string
-  /** Modo prueba (playground/eval): las tools con efectos NO escriben en BD. */
-  dryRun?: boolean
+  /** Modo de ejecución (default 'live'). */
+  mode?: ToolMode
 }
 
 // ─── lookup_price ────────────────────────────────────────────────────────────
@@ -89,8 +98,8 @@ export async function captureLead(
   args: z.infer<typeof captureLeadArgs>,
   ctx: ToolContext,
 ): Promise<{ leadId: string; status: 'captured' }> {
-  if (ctx.dryRun) return { leadId: 'dry-run', status: 'captured' }
-  if (!ctx.conversationId) throw new Error('capture_lead requiere conversationId')
+  const mode = ctx.mode ?? 'live'
+  if (mode === 'eval') return { leadId: 'dry-run', status: 'captured' }
 
   // Intentar enlazar el material de interés (best-effort).
   let materialId: string | null = null
@@ -106,21 +115,25 @@ export async function captureLead(
   const [lead] = await db
     .insert(leads)
     .values({
-      conversationId: ctx.conversationId,
+      conversationId: ctx.conversationId ?? null,
       name: args.name ?? null,
       contact: args.contact ?? null,
       interest: args.interest ?? null,
       materialId,
       quantity: args.quantity != null ? String(args.quantity) : null,
       requestedDiscount: args.requested_discount ?? false,
+      test: mode === 'test',
     })
     .returning({ id: leads.id })
 
-  await notifyAdmin(
-    `Nuevo lead: ${args.name ?? 'sin nombre'} (${args.contact ?? 'sin contacto'}) — ` +
-      `interés: ${args.interest ?? 'n/d'}${args.quantity ? `, cantidad: ${args.quantity}` : ''}` +
-      `${args.requested_discount ? ' · pidió descuento' : ''}`,
-  )
+  // Solo en producción se avisa al admin (no spamear con leads de prueba).
+  if (mode === 'live') {
+    await notifyAdmin(
+      `Nuevo lead: ${args.name ?? 'sin nombre'} (${args.contact ?? 'sin contacto'}) — ` +
+        `interés: ${args.interest ?? 'n/d'}${args.quantity ? `, cantidad: ${args.quantity}` : ''}` +
+        `${args.requested_discount ? ' · pidió descuento' : ''}`,
+    )
+  }
 
   return { leadId: lead.id, status: 'captured' }
 }
@@ -133,8 +146,9 @@ export async function requestHumanHandoff(
   args: z.infer<typeof handoffArgs>,
   ctx: ToolContext,
 ): Promise<{ status: 'human_controlled' }> {
-  if (ctx.dryRun) return { status: 'human_controlled' }
-  if (!ctx.conversationId) throw new Error('request_human_handoff requiere conversationId')
+  const mode = ctx.mode ?? 'live'
+  // En prueba/eval (o sin conversación real) se simula sin tocar nada.
+  if (mode !== 'live' || !ctx.conversationId) return { status: 'human_controlled' }
 
   await db
     .update(conversations)
@@ -203,11 +217,12 @@ export async function logKnowledgeGap(
   args: z.infer<typeof logGapArgs>,
   ctx: ToolContext,
 ): Promise<{ logged: true; gapId: string }> {
-  const question = args.question.trim()
+  const mode = ctx.mode ?? 'live'
+  // En eval (regresión) no escribimos. En live y test (playground) SÍ: así, al
+  // probar el bot, lo que no pudo responder queda visible en /gaps para resolverlo.
+  if (mode === 'eval') return { logged: true, gapId: 'dry-run' }
 
-  // Registramos el hueco incluso en modo prueba (playground): así, al probar el
-  // bot, lo que no pudo responder queda visible en /gaps para resolverlo. Es una
-  // señal sin efectos secundarios (a diferencia de capture_lead/handoff).
+  const question = args.question.trim()
   // Dedupe: si ya hay un hueco ABIERTO con la misma pregunta, no duplicar.
   const [existing] = await db
     .select({ id: knowledgeGaps.id })

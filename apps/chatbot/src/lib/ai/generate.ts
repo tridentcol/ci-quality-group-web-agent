@@ -6,7 +6,7 @@ import { botConfig } from '@/lib/db/schema'
 import { retrieve } from './retrieve'
 import { buildSystemPrompt } from './system-prompt'
 import { selectModel } from './router'
-import { executeTool, toolDefinitions, type ToolContext } from './tools'
+import { executeTool, toolDefinitions, type ToolContext, type ToolMode } from './tools'
 import { RAG_K, RAG_MIN_SCORE } from './rag-config'
 import { isAfterHours, type BusinessHours } from './hours'
 
@@ -29,8 +29,8 @@ export interface GenerateInput {
   customerSummary?: string | null
   /** Resumen acumulado de la conversación larga (conversations.summary), si existe. */
   conversationSummary?: string | null
-  /** Modo prueba: las tools con efectos no escriben (playground/eval). */
-  dryRun?: boolean
+  /** Modo de ejecución de las tools: 'live' (default) | 'test' (playground) | 'eval'. */
+  mode?: ToolMode
 }
 
 export interface ExecutedTool {
@@ -115,7 +115,7 @@ export async function generateReply(input: GenerateInput): Promise<GenerateResul
     { role: 'user', content: input.message },
   ]
 
-  const ctx: ToolContext = { conversationId: input.conversationId, dryRun: input.dryRun }
+  const ctx: ToolContext = { conversationId: input.conversationId, mode: input.mode ?? 'live' }
   const executed: ExecutedTool[] = []
   const attachments: { url: string; caption: string }[] = []
 

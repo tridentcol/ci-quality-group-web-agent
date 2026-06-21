@@ -43,6 +43,13 @@
       "when": 1781989816181,
       "tag": "0005_salty_genesis",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1782002830839,
+      "tag": "0006_useful_blur",
+      "breakpoints": true
     }
   ]
 }
