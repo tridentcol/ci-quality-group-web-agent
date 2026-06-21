@@ -48,6 +48,33 @@ export async function lookupPrice(
   return resolveLookup(rows, args)
 }
 
+// ─── list_materials ──────────────────────────────────────────────────────────
+
+export interface ListedMaterial {
+  name: string
+  category: string | null
+  unit: string
+  retailPriceCop: number
+  wholesalePriceCop: number | null
+  wholesaleThreshold: number | null
+}
+
+// Lista los materiales/servicios cotizables (activos) con sus precios oficiales.
+// Para responder "qué materiales manejas / de qué me das precio".
+export async function listMaterials(): Promise<{ materials: ListedMaterial[] }> {
+  const rows = await db.select().from(materials).where(eq(materials.active, true))
+  return {
+    materials: rows.map((m) => ({
+      name: m.name,
+      category: m.category,
+      unit: m.unit,
+      retailPriceCop: Number(m.retailPriceCop),
+      wholesalePriceCop: m.wholesalePriceCop != null ? Number(m.wholesalePriceCop) : null,
+      wholesaleThreshold: m.wholesaleThreshold != null ? Number(m.wholesaleThreshold) : null,
+    })),
+  }
+}
+
 // ─── capture_lead ─────────────────────────────────────────────────────────────
 
 const captureLeadArgs = z.object({
@@ -212,6 +239,17 @@ export const toolDefinitions: OpenAI.Chat.Completions.ChatCompletionTool[] = [
   {
     type: 'function',
     function: {
+      name: 'list_materials',
+      description:
+        'Lista los materiales y servicios que la empresa cotiza, con sus precios oficiales en COP. ' +
+        'Úsalo cuando el cliente pregunte EN GENERAL qué materiales compran/venden o de qué puedes dar ' +
+        'precio. Los precios salen SIEMPRE de aquí (tabla oficial), nunca del conocimiento de documentos.',
+      parameters: { type: 'object', properties: {}, additionalProperties: false },
+    },
+  },
+  {
+    type: 'function',
+    function: {
       name: 'capture_lead',
       description:
         'Registra una solicitud/lead cuando el cliente muestra intención de compra/venta ' +
@@ -306,6 +344,8 @@ export async function executeTool(
   switch (name) {
     case 'lookup_price':
       return lookupPrice(lookupPriceArgs.parse(parsed))
+    case 'list_materials':
+      return listMaterials()
     case 'capture_lead':
       return captureLead(captureLeadArgs.parse(parsed), ctx)
     case 'request_human_handoff':

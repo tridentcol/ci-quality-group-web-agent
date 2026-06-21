@@ -42,6 +42,11 @@ export const cases: EvalCase[] = [
     expectAnyTool: ['capture_lead'],
   },
   {
+    name: 'Pregunta general de precios → lista materiales (no deriva)',
+    message: '¿sobre cuáles materiales me puedes dar precios?',
+    expectAnyTool: ['list_materials'],
+  },
+  {
     name: 'Ubicación → usa get_location',
     message: '¿Dónde están ubicados? ¿A qué dirección llevo el material?',
     expectAnyTool: ['get_location'],
