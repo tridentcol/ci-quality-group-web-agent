@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Loader2, Check, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { ChannelBadge } from "@/components/panel/channel-badge";
 
@@ -56,6 +57,7 @@ export function LeadsManager() {
     if (!confirm("¿Borrar este lead?")) return;
     await fetch(`/api/panel/leads?id=${id}`, { method: "DELETE" });
     setItems((p) => p.filter((x) => x.id !== id));
+    toast.success("Lead borrado.");
   };
 
   const testCount = useMemo(() => items.filter((l) => l.test).length, [items]);
@@ -141,7 +143,12 @@ function useLeadPatch(lead: Lead, onChange: (l: Lead) => void) {
         body: JSON.stringify({ id: lead.id, ...body }),
       });
       const json = await res.json();
-      if (json.success) onChange(json.data);
+      if (json.success) {
+        onChange(json.data);
+        toast.success("Lead actualizado.");
+      } else {
+        toast.error(json.error?.message ?? "No se pudo actualizar.");
+      }
     } finally {
       setBusy(false);
     }

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Loader2, Check } from "lucide-react";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 export interface BusinessHours {
@@ -40,7 +41,6 @@ export function SettingsForm({ initial }: { initial: SettingsInitial }) {
     adminWhatsapp: initial.adminWhatsapp ?? "",
   });
   const [busy, setBusy] = useState(false);
-  const [msg, setMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
 
   const set = <K extends keyof typeof f>(k: K, v: (typeof f)[K]) => setF((p) => ({ ...p, [k]: v }));
   const toggleDay = (d: number) =>
@@ -54,7 +54,6 @@ export function SettingsForm({ initial }: { initial: SettingsInitial }) {
   async function save(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true);
-    setMsg(null);
     try {
       const res = await fetch("/api/panel/config", {
         method: "PATCH",
@@ -74,9 +73,9 @@ export function SettingsForm({ initial }: { initial: SettingsInitial }) {
       });
       const json = await res.json();
       if (!json.success) throw new Error(json.error?.message ?? "Error al guardar");
-      setMsg({ kind: "ok", text: "Cambios guardados." });
+      toast.success("Cambios guardados.");
     } catch (e2) {
-      setMsg({ kind: "err", text: e2 instanceof Error ? e2.message : "Error al guardar" });
+      toast.error(e2 instanceof Error ? e2.message : "Error al guardar");
     } finally {
       setBusy(false);
     }
@@ -188,9 +187,6 @@ export function SettingsForm({ initial }: { initial: SettingsInitial }) {
       </Card>
 
       <div className="flex items-center justify-end gap-3">
-        {msg && (
-          <p className={cn("text-sm", msg.kind === "ok" ? "text-success" : "text-destructive")}>{msg.text}</p>
-        )}
         <button
           type="submit"
           disabled={busy}

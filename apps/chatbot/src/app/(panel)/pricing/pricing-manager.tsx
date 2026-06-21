@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { Plus, Trash2, Loader2, Check } from "lucide-react";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 type Unit = "kg" | "ton" | "unidad";
@@ -136,8 +137,11 @@ function usePriceEditor(
       const json = await res.json();
       if (!json.success) throw new Error(json.error?.message ?? "Error al guardar");
       onChange(json.data);
+      toast.success("Cambios guardados.");
     } catch (e) {
-      setErr(e instanceof Error ? e.message : "Error al guardar");
+      const m = e instanceof Error ? e.message : "Error al guardar";
+      setErr(m);
+      toast.error(m);
     } finally {
       setBusy(false);
     }
@@ -163,6 +167,7 @@ function usePriceEditor(
     setBusy(true);
     await fetch(`/api/panel/pricing?id=${material.id}`, { method: "DELETE" });
     onDelete();
+    toast.success(`"${material.name}" borrado.`);
   }
 
   return { draft, setDraft, busy, err, dirty, patch, save, remove };
@@ -453,8 +458,11 @@ function AddCard({ onAdded }: { onAdded: (m: Material) => void }) {
       if (!json.success) throw new Error(json.error?.message ?? "Error al crear");
       onAdded(json.data);
       setF(empty);
+      toast.success("Material agregado.");
     } catch (e2) {
-      setErr(e2 instanceof Error ? e2.message : "Error al crear");
+      const m = e2 instanceof Error ? e2.message : "Error al crear";
+      setErr(m);
+      toast.error(m);
     } finally {
       setBusy(false);
     }

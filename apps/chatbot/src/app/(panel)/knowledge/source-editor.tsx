@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Loader2, Check, X } from "lucide-react";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 export interface EditorDraft {
@@ -57,9 +58,12 @@ export function SourceEditor({
       });
       const json = await res.json();
       if (!json.success) throw new Error(json.error?.message ?? "Error al guardar");
+      toast.success(draft.mode === "edit" ? "Fuente actualizada. Reprocesando…" : "Fuente guardada. Procesando…");
       onSaved();
     } catch (e) {
-      setErr(e instanceof Error ? e.message : "Error al guardar");
+      const m = e instanceof Error ? e.message : "Error al guardar";
+      setErr(m);
+      toast.error(m);
     } finally {
       setBusy(false);
     }

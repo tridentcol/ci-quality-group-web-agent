@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { upload } from "@vercel/blob/client";
 import { Upload, Loader2, Trash2, Pencil, Check, X } from "lucide-react";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 interface Img {
@@ -115,8 +116,11 @@ function AddImage({ onAdded }: { onAdded: () => void }) {
       if (!json.success) throw new Error(json.error?.message ?? "Error al guardar");
       reset();
       onAdded();
+      toast.success("Imagen agregada.");
     } catch (e) {
-      setErr(e instanceof Error ? e.message : "Error al guardar");
+      const m = e instanceof Error ? e.message : "Error al guardar";
+      setErr(m);
+      toast.error(m);
     } finally {
       setBusy(false);
     }
@@ -217,6 +221,9 @@ function ImageCard({
       if (json.success) {
         onChange({ ...img, name: name.trim(), description: description.trim(), tags: parseTags(tags) });
         setEditing(false);
+        toast.success("Imagen actualizada.");
+      } else {
+        toast.error(json.error?.message ?? "No se pudo actualizar.");
       }
     } finally {
       setBusy(false);
@@ -228,6 +235,7 @@ function ImageCard({
     setBusy(true);
     await fetch(`/api/panel/images?id=${img.id}`, { method: "DELETE" });
     onDelete();
+    toast.success("Imagen borrada.");
   }
 
   return (

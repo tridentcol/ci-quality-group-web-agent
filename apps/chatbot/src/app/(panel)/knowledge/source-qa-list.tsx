@@ -11,6 +11,7 @@ import {
   Plus,
   RefreshCw,
 } from "lucide-react";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 interface Qa {
@@ -51,13 +52,16 @@ export function SourceQaList({
     if (!confirm("¿Regenerar las preguntas de esta fuente? Reemplaza las actuales (usa la IA, ~½ centavo).")) return;
     setRegenerating(true);
     try {
-      await fetch("/api/panel/knowledge/qa/regenerate", {
+      const res = await fetch("/api/panel/knowledge/qa/regenerate", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ sourceId }),
       });
+      const json = await res.json();
       await load();
       onChanged?.();
+      if (json.success) toast.success(`Regeneradas: ${json.data.count} pregunta(s).`);
+      else toast.error(json.error?.message ?? "No se pudo regenerar.");
     } finally {
       setRegenerating(false);
     }
@@ -110,6 +114,7 @@ export function SourceQaList({
               setItems((p) => [...(p ?? []), json.data]);
               setAdding(false);
               onChanged?.();
+              toast.success("Pregunta agregada.");
             }
             return json.success;
           }}
@@ -156,6 +161,7 @@ function QaRow({
     setBusy(true);
     await fetch(`/api/panel/knowledge/qa?id=${qa.id}`, { method: "DELETE" });
     onDeleted();
+    toast.success("Pregunta borrada.");
   }
 
   if (editing) {
@@ -174,6 +180,7 @@ function QaRow({
             if (json.success) {
               onUpdated(json.data);
               setEditing(false);
+              toast.success("Pregunta actualizada.");
             }
             return json.success;
           }}

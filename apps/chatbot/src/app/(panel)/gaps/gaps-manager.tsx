@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { Loader2, CheckCircle2, HelpCircle } from "lucide-react";
+import { toast } from "sonner";
 
 interface Gap {
   id: string;
@@ -87,8 +88,11 @@ function GapCard({ gap, onResolved }: { gap: Gap; onResolved: (g: Gap) => void }
       const json = await res.json();
       if (!json.success) throw new Error(json.error?.message ?? "Error al resolver");
       onResolved(json.data.gap);
+      toast.success("Resuelto. El bot ya puede responder esta pregunta.");
     } catch (e) {
-      setErr(e instanceof Error ? e.message : "Error al resolver");
+      const m = e instanceof Error ? e.message : "Error al resolver";
+      setErr(m);
+      toast.error(m);
     } finally {
       setBusy(false);
     }

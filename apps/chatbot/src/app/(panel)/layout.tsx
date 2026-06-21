@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { auth } from "@clerk/nextjs/server";
+import { Toaster } from "sonner";
 import { Sidebar } from "@/components/panel/sidebar";
 import { MobileNav } from "@/components/panel/mobile-nav";
 
@@ -19,6 +20,7 @@ export default async function PanelLayout({
         <MobileNav />
         <main className="flex-1 overflow-y-auto bg-background">{children}</main>
       </div>
+      <Toaster richColors position="bottom-right" closeButton />
     </div>
   );
 }

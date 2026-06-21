@@ -15,6 +15,7 @@ import {
   ChevronDown,
   ChevronRight,
 } from "lucide-react";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { SourceEditor, type EditorDraft } from "./source-editor";
 import { SourceQaList } from "./source-qa-list";
@@ -96,6 +97,7 @@ export function KnowledgeManager() {
     if (!confirm("¿Borrar esta fuente y sus fragmentos?")) return;
     await fetch(`/api/panel/knowledge?id=${id}`, { method: "DELETE" });
     setSources((prev) => prev.filter((s) => s.id !== id));
+    toast.success("Fuente borrada.");
   }
 
   return (
