@@ -11,7 +11,17 @@ import { generateReply } from '@/lib/ai/generate'
  */
 export async function POST(req: Request) {
   const body = await req.json().catch(() => null)
-  const parsed = z.object({ message: z.string().trim().min(1) }).safeParse(body)
+  const parsed = z
+    .object({
+      message: z.string().trim().min(1),
+      // Historial de la conversación de prueba (turnos previos), para probar
+      // flujos multi-turno con memoria de corto plazo. Efímero: vive en el cliente.
+      history: z
+        .array(z.object({ role: z.enum(['user', 'assistant']), content: z.string() }))
+        .max(40)
+        .optional(),
+    })
+    .safeParse(body)
   if (!parsed.success) {
     return NextResponse.json(
       { success: false, error: { code: 'VALIDATION', message: 'Escribe un mensaje.' } },
@@ -20,7 +30,11 @@ export async function POST(req: Request) {
   }
 
   try {
-    const res = await generateReply({ message: parsed.data.message, dryRun: true })
+    const res = await generateReply({
+      message: parsed.data.message,
+      history: parsed.data.history,
+      dryRun: true,
+    })
     return NextResponse.json({ success: true, data: res })
   } catch (e) {
     return NextResponse.json(
