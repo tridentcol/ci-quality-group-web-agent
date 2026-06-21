@@ -43,10 +43,11 @@ export function buildSystemPrompt(i: SystemPromptInput): string {
     ? `\n## Cliente\n${i.customerSummary.trim()}\n`
     : ''
 
-  // Saludo: solo en el primer mensaje de la conversación.
+  // Saludo: solo en el primer mensaje. Si el cliente ya trae una consulta
+  // concreta, NO recitar la bienvenida genérica: saludar breve y resolver.
   const welcome =
     i.isFirstMessage && i.welcomeMessage?.trim()
-      ? `\n## Bienvenida\nEs el PRIMER mensaje de la conversación. Salúdalo con este mensaje de bienvenida (puedes adaptarlo levemente, sin cambiar su sentido):\n"${i.welcomeMessage.trim()}"\n`
+      ? `\n## Primer mensaje\nEs el primer mensaje de la conversación. Si el cliente SOLO saluda o no trae una consulta concreta, preséntate con este mensaje de bienvenida:\n"${i.welcomeMessage.trim()}"\nPero si el cliente YA viene con una pregunta o un interés concreto, NO recites esa presentación genérica: salúdalo en una sola línea breve y cordial y enfócate de inmediato en responder su consulta con precisión. Nunca antepongas la presentación de la empresa a lo que el cliente está pidiendo.\n`
       : ''
 
   // Fuera de horario: atiende igual pero deja claro el aviso configurado.
