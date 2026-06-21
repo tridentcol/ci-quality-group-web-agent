@@ -214,6 +214,20 @@ export const knowledgeGaps = pgTable('knowledge_gaps', {
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
 })
 
+// test_scenarios — escenarios de prueba del bot, editables desde el panel.
+// Cada uno define una conversación (turnos del cliente) y qué se espera del bot
+// en el último turno (tools, contexto, texto). Se corren en modo eval (no escriben).
+export const testScenarios = pgTable('test_scenarios', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  name: text('name').notNull(),
+  messages: jsonb('messages').notNull().default([]), // string[] — turnos del cliente
+  // { expectTools?: string[]; forbidTools?: string[]; expectContext?: 'any'|'with'|'without';
+  //   replyIncludes?: string; replyExcludes?: string }
+  expectations: jsonb('expectations').notNull().default({}),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
+})
+
 // webhook_events — idempotencia de reintentos de Meta
 export const webhookEvents = pgTable('webhook_events', {
   eventId: text('event_id').primaryKey(), // id del mensaje de Meta

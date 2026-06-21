@@ -67,7 +67,22 @@ const safeParse = (s: string): unknown => {
   }
 }
 
-export async function generateReply(input: GenerateInput): Promise<GenerateResult> {
+export interface AssembledGeneration {
+  system: string
+  model: string
+  routerReason: string
+  contextUsed: boolean
+  retrieved: RetrievedChunkPreview[]
+  messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[]
+}
+
+/**
+ * Arma todo lo previo a llamar al modelo: RAG (contexto) → router (modelo) →
+ * system prompt (tono + memoria + contexto + bienvenida/horario) → mensajes.
+ * Lo comparten `generateReply` y el visor de prompt del panel para que lo que se
+ * muestra sea EXACTAMENTE lo que usa el bot (sin desincronización).
+ */
+export async function assembleGeneration(input: GenerateInput): Promise<AssembledGeneration> {
   // 1) RAG: recuperar contexto para el mensaje actual.
   const chunks = await retrieve(input.message, RAG_K, RAG_MIN_SCORE)
   const contextUsed = chunks.length > 0
@@ -114,6 +129,13 @@ export async function generateReply(input: GenerateInput): Promise<GenerateResul
     ...(input.history ?? []).map((m) => ({ role: m.role, content: m.content })),
     { role: 'user', content: input.message },
   ]
+
+  return { system, model, routerReason: reason, contextUsed, retrieved, messages }
+}
+
+export async function generateReply(input: GenerateInput): Promise<GenerateResult> {
+  const { model, routerReason: reason, contextUsed, retrieved, messages } =
+    await assembleGeneration(input)
 
   const ctx: ToolContext = { conversationId: input.conversationId, mode: input.mode ?? 'live' }
   const executed: ExecutedTool[] = []
