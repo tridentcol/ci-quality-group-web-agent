@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { UserButton } from "@clerk/nextjs";
 import { cn } from "@/lib/utils";
 import { NAV, isActive } from "@/components/panel/nav-items";
+import { CommandTrigger } from "@/components/panel/command-menu";
 
 // Sidebar persistente de escritorio. En móvil/tablet se oculta y la navegación
 // la cubre <MobileNav /> (top bar + drawer).
@@ -20,6 +21,10 @@ export function Sidebar() {
         </span>
       </div>
 
+      <div className="px-3 pt-3">
+        <CommandTrigger className="flex w-full items-center gap-2 rounded-md border border-sidebar-border bg-background px-3 py-1.5 text-sm" />
+      </div>
+
       <nav className="flex-1 space-y-1 p-3">
         {NAV.map(({ href, label, icon: Icon }) => {
           const active = isActive(pathname, href);
@@ -27,6 +32,7 @@ export function Sidebar() {
             <Link
               key={href}
               href={href}
+              aria-current={active ? "page" : undefined}
               className={cn(
                 "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
                 active

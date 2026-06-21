@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { UserButton } from "@clerk/nextjs";
-import { Menu, X } from "lucide-react";
+import { Menu, X, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { NAV, isActive } from "@/components/panel/nav-items";
 
@@ -47,7 +47,21 @@ export function MobileNav() {
             CI Quality Group
           </span>
         </div>
-        <UserButton />
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={() =>
+              document.dispatchEvent(
+                new KeyboardEvent("keydown", { key: "k", metaKey: true, bubbles: true }),
+              )
+            }
+            aria-label="Buscar (paleta de comandos)"
+            className="inline-flex size-9 items-center justify-center rounded-md text-sidebar-foreground transition-colors hover:bg-sidebar-accent"
+          >
+            <Search className="size-5" />
+          </button>
+          <UserButton />
+        </div>
       </header>
 
       {/* Overlay */}
@@ -92,6 +106,7 @@ export function MobileNav() {
                 key={href}
                 href={href}
                 onClick={() => setOpen(false)}
+                aria-current={active ? "page" : undefined}
                 className={cn(
                   "flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors",
                   active

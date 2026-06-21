@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { useConfirm } from "@/components/panel/confirm-dialog";
 
 interface Qa {
   id: string;
@@ -36,6 +37,7 @@ export function SourceQaList({
   const [items, setItems] = useState<Qa[] | null>(null);
   const [adding, setAdding] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
+  const confirm = useConfirm();
 
   const load = useCallback(async () => {
     const res = await fetch(`/api/panel/knowledge/qa?sourceId=${sourceId}`);
@@ -49,7 +51,7 @@ export function SourceQaList({
   }, [load]);
 
   async function regenerate() {
-    if (!confirm("¿Regenerar las preguntas de esta fuente? Reemplaza las actuales (usa la IA, ~½ centavo).")) return;
+    if (!(await confirm({ title: "¿Regenerar las preguntas?", description: "Reemplaza las actuales generándolas desde el documento (usa la IA, ~½ centavo).", confirmLabel: "Regenerar" }))) return;
     setRegenerating(true);
     try {
       const res = await fetch("/api/panel/knowledge/qa/regenerate", {
@@ -155,9 +157,10 @@ function QaRow({
 }) {
   const [editing, setEditing] = useState(false);
   const [busy, setBusy] = useState(false);
+  const confirm = useConfirm();
 
   async function remove() {
-    if (!confirm("¿Borrar esta pregunta?")) return;
+    if (!(await confirm({ title: "¿Borrar esta pregunta?", confirmLabel: "Borrar", destructive: true }))) return;
     setBusy(true);
     await fetch(`/api/panel/knowledge/qa?id=${qa.id}`, { method: "DELETE" });
     onDeleted();

@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, Loader2, Hand, Bot, XCircle, Trash2, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ChannelBadge, ConversationStatusBadge } from "@/components/panel/channel-badge";
+import { useConfirm } from "@/components/panel/confirm-dialog";
 
 interface MessageMeta {
   model?: string;
@@ -35,6 +36,7 @@ export function ConversationView({ id }: { id: string }) {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const router = useRouter();
+  const confirm = useConfirm();
 
   const load = useCallback(async () => {
     const res = await fetch(`/api/panel/conversations?id=${id}`);
@@ -66,11 +68,11 @@ export function ConversationView({ id }: { id: string }) {
   }
 
   async function erase(scope: "conversation" | "customer") {
-    const label =
+    const opts =
       scope === "customer"
-        ? "¿Borrar el cliente y TODO su historial? (Habeas Data, irreversible)"
-        : "¿Borrar esta conversación y sus mensajes? (irreversible)";
-    if (!confirm(label)) return;
+        ? { title: "¿Borrar el cliente y TODO su historial?", description: "Habeas Data (Ley 1581). Irreversible." }
+        : { title: "¿Borrar esta conversación?", description: "Se eliminan sus mensajes. Irreversible." };
+    if (!(await confirm({ ...opts, confirmLabel: "Borrar", destructive: true }))) return;
     setBusy(true);
     try {
       const qs = scope === "customer" ? `?id=${id}&erase=customer` : `?id=${id}`;

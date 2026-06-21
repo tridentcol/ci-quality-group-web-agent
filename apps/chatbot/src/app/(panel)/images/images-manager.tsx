@@ -5,6 +5,7 @@ import { upload } from "@vercel/blob/client";
 import { Upload, Loader2, Trash2, Pencil, Check, X } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { useConfirm } from "@/components/panel/confirm-dialog";
 
 interface Img {
   id: string;
@@ -208,6 +209,7 @@ function ImageCard({
   const [description, setDescription] = useState(img.description);
   const [tags, setTags] = useState(img.tags.join(", "));
   const [busy, setBusy] = useState(false);
+  const confirm = useConfirm();
 
   async function save() {
     setBusy(true);
@@ -231,7 +233,7 @@ function ImageCard({
   }
 
   async function remove() {
-    if (!confirm(`¿Borrar la imagen "${img.name}"?`)) return;
+    if (!(await confirm({ title: `¿Borrar la imagen "${img.name}"?`, confirmLabel: "Borrar", destructive: true }))) return;
     setBusy(true);
     await fetch(`/api/panel/images?id=${img.id}`, { method: "DELETE" });
     onDelete();

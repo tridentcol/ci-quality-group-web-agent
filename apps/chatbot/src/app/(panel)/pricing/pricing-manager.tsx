@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Plus, Trash2, Loader2, Check } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { useConfirm } from "@/components/panel/confirm-dialog";
 
 type Unit = "kg" | "ton" | "unidad";
 
@@ -114,6 +115,7 @@ function usePriceEditor(
   const [draft, setDraft] = useState(material);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const confirm = useConfirm();
 
   useEffect(() => setDraft(material), [material]);
 
@@ -163,7 +165,7 @@ function usePriceEditor(
   }
 
   async function remove() {
-    if (!confirm(`¿Borrar "${material.name}"?`)) return;
+    if (!(await confirm({ title: `¿Borrar "${material.name}"?`, description: "Esta acción no se puede deshacer.", confirmLabel: "Borrar", destructive: true }))) return;
     setBusy(true);
     await fetch(`/api/panel/pricing?id=${material.id}`, { method: "DELETE" });
     onDelete();

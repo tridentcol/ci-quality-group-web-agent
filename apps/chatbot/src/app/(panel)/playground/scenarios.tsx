@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Loader2, Play, Plus, Pencil, Trash2, Check, X, CheckCircle2, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { useConfirm } from "@/components/panel/confirm-dialog";
 
 const TOOL_OPTIONS = [
   { id: "lookup_price", label: "lookup_price" },
@@ -45,6 +46,7 @@ export function Scenarios() {
   const [editing, setEditing] = useState<Scenario | "new" | null>(null);
   const [results, setResults] = useState<Record<string, RunResult>>({});
   const [runningAll, setRunningAll] = useState(false);
+  const confirm = useConfirm();
 
   const load = useCallback(async () => {
     const res = await fetch("/api/panel/scenarios");
@@ -79,7 +81,7 @@ export function Scenarios() {
   }
 
   async function remove(id: string) {
-    if (!confirm("¿Borrar este escenario?")) return;
+    if (!(await confirm({ title: "¿Borrar este escenario?", confirmLabel: "Borrar", destructive: true }))) return;
     await fetch(`/api/panel/scenarios?id=${id}`, { method: "DELETE" });
     setItems((p) => p.filter((x) => x.id !== id));
     toast.success("Escenario borrado.");

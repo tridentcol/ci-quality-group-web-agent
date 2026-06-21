@@ -5,6 +5,7 @@ import { Loader2, Check, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { ChannelBadge } from "@/components/panel/channel-badge";
+import { useConfirm } from "@/components/panel/confirm-dialog";
 
 type Status = "new" | "contacted" | "quoted" | "won" | "lost";
 
@@ -39,6 +40,7 @@ export function LeadsManager() {
   const [items, setItems] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [hideTest, setHideTest] = useState(false);
+  const confirm = useConfirm();
 
   const load = useCallback(async () => {
     const res = await fetch("/api/panel/leads");
@@ -54,7 +56,7 @@ export function LeadsManager() {
   const onChange = (u: Lead) => setItems((p) => p.map((x) => (x.id === u.id ? u : x)));
 
   const onDelete = async (id: string) => {
-    if (!confirm("¿Borrar este lead?")) return;
+    if (!(await confirm({ title: "¿Borrar este lead?", confirmLabel: "Borrar", destructive: true }))) return;
     await fetch(`/api/panel/leads?id=${id}`, { method: "DELETE" });
     setItems((p) => p.filter((x) => x.id !== id));
     toast.success("Lead borrado.");

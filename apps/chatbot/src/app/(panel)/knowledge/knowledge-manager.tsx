@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { useConfirm } from "@/components/panel/confirm-dialog";
 import { SourceEditor, type EditorDraft } from "./source-editor";
 import { SourceQaList } from "./source-qa-list";
 
@@ -49,6 +50,7 @@ export function KnowledgeManager() {
   const [editor, setEditor] = useState<EditorDraft | null>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const confirm = useConfirm();
 
   const toggleQa = (id: string) => setExpanded((cur) => (cur === id ? null : id));
 
@@ -94,7 +96,7 @@ export function KnowledgeManager() {
   }
 
   async function remove(id: string) {
-    if (!confirm("¿Borrar esta fuente y sus fragmentos?")) return;
+    if (!(await confirm({ title: "¿Borrar esta fuente?", description: "Se eliminan también sus fragmentos y preguntas. No se puede deshacer.", confirmLabel: "Borrar", destructive: true }))) return;
     await fetch(`/api/panel/knowledge?id=${id}`, { method: "DELETE" });
     setSources((prev) => prev.filter((s) => s.id !== id));
     toast.success("Fuente borrada.");
