@@ -26,6 +26,15 @@ describe('resolveLookup', () => {
     expect(r).toMatchObject({ tier: 'wholesale', unitPriceCop: 26000, totalCop: 26000 * 150 })
   })
 
+  it('devuelve el panorama completo: detal, mayorista y umbral', () => {
+    const r = resolveLookup([cobre], { material: 'Cobre #1' })
+    expect(r).toMatchObject({
+      retailPriceCop: 28000,
+      wholesalePriceCop: 26000,
+      wholesaleThreshold: 100,
+    })
+  })
+
   it('cantidad ≥ umbral pero sin precio mayorista → minorista', () => {
     const soloRetail: MaterialRow = { ...cobre, wholesalePriceCop: null, wholesaleThreshold: null }
     const r = resolveLookup([soloRetail], { material: 'Cobre #1', quantity: 999 })

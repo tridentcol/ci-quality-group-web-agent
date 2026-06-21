@@ -23,6 +23,11 @@ export type LookupPriceResult =
       unit: string
       tier: 'retail' | 'wholesale'
       unitPriceCop: number
+      // Panorama completo de precios para que el bot pueda explicar el mayoreo y
+      // responder "desde cuánto aplica" SIN inventar (umbral/precio mayorista).
+      retailPriceCop: number
+      wholesalePriceCop: number | null
+      wholesaleThreshold: number | null
       quantity?: number
       totalCop?: number
     }
@@ -111,6 +116,9 @@ export function resolveLookup(
     unit: m.unit,
     tier,
     unitPriceCop,
+    retailPriceCop: retail,
+    wholesalePriceCop: wholesale,
+    wholesaleThreshold: threshold,
     ...(args.quantity != null
       ? { quantity: args.quantity, totalCop: unitPriceCop * args.quantity }
       : {}),
