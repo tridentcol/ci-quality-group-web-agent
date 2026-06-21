@@ -143,7 +143,7 @@ export function KnowledgeManager() {
                   </div>
                   {expanded === s.id && s.qaCount > 0 && (
                     <div className="mt-2 rounded-lg border border-border bg-background/50">
-                      <SourceQaList sourceId={s.id} />
+                      <SourceQaList sourceId={s.id} onChanged={load} />
                     </div>
                   )}
                 </li>
@@ -189,7 +189,7 @@ export function KnowledgeManager() {
                       {expanded === s.id && s.qaCount > 0 && (
                         <tr className="border-b border-border/60">
                           <td colSpan={7} className="bg-background/50 p-0">
-                            <SourceQaList sourceId={s.id} />
+                            <SourceQaList sourceId={s.id} onChanged={load} />
                           </td>
                         </tr>
                       )}
