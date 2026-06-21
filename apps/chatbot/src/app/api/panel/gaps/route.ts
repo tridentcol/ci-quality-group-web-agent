@@ -2,9 +2,8 @@ import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { desc, eq } from 'drizzle-orm'
 import { db } from '@/lib/db'
-import { knowledgeChunks, knowledgeGaps, knowledgeSources } from '@/lib/db/schema'
-import { chunkText } from '@/lib/ingest/chunk'
-import { embedBatch } from '@/lib/ai/embed'
+import { knowledgeGaps } from '@/lib/db/schema'
+import { resolveGapToKnowledge } from '@/lib/ai/gaps'
 
 function ok(data: unknown) {
   return NextResponse.json({ success: true, data })
@@ -48,39 +47,13 @@ export async function PATCH(req: Request) {
   if (!gap) return fail('El hueco no existe.', 404, 'NOT_FOUND')
   if (gap.status === 'resolved') return fail('El hueco ya está resuelto.', 409, 'CONFLICT')
 
-  // 1) Embeber el par pregunta/respuesta para que el bot lo recupere por RAG.
-  const text = `Pregunta: ${gap.question}\nRespuesta: ${answer}`
-  const chunks = chunkText(text)
+  // Resolver = convertir la respuesta en FAQ embebida + marcar resuelto.
+  const { sourceId, chunks } = await resolveGapToKnowledge(gap.id, gap.question, answer)
 
-  // 2) Fuente de conocimiento tipo FAQ (lista de inmediato, sin Blob/parse).
-  //    Guarda `content` para que sea editable/re-ingerible desde el panel.
-  const [source] = await db
-    .insert(knowledgeSources)
-    .values({
-      type: 'faq',
-      name: `FAQ: ${gap.question.slice(0, 80)}`,
-      content: text,
-      status: 'ready',
-      chunkCount: chunks.length,
-    })
-    .returning({ id: knowledgeSources.id })
-
-  const embeddings = await embedBatch(chunks)
-  await db.insert(knowledgeChunks).values(
-    chunks.map((content, i) => ({
-      sourceId: source.id,
-      content,
-      embedding: embeddings[i],
-      metadata: { faq: true, gapId: id, index: i },
-    })),
-  )
-
-  // 3) Marcar el hueco como resuelto.
   const [updated] = await db
-    .update(knowledgeGaps)
-    .set({ status: 'resolved', resolvedAnswer: answer, resolvedAt: new Date() })
+    .select()
+    .from(knowledgeGaps)
     .where(eq(knowledgeGaps.id, id))
-    .returning()
 
-  return ok({ gap: updated, sourceId: source.id, chunks: chunks.length })
+  return ok({ gap: updated, sourceId, chunks })
 }

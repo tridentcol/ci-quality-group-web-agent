@@ -1,6 +1,6 @@
 import type OpenAI from 'openai'
 import { z } from 'zod'
-import { cosineDistance, desc, eq, ilike, sql } from 'drizzle-orm'
+import { and, cosineDistance, desc, eq, ilike, sql } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import { conversations, images, knowledgeGaps, leads, materials } from '@/lib/db/schema'
 import { notifyAdmin } from '@/lib/meta/notify'
@@ -203,13 +203,27 @@ export async function logKnowledgeGap(
   args: z.infer<typeof logGapArgs>,
   ctx: ToolContext,
 ): Promise<{ logged: true; gapId: string }> {
-  if (ctx.dryRun) return { logged: true, gapId: 'dry-run' }
+  const question = args.question.trim()
+
+  // Registramos el hueco incluso en modo prueba (playground): así, al probar el
+  // bot, lo que no pudo responder queda visible en /gaps para resolverlo. Es una
+  // señal sin efectos secundarios (a diferencia de capture_lead/handoff).
+  // Dedupe: si ya hay un hueco ABIERTO con la misma pregunta, no duplicar.
+  const [existing] = await db
+    .select({ id: knowledgeGaps.id })
+    .from(knowledgeGaps)
+    .where(
+      and(
+        eq(knowledgeGaps.status, 'open'),
+        sql`lower(${knowledgeGaps.question}) = ${question.toLowerCase()}`,
+      ),
+    )
+    .limit(1)
+  if (existing) return { logged: true, gapId: existing.id }
+
   const [gap] = await db
     .insert(knowledgeGaps)
-    .values({
-      conversationId: ctx.conversationId ?? null,
-      question: args.question,
-    })
+    .values({ conversationId: ctx.conversationId ?? null, question })
     .returning({ id: knowledgeGaps.id })
   return { logged: true, gapId: gap.id }
 }
