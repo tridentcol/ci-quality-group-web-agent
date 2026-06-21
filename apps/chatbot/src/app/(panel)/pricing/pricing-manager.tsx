@@ -5,6 +5,7 @@ import { Plus, Trash2, Loader2, Check } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useConfirm } from "@/components/panel/confirm-dialog";
+import { MediaPicker } from "@/components/panel/media-picker";
 
 type Unit = "kg" | "ton" | "unidad";
 
@@ -17,6 +18,7 @@ interface Material {
   wholesalePriceCop: string | null;
   wholesaleThreshold: string | null;
   active: boolean;
+  imageId: string | null;
   updatedAt: string | null;
 }
 
@@ -84,6 +86,7 @@ export function PricingManager() {
                   <th className="px-2 py-2 font-medium">Minorista</th>
                   <th className="px-2 py-2 font-medium">Mayorista</th>
                   <th className="px-2 py-2 font-medium">Umbral</th>
+                  <th className="px-2 py-2 font-medium">Medio</th>
                   <th className="px-2 py-2 font-medium">Activo</th>
                   <th className="px-4 py-2" />
                 </tr>
@@ -298,6 +301,9 @@ function PriceRow({
           onChange={(e) => setDraft({ ...draft, wholesaleThreshold: e.target.value })}
         />
       </td>
+      <td className="w-44 px-2 py-2 align-top">
+        <MediaPicker value={draft.imageId} onChange={(imageId) => patch({ imageId })} />
+      </td>
       <td className="px-2 py-2 align-top">
         <ActiveToggle active={draft.active} busy={busy} onToggle={() => patch({ active: !draft.active })} />
       </td>
@@ -408,6 +414,10 @@ function PriceCard({
             {draft.wholesalePriceCop ? cop.format(Number(draft.wholesalePriceCop)) : "—"}
           </p>
         </label>
+      </div>
+
+      <div className="mt-3">
+        <MediaPicker label="Medio (foto/clip del material)" value={draft.imageId} onChange={(imageId) => patch({ imageId })} />
       </div>
 
       <div className="mt-3 flex items-center justify-between gap-2">

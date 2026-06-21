@@ -49,12 +49,27 @@ export type { LookupPriceResult }
 export async function lookupPrice(
   args: z.infer<typeof lookupPriceArgs>,
 ): Promise<LookupPriceResult> {
-  // La lista de materiales es curada y pequeña: traemos todo y dejamos que
-  // resolveLookup haga el match por nombre Y categoría (tolerante a frases como
-  // "láminas tipo kingspan" y a plurales/acentos). Filtrar con ILIKE por nombre
-  // fallaba cuando el cliente describe el material con otras palabras.
-  const rows = await db.select().from(materials)
-  return resolveLookup(rows, args)
+  // La lista de materiales es curada y pequeña: traemos todo (con su medio fijo
+  // vinculado, si tiene) y dejamos que resolveLookup haga el match por nombre Y
+  // categoría (tolerante a frases/plurales/acentos).
+  const rows = await db
+    .select({
+      name: materials.name,
+      category: materials.category,
+      active: materials.active,
+      unit: materials.unit,
+      retailPriceCop: materials.retailPriceCop,
+      wholesalePriceCop: materials.wholesalePriceCop,
+      wholesaleThreshold: materials.wholesaleThreshold,
+      mediaUrl: images.url,
+      mediaType: images.type,
+    })
+    .from(materials)
+    .leftJoin(images, eq(materials.imageId, images.id))
+  return resolveLookup(
+    rows.map((r) => ({ ...r, mediaType: r.mediaType === 'video' ? 'video' : r.mediaType ? 'image' : null })),
+    args,
+  )
 }
 
 // ─── list_materials ──────────────────────────────────────────────────────────

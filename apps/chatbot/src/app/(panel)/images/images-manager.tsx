@@ -6,6 +6,7 @@ import { Upload, Loader2, Trash2, Pencil, Check, X } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useConfirm } from "@/components/panel/confirm-dialog";
+import { invalidateMediaCache } from "@/components/panel/media-picker";
 
 interface Img {
   id: string;
@@ -28,6 +29,7 @@ export function ImagesManager() {
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
+    invalidateMediaCache(); // el banco cambió → refresca el selector de medios
     const res = await fetch("/api/panel/images");
     const json = await res.json();
     if (json.success) setItems(json.data);
@@ -246,7 +248,8 @@ function ImageCard({
     setBusy(true);
     await fetch(`/api/panel/images?id=${img.id}`, { method: "DELETE" });
     onDelete();
-    toast.success("Imagen borrada.");
+    invalidateMediaCache();
+    toast.success("Medio borrado.");
   }
 
   return (

@@ -35,7 +35,12 @@ export async function GET(req: Request) {
   const sourceId = new URL(req.url).searchParams.get('sourceId')
   if (!sourceId) return fail('Falta sourceId.')
   const rows = await db
-    .select({ id: knowledgeQa.id, question: knowledgeQa.question, answer: knowledgeQa.answer })
+    .select({
+      id: knowledgeQa.id,
+      question: knowledgeQa.question,
+      answer: knowledgeQa.answer,
+      imageId: knowledgeQa.imageId,
+    })
     .from(knowledgeQa)
     .where(eq(knowledgeQa.sourceId, sourceId))
     .orderBy(asc(knowledgeQa.createdAt))
@@ -63,28 +68,31 @@ export async function POST(req: Request) {
   const [row] = await db
     .insert(knowledgeQa)
     .values({ sourceId, question, answer, embedding })
-    .returning({ id: knowledgeQa.id, question: knowledgeQa.question, answer: knowledgeQa.answer })
+    .returning({ id: knowledgeQa.id, question: knowledgeQa.question, answer: knowledgeQa.answer, imageId: knowledgeQa.imageId })
   await syncQaCount(sourceId)
   return ok(row)
 }
 
-// PATCH — editar pregunta y/o respuesta (re-embebe solo si cambia la pregunta)
+// PATCH — editar pregunta/respuesta/medio (re-embebe solo si cambia la pregunta)
 const patchSchema = z.object({
   id: z.string().uuid(),
   question: z.string().trim().min(1).optional(),
   answer: z.string().trim().min(1).optional(),
+  imageId: z.string().uuid().nullable().optional(),
 })
 export async function PATCH(req: Request) {
   const parsed = patchSchema.safeParse(await req.json().catch(() => null))
   if (!parsed.success) return fail('Datos inválidos.')
-  const { id, question, answer } = parsed.data
-  if (question === undefined && answer === undefined) return fail('Nada que actualizar.')
+  const { id, question, answer, imageId } = parsed.data
+  if (question === undefined && answer === undefined && imageId === undefined)
+    return fail('Nada que actualizar.')
 
   const [cur] = await db.select().from(knowledgeQa).where(eq(knowledgeQa.id, id))
   if (!cur) return fail('La pregunta no existe.', 404, 'NOT_FOUND')
 
   const set: Record<string, unknown> = {}
   if (answer !== undefined) set.answer = answer
+  if (imageId !== undefined) set.imageId = imageId
   if (question !== undefined && question !== cur.question) {
     set.question = question
     set.embedding = await embed(question) // re-embeber al cambiar la pregunta
@@ -96,7 +104,7 @@ export async function PATCH(req: Request) {
     .update(knowledgeQa)
     .set(set)
     .where(eq(knowledgeQa.id, id))
-    .returning({ id: knowledgeQa.id, question: knowledgeQa.question, answer: knowledgeQa.answer })
+    .returning({ id: knowledgeQa.id, question: knowledgeQa.question, answer: knowledgeQa.answer, imageId: knowledgeQa.imageId })
   return ok(row)
 }
 

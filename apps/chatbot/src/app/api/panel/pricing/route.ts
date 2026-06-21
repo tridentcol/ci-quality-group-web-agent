@@ -37,6 +37,7 @@ const updateSchema = z
     wholesalePriceCop: moneyNullable,
     wholesaleThreshold: moneyNullable,
     active: z.boolean().optional(),
+    imageId: z.string().uuid().nullable().optional(), // medio fijo del material
   })
   .refine((d) => Object.keys(d).length > 1, 'Nada que actualizar.')
 
@@ -90,6 +91,7 @@ export async function PATCH(req: Request) {
   if (rest.wholesalePriceCop !== undefined) set.wholesalePriceCop = toNum(rest.wholesalePriceCop)
   if (rest.wholesaleThreshold !== undefined) set.wholesaleThreshold = toNum(rest.wholesaleThreshold)
   if (rest.active !== undefined) set.active = rest.active
+  if (rest.imageId !== undefined) set.imageId = rest.imageId
 
   const [row] = await db.update(materials).set(set).where(eq(materials.id, id)).returning()
   if (!row) return fail('El material no existe.', 404, 'NOT_FOUND')

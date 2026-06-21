@@ -14,11 +14,13 @@ import {
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useConfirm } from "@/components/panel/confirm-dialog";
+import { MediaPicker } from "@/components/panel/media-picker";
 
 interface Qa {
   id: string;
   question: string;
   answer: string;
+  imageId: string | null;
 }
 
 const inputCls =
@@ -159,6 +161,19 @@ function QaRow({
   const [busy, setBusy] = useState(false);
   const confirm = useConfirm();
 
+  async function setMedia(imageId: string | null) {
+    const res = await fetch("/api/panel/knowledge/qa", {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ id: qa.id, imageId }),
+    });
+    const json = await res.json();
+    if (json.success) {
+      onUpdated(json.data);
+      toast.success(imageId ? "Medio vinculado." : "Medio quitado.");
+    }
+  }
+
   async function remove() {
     if (!(await confirm({ title: "¿Borrar esta pregunta?", confirmLabel: "Borrar", destructive: true }))) return;
     setBusy(true);
@@ -216,6 +231,9 @@ function QaRow({
         </div>
       </div>
       <p className="mt-1.5 pl-6 text-sm text-muted-foreground">{qa.answer}</p>
+      <div className="mt-2 pl-6">
+        <MediaPicker value={qa.imageId} onChange={setMedia} />
+      </div>
     </li>
   );
 }

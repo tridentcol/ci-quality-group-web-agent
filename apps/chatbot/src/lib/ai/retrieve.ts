@@ -1,6 +1,6 @@
 import { cosineDistance, desc, eq, gt, sql } from 'drizzle-orm'
 import { db } from '@/lib/db'
-import { knowledgeChunks, knowledgeQa, knowledgeSources } from '@/lib/db/schema'
+import { images, knowledgeChunks, knowledgeQa, knowledgeSources } from '@/lib/db/schema'
 import { embed } from './embed'
 import { PRIORITY_BOOST, PRIORITY_BOOST_MAX } from './rag-config'
 
@@ -59,11 +59,14 @@ export async function retrieve(
       id: knowledgeQa.id,
       content: sql<string>`'Pregunta: ' || ${knowledgeQa.question} || E'\nRespuesta: ' || ${knowledgeQa.answer}`,
       sourceId: knowledgeQa.sourceId,
+      mediaUrl: images.url,
+      mediaType: images.type,
       similarity: qaSim,
       ranked: rankedBy(qaSim),
     })
     .from(knowledgeQa)
     .innerJoin(knowledgeSources, eq(knowledgeQa.sourceId, knowledgeSources.id))
+    .leftJoin(images, eq(knowledgeQa.imageId, images.id))
     .where(gt(qaSim, minScore))
     .orderBy(desc(rankedBy(qaSim)))
     .limit(k)
@@ -82,7 +85,12 @@ export async function retrieve(
       id: r.id,
       content: r.content,
       similarity: r.similarity,
-      metadata: { qa: true, sourceId: r.sourceId },
+      metadata: {
+        qa: true,
+        sourceId: r.sourceId,
+        mediaUrl: r.mediaUrl ?? null,
+        mediaType: r.mediaType === 'video' ? 'video' : r.mediaType ? 'image' : null,
+      },
       ranked: r.ranked,
     })),
   ]

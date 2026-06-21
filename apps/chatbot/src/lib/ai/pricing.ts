@@ -13,6 +13,9 @@ export interface MaterialRow {
   retailPriceCop: string
   wholesalePriceCop: string | null
   wholesaleThreshold: string | null
+  // Medio fijo vinculado al material (foto/clip), si lo tiene.
+  mediaUrl?: string | null
+  mediaType?: 'image' | 'video' | null
 }
 
 export type LookupPriceResult =
@@ -30,6 +33,9 @@ export type LookupPriceResult =
       wholesaleThreshold: number | null
       quantity?: number
       totalCop?: number
+      // Medio fijo del material (para adjuntarlo de forma determinista).
+      mediaUrl?: string | null
+      mediaType?: 'image' | 'video' | null
     }
 
 const num = (v: string | null | undefined) => (v == null ? null : Number(v))
@@ -119,6 +125,8 @@ export function resolveLookup(
     retailPriceCop: retail,
     wholesalePriceCop: wholesale,
     wholesaleThreshold: threshold,
+    mediaUrl: m.mediaUrl ?? null,
+    mediaType: m.mediaType ?? null,
     ...(args.quantity != null
       ? { quantity: args.quantity, totalCop: unitPriceCop * args.quantity }
       : {}),

@@ -80,6 +80,8 @@ export interface AssembledGeneration {
   routerReason: string
   contextUsed: boolean
   retrieved: RetrievedChunkPreview[]
+  /** Medios vinculados a las FAQ recuperadas (adjunto determinista por Q&A). */
+  linkedMedia: MediaAttachment[]
   messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[]
 }
 
@@ -98,6 +100,15 @@ export async function assembleGeneration(input: GenerateInput): Promise<Assemble
     content: c.content,
     similarity: c.similarity,
   }))
+
+  // Medios vinculados a las FAQ recuperadas (adjunto determinista por Q&A).
+  const linkedMedia: MediaAttachment[] = []
+  for (const c of chunks) {
+    const meta = (c.metadata ?? {}) as { mediaUrl?: string | null; mediaType?: 'image' | 'video' | null }
+    if (meta.mediaUrl && !linkedMedia.some((m) => m.url === meta.mediaUrl)) {
+      linkedMedia.push({ url: meta.mediaUrl, caption: '', type: meta.mediaType ?? 'image' })
+    }
+  }
 
   // 2) Router: elegir modelo.
   const { model, reason } = selectModel({
@@ -137,28 +148,39 @@ export async function assembleGeneration(input: GenerateInput): Promise<Assemble
     { role: 'user', content: input.message },
   ]
 
-  return { system, model, routerReason: reason, contextUsed, retrieved, messages }
+  return { system, model, routerReason: reason, contextUsed, retrieved, linkedMedia, messages }
 }
 
 export async function generateReply(input: GenerateInput): Promise<GenerateResult> {
-  const { model, routerReason: reason, contextUsed, retrieved, messages } =
+  const { model, routerReason: reason, contextUsed, retrieved, linkedMedia, messages } =
     await assembleGeneration(input)
 
   const ctx: ToolContext = { conversationId: input.conversationId, mode: input.mode ?? 'live' }
   const executed: ExecutedTool[] = []
-  const attachments: MediaAttachment[] = []
 
-  const pushAttachment = (a: MediaAttachment) => {
-    if (a.url && !attachments.some((x) => x.url === a.url) && attachments.length < MAX_ATTACHMENTS) {
-      attachments.push(a)
+  // Adjuntos por fuente, con prioridad: material-vinculado (lookup_price) →
+  // Q&A-vinculado (retrieve) → semántico (find_media). Al final se dedupe y se
+  // toman los MAX_ATTACHMENTS primeros por prioridad.
+  const materialMedia: MediaAttachment[] = []
+  const semanticMedia: MediaAttachment[] = []
+  const finalAttachments = (): MediaAttachment[] => {
+    const out: MediaAttachment[] = []
+    for (const a of [...materialMedia, ...linkedMedia, ...semanticMedia]) {
+      if (a.url && !out.some((x) => x.url === a.url) && out.length < MAX_ATTACHMENTS) out.push(a)
     }
+    return out
   }
 
-  // Recolecta el medio que el bot decidió adjuntar (resultado de find_media).
+  // Recolecta medios deterministas (material) y semánticos (find_media).
   const collectAttachment = (name: string, result: unknown) => {
-    if (name !== 'find_media' || !result || typeof result !== 'object') return
-    const r = result as { found?: boolean; url?: string; caption?: string; type?: 'image' | 'video' }
-    if (r.found && r.url) pushAttachment({ url: r.url, caption: r.caption ?? '', type: r.type ?? 'image' })
+    if (!result || typeof result !== 'object') return
+    if (name === 'find_media') {
+      const r = result as { found?: boolean; url?: string; caption?: string; type?: 'image' | 'video' }
+      if (r.found && r.url) semanticMedia.push({ url: r.url, caption: r.caption ?? '', type: r.type ?? 'image' })
+    } else if (name === 'lookup_price') {
+      const r = result as { available?: boolean; mediaUrl?: string | null; mediaType?: 'image' | 'video' | null; material?: string }
+      if (r.available && r.mediaUrl) materialMedia.push({ url: r.mediaUrl, caption: r.material ?? '', type: r.mediaType ?? 'image' })
+    }
   }
 
   // 4) Bucle de tool-calling.
@@ -183,7 +205,7 @@ export async function generateReply(input: GenerateInput): Promise<GenerateResul
         contextUsed,
         toolCalls: executed,
         retrieved,
-        attachments,
+        attachments: finalAttachments(),
       }
     }
 
@@ -210,6 +232,6 @@ export async function generateReply(input: GenerateInput): Promise<GenerateResul
     contextUsed,
     toolCalls: executed,
     retrieved,
-    attachments,
+    attachments: finalAttachments(),
   }
 }
