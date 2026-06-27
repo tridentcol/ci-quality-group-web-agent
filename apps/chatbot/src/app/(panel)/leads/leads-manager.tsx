@@ -1,21 +1,27 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Loader2, Check, Trash2 } from "lucide-react";
+import Link from "next/link";
+import { Loader2, Check, Trash2, MessageSquare } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { ChannelBadge } from "@/components/panel/channel-badge";
 import { useConfirm } from "@/components/panel/confirm-dialog";
 
-type Status = "new" | "contacted" | "quoted" | "won" | "lost";
+type Status = "new" | "contacted" | "quoted" | "ready" | "won" | "lost";
 
 interface Lead {
   id: string;
+  conversationId: string | null;
   name: string | null;
   contact: string | null;
   interest: string | null;
   materialName: string | null;
   quantity: string | null;
+  unit: string | null;
+  agreedPriceCop: string | null;
+  fulfillment: string | null;
+  scheduledFor: string | null;
   requestedDiscount: boolean;
   discountApprovedPct: string | null;
   status: Status;
@@ -29,12 +35,40 @@ const STATUS_LABEL: Record<Status, string> = {
   new: "Nuevo",
   contacted: "Contactado",
   quoted: "Cotizado",
+  ready: "Por cerrar",
   won: "Ganado",
   lost: "Perdido",
 };
 
+const cop = new Intl.NumberFormat("es-CO", {
+  style: "currency",
+  currency: "COP",
+  maximumFractionDigits: 0,
+});
+
 const inputCls =
   "rounded-md border border-input bg-background px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-ring";
+
+// Resumen de cantidad con unidad (ej. "300 kg").
+function qtyLabel(lead: Lead): string {
+  if (!lead.quantity) return "—";
+  return `${lead.quantity}${lead.unit ? " " + lead.unit : ""}`;
+}
+
+// Botón-enlace a la conversación del lead (si tiene hilo real).
+function ConvLink({ conversationId }: { conversationId: string | null }) {
+  if (!conversationId) return null;
+  return (
+    <Link
+      href={`/conversations/${conversationId}`}
+      className="inline-flex items-center text-muted-foreground transition-colors hover:text-primary"
+      aria-label="Abrir conversación"
+      title="Abrir conversación"
+    >
+      <MessageSquare className="size-4" />
+    </Link>
+  );
+}
 
 export function LeadsManager() {
   const [items, setItems] = useState<Lead[]>([]);
@@ -108,6 +142,7 @@ export function LeadsManager() {
               <th className="px-2 py-2 font-medium">Canal</th>
               <th className="px-2 py-2 font-medium">Interés</th>
               <th className="px-2 py-2 font-medium">Cant.</th>
+              <th className="px-2 py-2 font-medium">Acordado</th>
               <th className="px-2 py-2 font-medium">Descuento</th>
               <th className="px-2 py-2 font-medium">Estado</th>
               <th className="px-2 py-2" />
@@ -239,12 +274,20 @@ function LeadRow({
           {lead.test && <TestBadge />}
         </div>
         <div className="text-xs text-muted-foreground">{lead.contact ?? "sin contacto"}</div>
+        {(lead.fulfillment || lead.scheduledFor) && (
+          <div className="mt-0.5 text-xs text-muted-foreground">
+            {[lead.fulfillment, lead.scheduledFor].filter(Boolean).join(" · ")}
+          </div>
+        )}
       </td>
       <td className="px-2 py-3">
         <ChannelBadge channel={lead.channel} />
       </td>
       <td className="px-2 py-3 text-foreground">{lead.interest ?? lead.materialName ?? "—"}</td>
-      <td className="px-2 py-3 text-muted-foreground">{lead.quantity ?? "—"}</td>
+      <td className="px-2 py-3 text-muted-foreground">{qtyLabel(lead)}</td>
+      <td className="px-2 py-3 text-foreground">
+        {lead.agreedPriceCop ? cop.format(Number(lead.agreedPriceCop)) : "—"}
+      </td>
       <td className="px-2 py-3">
         <DiscountControl lead={lead} onChange={onChange} />
       </td>
@@ -252,13 +295,16 @@ function LeadRow({
         <StatusControl lead={lead} onChange={onChange} />
       </td>
       <td className="px-2 py-3 text-right">
-        <button
-          onClick={onDelete}
-          className="text-muted-foreground transition-colors hover:text-destructive"
-          aria-label="Borrar lead"
-        >
-          <Trash2 className="size-4" />
-        </button>
+        <div className="flex items-center justify-end gap-2">
+          <ConvLink conversationId={lead.conversationId} />
+          <button
+            onClick={onDelete}
+            className="text-muted-foreground transition-colors hover:text-destructive"
+            aria-label="Borrar lead"
+          >
+            <Trash2 className="size-4" />
+          </button>
+        </div>
       </td>
     </tr>
   );
@@ -286,6 +332,7 @@ function LeadCard({
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <ConvLink conversationId={lead.conversationId} />
           <ChannelBadge channel={lead.channel} />
           <button
             onClick={onDelete}
@@ -304,8 +351,26 @@ function LeadCard({
         </div>
         <div>
           <dt className="text-xs text-muted-foreground">Cantidad</dt>
-          <dd className="text-foreground">{lead.quantity ?? "—"}</dd>
+          <dd className="text-foreground">{qtyLabel(lead)}</dd>
         </div>
+        {lead.agreedPriceCop && (
+          <div>
+            <dt className="text-xs text-muted-foreground">Precio acordado</dt>
+            <dd className="font-medium text-foreground">{cop.format(Number(lead.agreedPriceCop))}</dd>
+          </div>
+        )}
+        {lead.fulfillment && (
+          <div>
+            <dt className="text-xs text-muted-foreground">Logística</dt>
+            <dd className="text-foreground">{lead.fulfillment}</dd>
+          </div>
+        )}
+        {lead.scheduledFor && (
+          <div>
+            <dt className="text-xs text-muted-foreground">Fecha/horario</dt>
+            <dd className="text-foreground">{lead.scheduledFor}</dd>
+          </div>
+        )}
       </dl>
 
       <div className="mt-3 space-y-2">

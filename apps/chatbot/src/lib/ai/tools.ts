@@ -69,6 +69,9 @@ export async function lookupPrice(
       retailPriceCop: materials.retailPriceCop,
       wholesalePriceCop: materials.wholesalePriceCop,
       wholesaleThreshold: materials.wholesaleThreshold,
+      wholesalePrice2Cop: materials.wholesalePrice2Cop,
+      wholesaleThreshold2: materials.wholesaleThreshold2,
+      minOrder: materials.minOrder,
       mediaUrl: images.url,
       mediaType: images.type,
     })
@@ -114,17 +117,48 @@ const captureLeadArgs = z.object({
   contact: z.string().trim().min(1).optional(),
   interest: z.string().trim().min(1).optional(),
   quantity: z.coerce.number().positive().optional(),
+  unit: z.string().trim().min(1).optional(),
+  agreed_price: z.coerce.number().nonnegative().optional(),
+  fulfillment: z.string().trim().min(1).optional(),
+  scheduled_for: z.string().trim().min(1).optional(),
   requested_discount: z.boolean().optional(),
 })
 
+// Etapas automáticas del lead (won/lost las pone el humano y no se tocan aquí).
+const STAGE_RANK: Record<string, number> = { new: 0, contacted: 1, quoted: 2, ready: 3 }
+
+// Calcula la etapa según lo que ya se sabe; nunca retrocede ni pisa won/lost.
+function leadStage(
+  current: string,
+  d: { contact: string | null; quantity: string | null; agreedPrice: string | null; logistics: boolean },
+): string {
+  if (current === 'won' || current === 'lost') return current
+  const desired =
+    d.agreedPrice != null && d.quantity != null && d.logistics
+      ? 'ready'
+      : d.agreedPrice != null
+        ? 'quoted'
+        : d.contact != null
+          ? 'contacted'
+          : 'new'
+  return (STAGE_RANK[desired] ?? 0) > (STAGE_RANK[current] ?? 0) ? desired : current
+}
+
+/**
+ * Captura/actualiza el lead de la conversación. ACUMULATIVO: una sola fila por
+ * conversación que se va completando llamada a llamada (no duplica), para que el
+ * bot pueda conducir la venta hasta dejarla "casi cerrada" (precio acordado +
+ * cantidad + logística → status `ready`). El humano solo confirma pago y coordina.
+ */
 export async function captureLead(
   args: z.infer<typeof captureLeadArgs>,
   ctx: ToolContext,
-): Promise<{ leadId: string; status: 'captured' }> {
+): Promise<{ leadId: string; status: string }> {
   const mode = ctx.mode ?? 'live'
-  if (mode === 'eval') return { leadId: 'dry-run', status: 'captured' }
+  if (mode === 'eval') return { leadId: 'dry-run', status: 'new' }
+  const isTest = mode === 'test'
 
-  // Intentar enlazar el material de interés (best-effort).
+  // Material de interés (best-effort).
   let materialId: string | null = null
   if (args.interest) {
     const [m] = await db
@@ -135,31 +169,71 @@ export async function captureLead(
     materialId = m?.id ?? null
   }
 
-  const [lead] = await db
-    .insert(leads)
-    .values({
-      conversationId: ctx.conversationId ?? null,
-      name: args.name ?? null,
-      contact: args.contact ?? null,
-      interest: args.interest ?? null,
-      materialId,
-      quantity: args.quantity != null ? String(args.quantity) : null,
-      requestedDiscount: args.requested_discount ?? false,
-      test: mode === 'test',
-    })
-    .returning({ id: leads.id })
+  // Lead existente de ESTA conversación (mismo flag de prueba) para acumular.
+  const [existing] = ctx.conversationId
+    ? await db
+        .select()
+        .from(leads)
+        .where(and(eq(leads.conversationId, ctx.conversationId), eq(leads.test, isTest)))
+        .orderBy(desc(leads.createdAt))
+        .limit(1)
+    : []
 
-  // Solo en producción se avisa al admin (no spamear con leads de prueba).
-  if (mode === 'live') {
+  // Mezcla: solo se sobrescribe lo que llega; lo demás conserva lo previo.
+  const merged = {
+    name: args.name ?? existing?.name ?? null,
+    contact: args.contact ?? existing?.contact ?? null,
+    interest: args.interest ?? existing?.interest ?? null,
+    materialId: materialId ?? existing?.materialId ?? null,
+    quantity: args.quantity != null ? String(args.quantity) : (existing?.quantity ?? null),
+    unit: args.unit ?? existing?.unit ?? null,
+    agreedPriceCop: args.agreed_price != null ? String(args.agreed_price) : (existing?.agreedPriceCop ?? null),
+    fulfillment: args.fulfillment ?? existing?.fulfillment ?? null,
+    scheduledFor: args.scheduled_for ?? existing?.scheduledFor ?? null,
+    requestedDiscount: args.requested_discount ?? existing?.requestedDiscount ?? false,
+  }
+
+  const status = leadStage(existing?.status ?? 'new', {
+    contact: merged.contact,
+    quantity: merged.quantity,
+    agreedPrice: merged.agreedPriceCop,
+    logistics: merged.fulfillment != null || merged.scheduledFor != null,
+  })
+
+  let leadId: string
+  if (existing) {
+    await db.update(leads).set({ ...merged, status }).where(eq(leads.id, existing.id))
+    leadId = existing.id
+  } else {
+    const [row] = await db
+      .insert(leads)
+      .values({ conversationId: ctx.conversationId ?? null, ...merged, status, test: isTest })
+      .returning({ id: leads.id })
+    leadId = row.id
+  }
+
+  // Aviso al admin SOLO en producción y solo cuando aporta: al crear el lead, o al
+  // quedar "casi cerrado" (ready). Así no se spamea en cada actualización parcial.
+  const becameReady = status === 'ready' && existing?.status !== 'ready'
+  if (mode === 'live' && (!existing || becameReady)) {
+    const header = becameReady ? '🟢 Lead LISTO para cerrar' : 'Nuevo lead'
+    const deal = [
+      merged.interest ? `interés: ${merged.interest}` : null,
+      merged.quantity ? `cantidad: ${merged.quantity}${merged.unit ? ' ' + merged.unit : ''}` : null,
+      merged.agreedPriceCop ? `precio acordado: $${Number(merged.agreedPriceCop).toLocaleString('es-CO')}` : null,
+      merged.fulfillment ? `logística: ${merged.fulfillment}` : null,
+      merged.scheduledFor ? `cuándo: ${merged.scheduledFor}` : null,
+    ]
+      .filter(Boolean)
+      .join(' · ')
     await notifyAdmin(
-      `Nuevo lead: ${args.name ?? 'sin nombre'} (${args.contact ?? 'sin contacto'}) — ` +
-        `interés: ${args.interest ?? 'n/d'}${args.quantity ? `, cantidad: ${args.quantity}` : ''}` +
-        `${args.requested_discount ? ' · pidió descuento' : ''}` +
+      `${header}: ${merged.name ?? 'sin nombre'} (${merged.contact ?? 'sin contacto'})` +
+        `${deal ? ' — ' + deal : ''}${merged.requestedDiscount ? ' · pidió descuento' : ''}` +
         panelConvLink(ctx.conversationId),
     )
   }
 
-  return { leadId: lead.id, status: 'captured' }
+  return { leadId, status }
 }
 
 // ─── request_human_handoff ────────────────────────────────────────────────────
@@ -307,15 +381,31 @@ export const toolDefinitions: OpenAI.Chat.Completions.ChatCompletionTool[] = [
     function: {
       name: 'capture_lead',
       description:
-        'Registra una solicitud/lead cuando el cliente muestra intención de compra/venta ' +
-        'o pide cotización, y avisa al administrador. Captura los datos que tengas.',
+        'Registra/ACTUALIZA el lead de la conversación cuando el cliente muestra intención ' +
+        'de compra/venta o pide cotización. Es ACUMULATIVO: llámalo cada vez que confirmes un ' +
+        'dato nuevo (contacto, cantidad, precio acordado, logística, fecha) y se irá completando ' +
+        'el MISMO lead sin duplicar. Cuando tengas precio acordado + cantidad + logística, el lead ' +
+        'queda "listo para cerrar" y se avisa al administrador.',
       parameters: {
         type: 'object',
         properties: {
           name: { type: 'string', description: 'Nombre del cliente' },
           contact: { type: 'string', description: 'Teléfono o email' },
           interest: { type: 'string', description: 'Material o servicio de interés' },
-          quantity: { type: 'number', description: 'Cantidad estimada' },
+          quantity: { type: 'number', description: 'Cantidad concreta acordada' },
+          unit: { type: 'string', description: 'Unidad de la cantidad (ej. kg, ton, unidad)' },
+          agreed_price: {
+            type: 'number',
+            description:
+              'Precio FINAL acordado en COP (unitario o total) tras aplicar el descuento permitido. ' +
+              'Solo cuando el cliente lo acepte.',
+          },
+          fulfillment: {
+            type: 'string',
+            description:
+              'Logística acordada: si el cliente lleva a la planta o si lo recogen (con dirección).',
+          },
+          scheduled_for: { type: 'string', description: 'Fecha/horario acordado para entrega o recogida' },
           requested_discount: { type: 'boolean', description: 'Si pidió un descuento' },
         },
         additionalProperties: false,

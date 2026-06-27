@@ -124,10 +124,15 @@ export const materials = pgTable('materials', {
   id: uuid('id').defaultRandom().primaryKey(),
   name: text('name').notNull(),
   category: text('category'),
-  unit: text('unit').notNull().default('kg'), // kg|ton|unidad
+  unit: text('unit').notNull().default('kg'), // libre: kg|ton|unidad|libra|metro|galón…
   retailPriceCop: numeric('retail_price_cop').notNull(),
   wholesalePriceCop: numeric('wholesale_price_cop'),
   wholesaleThreshold: numeric('wholesale_threshold'),
+  // Segundo escalón mayorista (volumen mayor): precio + umbral aún más bajo.
+  wholesalePrice2Cop: numeric('wholesale_price2_cop'),
+  wholesaleThreshold2: numeric('wholesale_threshold2'),
+  // Cantidad mínima para comprar/vender este material (en su unidad).
+  minOrder: numeric('min_order'),
   active: boolean('active').notNull().default(true),
   // Medio fijo del material (foto/clip): el bot lo adjunta al cotizarlo.
   imageId: uuid('image_id').references(() => images.id, { onDelete: 'set null' }),
@@ -197,9 +202,15 @@ export const leads = pgTable('leads', {
   interest: text('interest'), // material/servicio de interés
   materialId: uuid('material_id').references(() => materials.id, { onDelete: 'set null' }),
   quantity: numeric('quantity'),
+  unit: text('unit'), // unidad de la cantidad acordada (ej. kg) — la confirma el bot
   requestedDiscount: boolean('requested_discount').notNull().default(false),
   discountApprovedPct: numeric('discount_approved_pct'),
-  status: text('status').notNull().default('new'), // new|contacted|quoted|won|lost
+  // Datos del "casi cierre": el bot los acuerda con el cliente y los deja listos
+  // para que un humano solo confirme el pago y coordine.
+  agreedPriceCop: numeric('agreed_price_cop'), // precio final pactado (con descuento)
+  fulfillment: text('fulfillment'), // logística: lleva a planta / recogemos + dirección
+  scheduledFor: text('scheduled_for'), // fecha/horario acordado (texto del cliente)
+  status: text('status').notNull().default('new'), // new|contacted|quoted|ready|won|lost
   notes: text('notes'),
   // Lead de PRUEBA (capturado desde el playground): visible pero claramente
   // marcado, no notifica al admin. Para ver el flujo como en producción.

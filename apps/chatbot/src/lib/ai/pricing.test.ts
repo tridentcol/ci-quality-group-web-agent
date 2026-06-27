@@ -26,6 +26,29 @@ describe('resolveLookup', () => {
     expect(r).toMatchObject({ tier: 'wholesale', unitPriceCop: 26000, totalCop: 26000 * 150 })
   })
 
+  it('segundo escalón: cantidad ≥ umbral2 → precio mayorista 2', () => {
+    const conEscalon2: MaterialRow = {
+      ...cobre,
+      wholesalePrice2Cop: '24000',
+      wholesaleThreshold2: '1000',
+      minOrder: '10',
+    }
+    // Primer escalón
+    expect(resolveLookup([conEscalon2], { material: 'Cobre #1', quantity: 150 })).toMatchObject({
+      tier: 'wholesale',
+      unitPriceCop: 26000,
+    })
+    // Segundo escalón (volumen mayor)
+    expect(resolveLookup([conEscalon2], { material: 'Cobre #1', quantity: 1200 })).toMatchObject({
+      tier: 'wholesale2',
+      unitPriceCop: 24000,
+      totalCop: 24000 * 1200,
+      wholesalePrice2Cop: 24000,
+      wholesaleThreshold2: 1000,
+      minOrder: 10,
+    })
+  })
+
   it('devuelve el panorama completo: detal, mayorista y umbral', () => {
     const r = resolveLookup([cobre], { material: 'Cobre #1' })
     expect(r).toMatchObject({

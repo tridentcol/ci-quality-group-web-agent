@@ -17,13 +17,19 @@ const moneyNullable = z
   .union([z.coerce.number().nonnegative('El valor no puede ser negativo.'), z.null()])
   .optional()
 
+// Unidad LIBRE (kg, ton, unidad, libra, metro, galón…), no una lista fija.
+const unit = z.string().trim().min(1).max(20)
+
 const createSchema = z.object({
   name: z.string().trim().min(1, 'El nombre es obligatorio.'),
   category: z.string().trim().min(1).nullable().optional(),
-  unit: z.enum(['kg', 'ton', 'unidad']).default('kg'),
+  unit: unit.default('kg'),
   retailPriceCop: money,
   wholesalePriceCop: moneyNullable,
   wholesaleThreshold: moneyNullable,
+  wholesalePrice2Cop: moneyNullable,
+  wholesaleThreshold2: moneyNullable,
+  minOrder: moneyNullable,
   active: z.boolean().optional(),
 })
 
@@ -32,10 +38,13 @@ const updateSchema = z
     id: z.string().uuid('id inválido.'),
     name: z.string().trim().min(1).optional(),
     category: z.string().trim().min(1).nullable().optional(),
-    unit: z.enum(['kg', 'ton', 'unidad']).optional(),
+    unit: unit.optional(),
     retailPriceCop: money.optional(),
     wholesalePriceCop: moneyNullable,
     wholesaleThreshold: moneyNullable,
+    wholesalePrice2Cop: moneyNullable,
+    wholesaleThreshold2: moneyNullable,
+    minOrder: moneyNullable,
     active: z.boolean().optional(),
     imageId: z.string().uuid().nullable().optional(), // medio fijo del material
   })
@@ -68,6 +77,9 @@ export async function POST(req: Request) {
       retailPriceCop: String(d.retailPriceCop),
       wholesalePriceCop: toNum(d.wholesalePriceCop) ?? null,
       wholesaleThreshold: toNum(d.wholesaleThreshold) ?? null,
+      wholesalePrice2Cop: toNum(d.wholesalePrice2Cop) ?? null,
+      wholesaleThreshold2: toNum(d.wholesaleThreshold2) ?? null,
+      minOrder: toNum(d.minOrder) ?? null,
       active: d.active ?? true,
     })
     .returning()
@@ -90,6 +102,9 @@ export async function PATCH(req: Request) {
   if (rest.retailPriceCop !== undefined) set.retailPriceCop = String(rest.retailPriceCop)
   if (rest.wholesalePriceCop !== undefined) set.wholesalePriceCop = toNum(rest.wholesalePriceCop)
   if (rest.wholesaleThreshold !== undefined) set.wholesaleThreshold = toNum(rest.wholesaleThreshold)
+  if (rest.wholesalePrice2Cop !== undefined) set.wholesalePrice2Cop = toNum(rest.wholesalePrice2Cop)
+  if (rest.wholesaleThreshold2 !== undefined) set.wholesaleThreshold2 = toNum(rest.wholesaleThreshold2)
+  if (rest.minOrder !== undefined) set.minOrder = toNum(rest.minOrder)
   if (rest.active !== undefined) set.active = rest.active
   if (rest.imageId !== undefined) set.imageId = rest.imageId
 

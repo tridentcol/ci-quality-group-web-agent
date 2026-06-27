@@ -13,6 +13,11 @@ export interface MaterialRow {
   retailPriceCop: string
   wholesalePriceCop: string | null
   wholesaleThreshold: string | null
+  // Segundo escalón mayorista (volumen mayor): precio + umbral.
+  wholesalePrice2Cop?: string | null
+  wholesaleThreshold2?: string | null
+  // Cantidad mínima para operar este material (en su unidad).
+  minOrder?: string | null
   // Medio fijo vinculado al material (foto/clip), si lo tiene.
   mediaUrl?: string | null
   mediaType?: 'image' | 'video' | null
@@ -24,13 +29,16 @@ export type LookupPriceResult =
       available: true
       material: string
       unit: string
-      tier: 'retail' | 'wholesale'
+      tier: 'retail' | 'wholesale' | 'wholesale2'
       unitPriceCop: number
       // Panorama completo de precios para que el bot pueda explicar el mayoreo y
       // responder "desde cuánto aplica" SIN inventar (umbral/precio mayorista).
       retailPriceCop: number
       wholesalePriceCop: number | null
       wholesaleThreshold: number | null
+      wholesalePrice2Cop: number | null
+      wholesaleThreshold2: number | null
+      minOrder: number | null
       quantity?: number
       totalCop?: number
       // Medio fijo del material (para adjuntarlo de forma determinista).
@@ -109,12 +117,24 @@ export function resolveLookup(
   const retail = Number(m.retailPriceCop)
   const wholesale = num(m.wholesalePriceCop)
   const threshold = num(m.wholesaleThreshold)
+  const wholesale2 = num(m.wholesalePrice2Cop)
+  const threshold2 = num(m.wholesaleThreshold2)
+  const minOrder = num(m.minOrder)
 
-  const useWholesale =
-    args.quantity != null && wholesale != null && threshold != null && args.quantity >= threshold
-
-  const unitPriceCop = useWholesale ? wholesale! : retail
-  const tier: 'retail' | 'wholesale' = useWholesale ? 'wholesale' : 'retail'
+  // Escalón aplicable según la cantidad. Se evalúa del volumen mayor al menor para
+  // dar el mejor precio. Cada escalón requiere SU precio Y SU umbral.
+  const qty = args.quantity ?? null
+  let unitPriceCop = retail
+  let tier: 'retail' | 'wholesale' | 'wholesale2' = 'retail'
+  if (qty != null) {
+    if (wholesale2 != null && threshold2 != null && qty >= threshold2) {
+      unitPriceCop = wholesale2
+      tier = 'wholesale2'
+    } else if (wholesale != null && threshold != null && qty >= threshold) {
+      unitPriceCop = wholesale
+      tier = 'wholesale'
+    }
+  }
 
   return {
     available: true,
@@ -125,10 +145,11 @@ export function resolveLookup(
     retailPriceCop: retail,
     wholesalePriceCop: wholesale,
     wholesaleThreshold: threshold,
+    wholesalePrice2Cop: wholesale2,
+    wholesaleThreshold2: threshold2,
+    minOrder,
     mediaUrl: m.mediaUrl ?? null,
     mediaType: m.mediaType ?? null,
-    ...(args.quantity != null
-      ? { quantity: args.quantity, totalCop: unitPriceCop * args.quantity }
-      : {}),
+    ...(qty != null ? { quantity: qty, totalCop: unitPriceCop * qty } : {}),
   }
 }

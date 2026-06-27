@@ -7,22 +7,24 @@ import { cn } from "@/lib/utils";
 import { useConfirm } from "@/components/panel/confirm-dialog";
 import { MediaPicker } from "@/components/panel/media-picker";
 
-type Unit = "kg" | "ton" | "unidad";
-
 interface Material {
   id: string;
   name: string;
   category: string | null;
-  unit: Unit;
+  unit: string;
   retailPriceCop: string;
   wholesalePriceCop: string | null;
   wholesaleThreshold: string | null;
+  wholesalePrice2Cop: string | null;
+  wholesaleThreshold2: string | null;
+  minOrder: string | null;
   active: boolean;
   imageId: string | null;
   updatedAt: string | null;
 }
 
-const UNITS: Unit[] = ["kg", "ton", "unidad"];
+// Sugerencias para la unidad (campo libre: se puede escribir cualquiera).
+const UNIT_SUGGESTIONS = ["kg", "ton", "unidad", "libra", "metro", "galón", "litro", "pieza", "rollo"];
 const cop = new Intl.NumberFormat("es-CO", {
   style: "currency",
   currency: "COP",
@@ -54,6 +56,12 @@ export function PricingManager() {
 
   return (
     <div className="space-y-8">
+      {/* Sugerencias de unidad compartidas por todos los inputs de unidad. */}
+      <datalist id="unit-suggestions">
+        {UNIT_SUGGESTIONS.map((u) => (
+          <option key={u} value={u} />
+        ))}
+      </datalist>
       <AddCard onAdded={(m) => setItems((prev) => [m, ...prev])} />
 
       {loading ? (
@@ -86,6 +94,9 @@ export function PricingManager() {
                   <th className="px-2 py-2 font-medium">Minorista</th>
                   <th className="px-2 py-2 font-medium">Mayorista</th>
                   <th className="px-2 py-2 font-medium">Umbral</th>
+                  <th className="px-2 py-2 font-medium">May. 2</th>
+                  <th className="px-2 py-2 font-medium">Umbral 2</th>
+                  <th className="px-2 py-2 font-medium">Mínimo</th>
                   <th className="px-2 py-2 font-medium">Medio</th>
                   <th className="px-2 py-2 font-medium">Activo</th>
                   <th className="px-4 py-2" />
@@ -128,7 +139,10 @@ function usePriceEditor(
     draft.unit !== material.unit ||
     draft.retailPriceCop !== material.retailPriceCop ||
     (draft.wholesalePriceCop ?? "") !== (material.wholesalePriceCop ?? "") ||
-    (draft.wholesaleThreshold ?? "") !== (material.wholesaleThreshold ?? "");
+    (draft.wholesaleThreshold ?? "") !== (material.wholesaleThreshold ?? "") ||
+    (draft.wholesalePrice2Cop ?? "") !== (material.wholesalePrice2Cop ?? "") ||
+    (draft.wholesaleThreshold2 ?? "") !== (material.wholesaleThreshold2 ?? "") ||
+    (draft.minOrder ?? "") !== (material.minOrder ?? "");
 
   async function patch(body: Record<string, unknown>) {
     setBusy(true);
@@ -160,10 +174,13 @@ function usePriceEditor(
     await patch({
       name: draft.name.trim(),
       category: draft.category?.trim() || null,
-      unit: draft.unit,
+      unit: draft.unit.trim() || "kg",
       retailPriceCop: Number(draft.retailPriceCop),
       wholesalePriceCop: numOrNull(draft.wholesalePriceCop ?? ""),
       wholesaleThreshold: numOrNull(draft.wholesaleThreshold ?? ""),
+      wholesalePrice2Cop: numOrNull(draft.wholesalePrice2Cop ?? ""),
+      wholesaleThreshold2: numOrNull(draft.wholesaleThreshold2 ?? ""),
+      minOrder: numOrNull(draft.minOrder ?? ""),
     });
   }
 
@@ -255,17 +272,13 @@ function PriceRow({
         {err && <p className="mt-1 text-xs text-destructive">{err}</p>}
       </td>
       <td className="px-2 py-2 align-top">
-        <select
-          className={inputCls}
+        <input
+          className={cn(inputCls, "w-20")}
+          list="unit-suggestions"
           value={draft.unit}
-          onChange={(e) => setDraft({ ...draft, unit: e.target.value as Unit })}
-        >
-          {UNITS.map((u) => (
-            <option key={u} value={u}>
-              {u}
-            </option>
-          ))}
-        </select>
+          placeholder="kg"
+          onChange={(e) => setDraft({ ...draft, unit: e.target.value })}
+        />
       </td>
       <td className="px-2 py-2 align-top">
         <input
@@ -299,6 +312,39 @@ function PriceRow({
           placeholder="—"
           value={draft.wholesaleThreshold ?? ""}
           onChange={(e) => setDraft({ ...draft, wholesaleThreshold: e.target.value })}
+        />
+      </td>
+      <td className="px-2 py-2 align-top">
+        <input
+          type="number"
+          min={0}
+          className={cn(inputCls, "w-28")}
+          placeholder="—"
+          value={draft.wholesalePrice2Cop ?? ""}
+          onChange={(e) => setDraft({ ...draft, wholesalePrice2Cop: e.target.value })}
+        />
+        <p className="mt-0.5 text-xs text-muted-foreground">
+          {draft.wholesalePrice2Cop ? cop.format(Number(draft.wholesalePrice2Cop)) : "—"}
+        </p>
+      </td>
+      <td className="px-2 py-2 align-top">
+        <input
+          type="number"
+          min={0}
+          className={cn(inputCls, "w-24")}
+          placeholder="—"
+          value={draft.wholesaleThreshold2 ?? ""}
+          onChange={(e) => setDraft({ ...draft, wholesaleThreshold2: e.target.value })}
+        />
+      </td>
+      <td className="px-2 py-2 align-top">
+        <input
+          type="number"
+          min={0}
+          className={cn(inputCls, "w-24")}
+          placeholder="—"
+          value={draft.minOrder ?? ""}
+          onChange={(e) => setDraft({ ...draft, minOrder: e.target.value })}
         />
       </td>
       <td className="w-44 px-2 py-2 align-top">
@@ -365,17 +411,13 @@ function PriceCard({
       <div className="mt-3 grid grid-cols-2 gap-3">
         <label className="block">
           <span className="mb-1 block text-xs text-muted-foreground">Unidad</span>
-          <select
+          <input
             className={inputCls}
+            list="unit-suggestions"
+            placeholder="kg"
             value={draft.unit}
-            onChange={(e) => setDraft({ ...draft, unit: e.target.value as Unit })}
-          >
-            {UNITS.map((u) => (
-              <option key={u} value={u}>
-                {u}
-              </option>
-            ))}
-          </select>
+            onChange={(e) => setDraft({ ...draft, unit: e.target.value })}
+          />
         </label>
         <label className="block">
           <span className="mb-1 block text-xs text-muted-foreground">Umbral mayoreo</span>
@@ -414,6 +456,39 @@ function PriceCard({
             {draft.wholesalePriceCop ? cop.format(Number(draft.wholesalePriceCop)) : "—"}
           </p>
         </label>
+        <label className="block">
+          <span className="mb-1 block text-xs text-muted-foreground">Mayorista 2 (volumen mayor)</span>
+          <input
+            type="number"
+            min={0}
+            className={inputCls}
+            placeholder="—"
+            value={draft.wholesalePrice2Cop ?? ""}
+            onChange={(e) => setDraft({ ...draft, wholesalePrice2Cop: e.target.value })}
+          />
+        </label>
+        <label className="block">
+          <span className="mb-1 block text-xs text-muted-foreground">Umbral 2</span>
+          <input
+            type="number"
+            min={0}
+            className={inputCls}
+            placeholder="—"
+            value={draft.wholesaleThreshold2 ?? ""}
+            onChange={(e) => setDraft({ ...draft, wholesaleThreshold2: e.target.value })}
+          />
+        </label>
+        <label className="block">
+          <span className="mb-1 block text-xs text-muted-foreground">Mínimo de pedido</span>
+          <input
+            type="number"
+            min={0}
+            className={inputCls}
+            placeholder="—"
+            value={draft.minOrder ?? ""}
+            onChange={(e) => setDraft({ ...draft, minOrder: e.target.value })}
+          />
+        </label>
       </div>
 
       <div className="mt-3">
@@ -440,7 +515,17 @@ function PriceCard({
 }
 
 function AddCard({ onAdded }: { onAdded: (m: Material) => void }) {
-  const empty = { name: "", category: "", unit: "kg" as Unit, retail: "", wholesale: "", threshold: "" };
+  const empty = {
+    name: "",
+    category: "",
+    unit: "kg",
+    retail: "",
+    wholesale: "",
+    threshold: "",
+    wholesale2: "",
+    threshold2: "",
+    minOrder: "",
+  };
   const [f, setF] = useState(empty);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -460,10 +545,13 @@ function AddCard({ onAdded }: { onAdded: (m: Material) => void }) {
         body: JSON.stringify({
           name: f.name.trim(),
           category: f.category.trim() || null,
-          unit: f.unit,
+          unit: f.unit.trim() || "kg",
           retailPriceCop: Number(f.retail),
           wholesalePriceCop: numOrNull(f.wholesale),
           wholesaleThreshold: numOrNull(f.threshold),
+          wholesalePrice2Cop: numOrNull(f.wholesale2),
+          wholesaleThreshold2: numOrNull(f.threshold2),
+          minOrder: numOrNull(f.minOrder),
         }),
       });
       const json = await res.json();
@@ -496,17 +584,13 @@ function AddCard({ onAdded }: { onAdded: (m: Material) => void }) {
           value={f.category}
           onChange={(e) => setF({ ...f, category: e.target.value })}
         />
-        <select
+        <input
           className={inputCls}
+          list="unit-suggestions"
+          placeholder="Unidad (kg)"
           value={f.unit}
-          onChange={(e) => setF({ ...f, unit: e.target.value as Unit })}
-        >
-          {UNITS.map((u) => (
-            <option key={u} value={u}>
-              {u}
-            </option>
-          ))}
-        </select>
+          onChange={(e) => setF({ ...f, unit: e.target.value })}
+        />
         <input
           type="number"
           min={0}
@@ -530,6 +614,30 @@ function AddCard({ onAdded }: { onAdded: (m: Material) => void }) {
           placeholder="Umbral mayoreo"
           value={f.threshold}
           onChange={(e) => setF({ ...f, threshold: e.target.value })}
+        />
+        <input
+          type="number"
+          min={0}
+          className={inputCls}
+          placeholder="Mayorista 2"
+          value={f.wholesale2}
+          onChange={(e) => setF({ ...f, wholesale2: e.target.value })}
+        />
+        <input
+          type="number"
+          min={0}
+          className={inputCls}
+          placeholder="Umbral 2"
+          value={f.threshold2}
+          onChange={(e) => setF({ ...f, threshold2: e.target.value })}
+        />
+        <input
+          type="number"
+          min={0}
+          className={inputCls}
+          placeholder="Mínimo de pedido"
+          value={f.minOrder}
+          onChange={(e) => setF({ ...f, minOrder: e.target.value })}
         />
       </div>
       <div className="mt-3 flex items-center justify-between">
