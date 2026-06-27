@@ -21,6 +21,9 @@ const envSchema = z.object({
   // Meta — verificación de webhooks (Step 10)
   META_APP_SECRET: z.string().optional(),
   META_VERIFY_TOKEN: z.string().optional(),
+  // Versión del Graph API (fijada/pin). Vigente al implementar: v25.0; v21.0 sigue
+  // siendo válida. Configurable por env para no tocar código en cada upgrade.
+  GRAPH_API_VERSION: z.string().optional(),
 
   // Canal Messenger (Step 10/16)
   MESSENGER_PAGE_ID: z.string().optional(),

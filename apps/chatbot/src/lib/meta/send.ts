@@ -7,11 +7,35 @@ import type { Channel } from './normalize'
  * Lanza si el canal no tiene credenciales; el webhook captura y loguea.
  */
 
-const GRAPH = 'https://graph.facebook.com/v21.0'
+// Versión del Graph API fijada por env (default a una estable reciente).
+const GRAPH = `https://graph.facebook.com/${env.GRAPH_API_VERSION || 'v23.0'}`
+
+// Límite de longitud de texto por mensaje según canal (con margen).
+const TEXT_LIMIT: Record<Channel, number> = { messenger: 1900, instagram: 1900, whatsapp: 4000 }
 
 export interface SendOptions {
   /** Respuestas rápidas (solo Messenger/Instagram). */
   quickReplies?: string[]
+}
+
+/** Parte un texto largo en trozos ≤limit, cortando por párrafo/frase/espacio. */
+export function splitMessage(text: string, limit: number): string[] {
+  const t = text.trim()
+  if (t.length <= limit) return [t]
+  const chunks: string[] = []
+  let rest = t
+  while (rest.length > limit) {
+    const slice = rest.slice(0, limit)
+    // mejor punto de corte: doble salto > salto > final de frase > espacio
+    const cut =
+      Math.max(slice.lastIndexOf('\n\n'), slice.lastIndexOf('\n')) ||
+      Math.max(slice.lastIndexOf('. '), slice.lastIndexOf(' '))
+    const at = cut > limit * 0.5 ? cut : limit
+    chunks.push(rest.slice(0, at).trim())
+    rest = rest.slice(at).trim()
+  }
+  if (rest) chunks.push(rest)
+  return chunks
 }
 
 export interface Location {
@@ -46,7 +70,24 @@ function pageMessage(to: string, text: string, opts?: SendOptions) {
   return { recipient: { id: to }, messaging_type: 'RESPONSE', message }
 }
 
+// Envía un texto, dividiéndolo en varios mensajes si supera el límite del canal.
+// Las quick replies se adjuntan solo al ÚLTIMO mensaje.
 export async function sendText(
+  channel: Channel,
+  to: string,
+  text: string,
+  opts?: SendOptions,
+): Promise<unknown> {
+  const parts = splitMessage(text, TEXT_LIMIT[channel])
+  let last: unknown
+  for (let i = 0; i < parts.length; i++) {
+    const isLast = i === parts.length - 1
+    last = await sendTextChunk(channel, to, parts[i], isLast ? opts : undefined)
+  }
+  return last
+}
+
+async function sendTextChunk(
   channel: Channel,
   to: string,
   text: string,

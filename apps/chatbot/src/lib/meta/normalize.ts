@@ -37,20 +37,36 @@ function normalizePage(body: Json, channel: Channel): NormalizedEvent[] {
   const out: NormalizedEvent[] = []
   for (const entry of asArray(body.entry)) {
     for (const m of asArray(entry.messaging)) {
-      const msg = m.message as Json | undefined
-      if (!msg || msg.is_deleted) continue
-      const text = str(msg.text)
-      if (!text) continue // ignoramos adjuntos/no-texto por ahora
-
-      const isEcho = !!msg.is_echo
       const sender = (m.sender as Json | undefined)?.id
       const recipient = (m.recipient as Json | undefined)?.id
-      // En echo, el usuario de la conversación es el destinatario, no la página.
-      const externalId = str(isEcho ? recipient : sender)
-      const messageId = str(msg.mid)
-      if (!externalId || !messageId) continue
+      const msg = m.message as Json | undefined
+      const postback = m.postback as Json | undefined
 
-      out.push({ channel, externalId, text, messageId, isEcho })
+      // 1) Mensaje de texto (ignoramos adjuntos/no-texto por ahora).
+      if (msg && !msg.is_deleted) {
+        const text = str(msg.text)
+        if (!text) continue
+        const isEcho = !!msg.is_echo
+        // En echo, el usuario de la conversación es el destinatario, no la página.
+        const externalId = str(isEcho ? recipient : sender)
+        const messageId = str(msg.mid)
+        if (!externalId || !messageId) continue
+        out.push({ channel, externalId, text, messageId, isEcho })
+        continue
+      }
+
+      // 2) Postback (botón/menú): tratamos su payload como el texto del usuario.
+      if (postback) {
+        const text = str(postback.payload) ?? str(postback.title)
+        const externalId = str(sender)
+        // Algunos postbacks no traen mid; derivamos uno estable (sender+timestamp)
+        // para idempotencia.
+        const ts = typeof m.timestamp === 'number' ? m.timestamp : null
+        const messageId =
+          str(postback.mid) ?? (externalId ? `pb:${externalId}:${ts ?? text}` : undefined)
+        if (!text || !externalId || !messageId) continue
+        out.push({ channel, externalId, text, messageId, isEcho: false })
+      }
     }
   }
   return out

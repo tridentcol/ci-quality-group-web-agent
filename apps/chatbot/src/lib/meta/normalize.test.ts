@@ -47,4 +47,19 @@ describe('normalize', () => {
     expect(normalize(null)).toEqual([])
     expect(normalize('x')).toEqual([])
   })
+
+  it('postback de Messenger → payload como texto', () => {
+    const out = normalize({
+      object: 'page',
+      entry: [
+        {
+          messaging: [
+            { sender: { id: 'U9' }, recipient: { id: 'P' }, timestamp: 1730000000000, postback: { title: 'Ver precios', payload: 'VER_PRECIOS' } },
+          ],
+        },
+      ],
+    })
+    expect(out[0]).toMatchObject({ channel: 'messenger', externalId: 'U9', text: 'VER_PRECIOS', isEcho: false })
+    expect(out[0].messageId).toBeTruthy()
+  })
 })

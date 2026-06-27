@@ -11,7 +11,10 @@ export const runtime = 'nodejs'
 export async function GET(req: Request) {
   const params = new URL(req.url).searchParams
   const challenge = verifyWebhookChallenge(params)
-  if (challenge === null) return new Response('Forbidden', { status: 403 })
+  if (challenge === null) {
+    console.warn('webhook/meta: handshake fallido (verify_token no coincide o falta)')
+    return new Response('Forbidden', { status: 403 })
+  }
   return new Response(challenge, { status: 200, headers: { 'content-type': 'text/plain' } })
 }
 
@@ -22,6 +25,7 @@ export async function POST(req: Request) {
   const signature = req.headers.get('x-hub-signature-256')
 
   if (!verifySignature(raw, signature)) {
+    console.warn('webhook/meta: firma X-Hub-Signature-256 inválida o ausente')
     return new Response('Invalid signature', { status: 401 })
   }
 
