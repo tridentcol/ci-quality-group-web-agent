@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useConfirm } from "@/components/panel/confirm-dialog";
 import { invalidateMediaCache } from "@/components/panel/media-picker";
+import { safeBlobName } from "@/lib/blob-name";
 
 interface Img {
   id: string;
@@ -102,12 +103,12 @@ function AddImage({ onAdded }: { onAdded: () => void }) {
     setErr(null);
     setProgress(0);
     try {
-      // IMPORTANTE: subida SIMPLE (un solo PUT), NO multipart. Multipart envía los
-      // trozos a `vercel.com/api/blob/`, que rechaza por CORS los orígenes de dominios
-      // propios (p. ej. bot.ci-quality-group.com → 400) y la subida se cuelga al ~98%.
-      // El PUT simple va DIRECTO al almacenamiento de Blob (CORS abierto) y para ≤16 MB
-      // es de sobra. El progreso nunca retrocede (defensa ante eventos fuera de orden).
-      const blob = await upload(`images/${file.name}`, file, {
+      // Subida SIMPLE (un solo PUT), NO multipart: el multipart de cliente sube los
+      // trozos por un endpoint distinto que es más frágil en dominios propios; para
+      // ≤16 MB un PUT directo basta. La ruta se SANEA (sin espacios/paréntesis/acentos)
+      // para que coincida con el pathname firmado en el token y el Blob API no devuelva
+      // 400. El progreso nunca retrocede (defensa ante eventos fuera de orden).
+      const blob = await upload(`images/${safeBlobName(file.name)}`, file, {
         access: "public",
         handleUploadUrl: "/api/panel/images/upload",
         onUploadProgress: (p) => setProgress((cur) => Math.max(cur ?? 0, p.percentage)),

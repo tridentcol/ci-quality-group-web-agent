@@ -21,6 +21,7 @@ import { useConfirm } from "@/components/panel/confirm-dialog";
 import { SourceEditor, type EditorDraft } from "./source-editor";
 import { SourceQaList } from "./source-qa-list";
 import { AllQuestions } from "./all-questions";
+import { safeBlobName } from "@/lib/blob-name";
 
 interface Source {
   id: string;
@@ -322,10 +323,11 @@ function UploadCard({ onParsed }: { onParsed: (d: EditorDraft) => void }) {
     setErr(null);
     setProgress(0);
     try {
-      const blob = await upload(`knowledge/${file.name}`, file, {
+      // Ruta saneada (sin espacios/acentos/paréntesis) para evitar el 400 del Blob API
+      // por desajuste de pathname con el token firmado. Sin multipart de cliente.
+      const blob = await upload(`knowledge/${safeBlobName(file.name)}`, file, {
         access: "private",
         handleUploadUrl: "/api/panel/knowledge/upload",
-        multipart: file.size > 10 * 1024 * 1024,
         onUploadProgress: (p) => setProgress(p.percentage),
       });
       await parsePayload({ blobUrl: blob.url, name: file.name });
