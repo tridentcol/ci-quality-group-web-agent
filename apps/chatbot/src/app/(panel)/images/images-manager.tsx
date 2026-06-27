@@ -102,11 +102,13 @@ function AddImage({ onAdded }: { onAdded: () => void }) {
     setErr(null);
     setProgress(0);
     try {
+      // Subida simple (un solo PUT): para ≤16 MB es de sobra y evita que la barra
+      // de progreso se "reinicie" por partes (multipart reporta % por cada parte).
       const blob = await upload(`images/${file.name}`, file, {
         access: "public",
         handleUploadUrl: "/api/panel/images/upload",
-        multipart: file.size > 8 * 1024 * 1024,
-        onUploadProgress: (p) => setProgress(p.percentage),
+        // El progreso nunca retrocede (defensa ante reintentos/eventos fuera de orden).
+        onUploadProgress: (p) => setProgress((cur) => Math.max(cur ?? 0, p.percentage)),
       });
       setUrl(blob.url);
       setMediaType(file.type.startsWith("video") ? "video" : "image");
