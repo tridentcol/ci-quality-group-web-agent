@@ -102,12 +102,13 @@ function AddImage({ onAdded }: { onAdded: () => void }) {
     setErr(null);
     setProgress(0);
     try {
-      // Subida simple (un solo PUT): para ≤16 MB es de sobra y evita que la barra
-      // de progreso se "reinicie" por partes (multipart reporta % por cada parte).
+      // Subida robusta: multipart para archivos grandes (>4 MB) → sube por partes
+      // en paralelo y REINTENTA cada parte, en vez de colgarse en una sola petición
+      // grande. El progreso nunca retrocede (defensa ante eventos fuera de orden).
       const blob = await upload(`images/${file.name}`, file, {
         access: "public",
         handleUploadUrl: "/api/panel/images/upload",
-        // El progreso nunca retrocede (defensa ante reintentos/eventos fuera de orden).
+        multipart: file.size > 4 * 1024 * 1024,
         onUploadProgress: (p) => setProgress((cur) => Math.max(cur ?? 0, p.percentage)),
       });
       setUrl(blob.url);
@@ -165,7 +166,9 @@ function AddImage({ onAdded }: { onAdded: () => void }) {
           <span className="text-sm text-foreground">
             {busy
               ? progress !== null
-                ? `Subiendo… ${Math.round(progress)}%`
+                ? progress >= 99
+                  ? "Finalizando… casi listo"
+                  : `Subiendo… ${Math.round(progress)}%`
                 : "Subiendo…"
               : "Haz clic para subir una imagen (JPG/PNG/WEBP/GIF) o un video corto (MP4)"}
           </span>
