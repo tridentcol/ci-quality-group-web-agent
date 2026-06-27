@@ -5,6 +5,19 @@ import { count, desc, eq, isNotNull } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import { images, knowledgeQa, materials } from '@/lib/db/schema'
 import { embed } from '@/lib/ai/embed'
+import { env } from '@/lib/env'
+
+// Base pública absoluta para la URL del proxy. Se prefiere APP_URL si es un https
+// real (config de prod); si no, se deriva del host de la petición (el dominio por el
+// que entra el admin = el dominio público del bot). Así la URL que recibe Meta es
+// siempre absoluta y alcanzable, sin depender de que APP_URL esté bien configurada.
+function publicBase(req: Request): string {
+  const appUrl = (env.APP_URL ?? '').replace(/\/$/, '')
+  if (/^https:\/\//.test(appUrl) && !appUrl.includes('localhost')) return appUrl
+  const host = req.headers.get('x-forwarded-host') ?? req.headers.get('host') ?? ''
+  const proto = req.headers.get('x-forwarded-proto') ?? 'https'
+  return `${proto}://${host}`
+}
 
 /**
  * Banco de imágenes. Cada imagen se embebe por nombre+descripción+etiquetas para
@@ -77,11 +90,15 @@ export async function POST(req: Request) {
   const { url, type, name, description, tags } = parsed.data
 
   const embedding = await embed(embedText(name, description, tags))
+  // `url` que llega del cliente es la URL del blob PRIVADO → se guarda en blobUrl.
+  // La `url` pública es el proxy /api/media/<id> (se calcula con el id ya generado).
   const [row] = await db
     .insert(images)
-    .values({ url, type, name, description, tags, embedding })
+    .values({ url: '', blobUrl: url, type, name, description, tags, embedding })
     .returning({ id: images.id })
-  return ok({ id: row.id })
+  const publicUrl = `${publicBase(req)}/api/media/${row.id}`
+  await db.update(images).set({ url: publicUrl }).where(eq(images.id, row.id))
+  return ok({ id: row.id, url: publicUrl })
 }
 
 const patchSchema = z.object({
@@ -117,12 +134,14 @@ export async function PATCH(req: Request) {
 export async function DELETE(req: Request) {
   const id = new URL(req.url).searchParams.get('id')
   if (!id) return fail('Falta el id.')
-  const [row] = await db.select({ url: images.url }).from(images).where(eq(images.id, id))
+  const [row] = await db.select({ blobUrl: images.blobUrl }).from(images).where(eq(images.id, id))
   if (!row) return fail('La imagen no existe.', 404, 'NOT_FOUND')
-  try {
-    await del(row.url)
-  } catch {
-    /* el blob ya no existe: seguimos */
+  if (row.blobUrl) {
+    try {
+      await del(row.blobUrl) // borra el blob PRIVADO real (no la URL proxy)
+    } catch {
+      /* el blob ya no existe: seguimos */
+    }
   }
   await db.delete(images).where(eq(images.id, id))
   return ok({ deleted: id })

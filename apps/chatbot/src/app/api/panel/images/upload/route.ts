@@ -3,10 +3,10 @@ import { handleUpload, type HandleUploadBody } from '@vercel/blob/client'
 
 /**
  * Token firmado para subir medios (imágenes y videos cortos) DIRECTO del navegador
- * a Vercel Blob con `access: 'public'` — deben tener URL pública para que Meta
- * (WhatsApp/Messenger/Instagram) los descargue al adjuntarlos. Bajo /api/panel/* →
- * protegido por Clerk. El registro (embeddings) lo hace el cliente al terminar vía
- * POST /api/panel/images { url, type, name, description, tags }.
+ * a Vercel Blob con `access: 'private'` — el store está configurado como privado.
+ * Los medios se exponen públicamente a Meta vía el proxy GET /api/media/<id>, que
+ * lee el blob privado con el token y lo transmite. Bajo /api/panel/* → Clerk. El
+ * registro (embeddings) lo hace el cliente al terminar vía POST /api/panel/images.
  */
 const ALLOWED_CONTENT_TYPES = [
   'image/jpeg',
@@ -27,7 +27,7 @@ export async function POST(req: Request) {
       request: req,
       body,
       onBeforeGenerateToken: async () => ({
-        access: 'public',
+        access: 'private',
         addRandomSuffix: true,
         allowedContentTypes: ALLOWED_CONTENT_TYPES,
         maximumSizeInBytes: MAX_SIZE,

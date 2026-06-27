@@ -81,6 +81,9 @@ export function ImagesManager() {
 
 function AddImage({ onAdded }: { onAdded: () => void }) {
   const [url, setUrl] = useState<string | null>(null);
+  // Vista previa LOCAL (object URL del archivo): el blob es privado y no se puede
+  // mostrar por su URL en el navegador; mostramos el archivo recién elegido.
+  const [preview, setPreview] = useState<string | null>(null);
   const [mediaType, setMediaType] = useState<"image" | "video">("image");
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -91,6 +94,10 @@ function AddImage({ onAdded }: { onAdded: () => void }) {
 
   function reset() {
     setUrl(null);
+    setPreview((p) => {
+      if (p) URL.revokeObjectURL(p);
+      return null;
+    });
     setMediaType("image");
     setName("");
     setDescription("");
@@ -103,17 +110,20 @@ function AddImage({ onAdded }: { onAdded: () => void }) {
     setErr(null);
     setProgress(0);
     try {
-      // Subida SIMPLE (un solo PUT), NO multipart: el multipart de cliente sube los
-      // trozos por un endpoint distinto que es más frágil en dominios propios; para
-      // ≤16 MB un PUT directo basta. La ruta se SANEA (sin espacios/paréntesis/acentos)
-      // para que coincida con el pathname firmado en el token y el Blob API no devuelva
-      // 400. El progreso nunca retrocede (defensa ante eventos fuera de orden).
+      // Subida PRIVADA (el store es privado): igual que el conocimiento, funciona sin
+      // CORS. El medio se expone a Meta vía el proxy /api/media/<id>. PUT simple (no
+      // multipart) y ruta saneada (sin espacios/acentos/paréntesis). El progreso nunca
+      // retrocede (defensa ante eventos fuera de orden).
       const blob = await upload(`images/${safeBlobName(file.name)}`, file, {
-        access: "public",
+        access: "private",
         handleUploadUrl: "/api/panel/images/upload",
         onUploadProgress: (p) => setProgress((cur) => Math.max(cur ?? 0, p.percentage)),
       });
       setUrl(blob.url);
+      setPreview((p) => {
+        if (p) URL.revokeObjectURL(p);
+        return URL.createObjectURL(file);
+      });
       setMediaType(file.type.startsWith("video") ? "video" : "image");
       setName(file.name.replace(/\.[^.]+$/, ""));
     } catch (e) {
@@ -191,10 +201,10 @@ function AddImage({ onAdded }: { onAdded: () => void }) {
       ) : (
         <div className="flex flex-col gap-4 sm:flex-row">
           {mediaType === "video" ? (
-            <video src={url} controls className="h-40 w-40 shrink-0 rounded-lg border border-border object-cover" />
+            <video src={preview ?? undefined} controls className="h-40 w-40 shrink-0 rounded-lg border border-border object-cover" />
           ) : (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={url} alt="" className="h-40 w-40 shrink-0 rounded-lg border border-border object-cover" />
+            <img src={preview ?? undefined} alt="" className="h-40 w-40 shrink-0 rounded-lg border border-border object-cover" />
           )}
           <div className="flex-1 space-y-2">
             <input className={inputCls} placeholder="Nombre (ej. Cobre #1)" value={name} onChange={(e) => setName(e.target.value)} />

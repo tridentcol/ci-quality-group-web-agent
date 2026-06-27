@@ -110,7 +110,8 @@ export const images = pgTable(
     name: text('name').notNull(),
     description: text('description').notNull().default(''),
     tags: jsonb('tags').notNull().default([]), // string[]
-    url: text('url').notNull(), // blob público
+    url: text('url').notNull(), // URL pública servida por /api/media/<id> (proxy)
+    blobUrl: text('blob_url'), // URL del blob PRIVADO (la lee el proxy con el token)
     embedding: vector('embedding', { dimensions: 1536 }).notNull(),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
