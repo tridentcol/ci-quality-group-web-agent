@@ -102,13 +102,14 @@ function AddImage({ onAdded }: { onAdded: () => void }) {
     setErr(null);
     setProgress(0);
     try {
-      // Subida robusta: multipart para archivos grandes (>4 MB) → sube por partes
-      // en paralelo y REINTENTA cada parte, en vez de colgarse en una sola petición
-      // grande. El progreso nunca retrocede (defensa ante eventos fuera de orden).
+      // IMPORTANTE: subida SIMPLE (un solo PUT), NO multipart. Multipart envía los
+      // trozos a `vercel.com/api/blob/`, que rechaza por CORS los orígenes de dominios
+      // propios (p. ej. bot.ci-quality-group.com → 400) y la subida se cuelga al ~98%.
+      // El PUT simple va DIRECTO al almacenamiento de Blob (CORS abierto) y para ≤16 MB
+      // es de sobra. El progreso nunca retrocede (defensa ante eventos fuera de orden).
       const blob = await upload(`images/${file.name}`, file, {
         access: "public",
         handleUploadUrl: "/api/panel/images/upload",
-        multipart: file.size > 4 * 1024 * 1024,
         onUploadProgress: (p) => setProgress((cur) => Math.max(cur ?? 0, p.percentage)),
       });
       setUrl(blob.url);
