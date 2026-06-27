@@ -18,6 +18,14 @@ describe('normalize', () => {
     expect(out[0]).toMatchObject({ isEcho: true, externalId: 'U1' })
   })
 
+  it('echo del propio bot (con app_id) se ignora → no falso relevo humano', () => {
+    const out = normalize({
+      object: 'page',
+      entry: [{ messaging: [{ sender: { id: 'PAGE' }, recipient: { id: 'U1' }, message: { mid: 'm3', text: 'respuesta del bot', is_echo: true, app_id: 123456 } }] }],
+    })
+    expect(out).toEqual([])
+  })
+
   it('Instagram entrante (mismo formato page)', () => {
     const out = normalize({
       object: 'instagram',

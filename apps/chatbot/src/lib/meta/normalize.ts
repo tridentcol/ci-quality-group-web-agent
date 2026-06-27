@@ -47,6 +47,11 @@ function normalizePage(body: Json, channel: Channel): NormalizedEvent[] {
         const text = str(msg.text)
         if (!text) continue
         const isEcho = !!msg.is_echo
+        // Echo enviado por una APP (incluido nuestro propio bot) trae `app_id`.
+        // Lo ignoramos: si no, el bot tomaría su propia respuesta como "un humano
+        // respondió" y se pausaría a sí mismo. El relevo humano se detecta por los
+        // echos SIN app_id (respuestas escritas a mano desde la bandeja de Meta).
+        if (isEcho && msg.app_id != null) continue
         // En echo, el usuario de la conversación es el destinatario, no la página.
         const externalId = str(isEcho ? recipient : sender)
         const messageId = str(msg.mid)
