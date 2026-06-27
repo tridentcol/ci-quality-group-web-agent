@@ -3,10 +3,14 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Loader2, Hand, Bot, XCircle, Trash2, Info } from "lucide-react";
+import { ArrowLeft, Loader2, Hand, Bot, XCircle, Trash2, Info, Send } from "lucide-react";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { ChannelBadge, ConversationStatusBadge } from "@/components/panel/channel-badge";
 import { useConfirm } from "@/components/panel/confirm-dialog";
+import { MediaPicker } from "@/components/panel/media-picker";
+
+const META_CHANNELS = ["messenger", "whatsapp", "instagram"];
 
 interface MessageMeta {
   model?: string;
@@ -125,6 +129,17 @@ export function ConversationView({ id }: { id: string }) {
         )}
       </div>
 
+      {META_CHANNELS.includes(conv.channel) && conv.status !== "closed" && (
+        <ReplyBox
+          id={id}
+          paused={conv.status === "human_controlled"}
+          onSent={(sent) => {
+            setMessages((prev) => [...prev, ...sent]);
+            setConv((c) => (c ? { ...c, status: "human_controlled" } : c));
+          }}
+        />
+      )}
+
       <div className="mt-8 rounded-xl border border-destructive/30 bg-destructive/5 p-4">
         <p className="text-sm font-semibold text-foreground">Privacidad (Habeas Data · Ley 1581)</p>
         <p className="mt-1 text-xs text-muted-foreground">
@@ -147,6 +162,88 @@ export function ConversationView({ id }: { id: string }) {
               <Trash2 className="size-4" /> Borrar cliente y todo su historial
             </button>
           )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Cuadro para responder COMO AGENTE HUMANO desde el panel. Envía por el canal del
+// cliente, registra el mensaje y deja la conversación en pausa (human_controlled).
+function ReplyBox({
+  id,
+  paused,
+  onSent,
+}: {
+  id: string;
+  paused: boolean;
+  onSent: (messages: Message[]) => void;
+}) {
+  const [text, setText] = useState("");
+  const [imageId, setImageId] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const canSend = (text.trim().length > 0 || !!imageId) && !busy;
+
+  async function send() {
+    if (!canSend) return;
+    setBusy(true);
+    try {
+      const res = await fetch("/api/panel/conversations/reply", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          id,
+          text: text.trim() || undefined,
+          imageId: imageId || undefined,
+        }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        onSent(json.data.messages as Message[]);
+        setText("");
+        setImageId(null);
+        toast.success("Mensaje enviado al cliente.");
+      } else {
+        toast.error(json.error?.message ?? "No se pudo enviar.");
+      }
+    } catch {
+      toast.error("No se pudo enviar.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="mt-6 rounded-xl border border-border bg-card p-4 shadow-sm">
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <span className="text-sm font-semibold text-foreground">Responder como agente</span>
+        <span className="text-xs text-muted-foreground">
+          {paused ? "Tú tienes el control (bot en pausa)" : "Al enviar, el bot queda en pausa"}
+        </span>
+      </div>
+      <textarea
+        rows={3}
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) send();
+        }}
+        placeholder="Escribe tu respuesta al cliente…"
+        className="w-full resize-y rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+      />
+      <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+        <MediaPicker value={imageId} onChange={setImageId} />
+        <div className="ml-auto flex items-center gap-2">
+          <span className="hidden text-xs text-muted-foreground sm:inline">⌘/Ctrl + Enter</span>
+          <button
+            onClick={send}
+            disabled={!canSend}
+            className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-60"
+          >
+            {busy ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
+            Enviar
+          </button>
         </div>
       </div>
     </div>

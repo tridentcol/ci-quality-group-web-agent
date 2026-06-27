@@ -4,6 +4,7 @@ import { and, cosineDistance, desc, eq, ilike, sql } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import { conversations, images, knowledgeGaps, leads, materials } from '@/lib/db/schema'
 import { notifyAdmin } from '@/lib/meta/notify'
+import { env } from '@/lib/env'
 import { embed } from './embed'
 import { retrieve } from './retrieve'
 import { RAG_MIN_SCORE } from './rag-config'
@@ -35,6 +36,13 @@ export interface ToolContext {
   conversationId?: string
   /** Modo de ejecución (default 'live'). */
   mode?: ToolMode
+}
+
+// Enlace directo a la conversación en el panel (para responder el relevo ahí mismo).
+function panelConvLink(conversationId?: string | null): string {
+  const base = (env.APP_URL ?? '').replace(/\/$/, '')
+  if (!conversationId || !/^https?:\/\//.test(base)) return ''
+  return `\nResponder en el panel: ${base}/conversations/${conversationId}`
 }
 
 // ─── lookup_price ────────────────────────────────────────────────────────────
@@ -146,7 +154,8 @@ export async function captureLead(
     await notifyAdmin(
       `Nuevo lead: ${args.name ?? 'sin nombre'} (${args.contact ?? 'sin contacto'}) — ` +
         `interés: ${args.interest ?? 'n/d'}${args.quantity ? `, cantidad: ${args.quantity}` : ''}` +
-        `${args.requested_discount ? ' · pidió descuento' : ''}`,
+        `${args.requested_discount ? ' · pidió descuento' : ''}` +
+        panelConvLink(ctx.conversationId),
     )
   }
 
@@ -170,7 +179,7 @@ export async function requestHumanHandoff(
     .set({ status: 'human_controlled' })
     .where(eq(conversations.id, ctx.conversationId))
 
-  await notifyAdmin(`Relevo humano solicitado. Motivo: ${args.reason}`)
+  await notifyAdmin(`Relevo humano solicitado. Motivo: ${args.reason}${panelConvLink(ctx.conversationId)}`)
 
   return { status: 'human_controlled' }
 }
