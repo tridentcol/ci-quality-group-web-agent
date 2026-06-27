@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { asc, eq } from 'drizzle-orm'
+import { asc, desc, eq } from 'drizzle-orm'
 import { z } from 'zod'
 import { db } from '@/lib/db'
 import { knowledgeQa, knowledgeSources } from '@/lib/db/schema'
@@ -30,20 +30,38 @@ async function syncQaCount(sourceId: string) {
   return n
 }
 
-// GET ?sourceId= — preguntas de una fuente
+// GET ?sourceId= — preguntas de una fuente. Sin sourceId → TODAS las preguntas
+// con el nombre de su fuente (para la vista global "Todas las preguntas").
 export async function GET(req: Request) {
   const sourceId = new URL(req.url).searchParams.get('sourceId')
-  if (!sourceId) return fail('Falta sourceId.')
+
+  if (sourceId) {
+    const rows = await db
+      .select({
+        id: knowledgeQa.id,
+        question: knowledgeQa.question,
+        answer: knowledgeQa.answer,
+        imageId: knowledgeQa.imageId,
+      })
+      .from(knowledgeQa)
+      .where(eq(knowledgeQa.sourceId, sourceId))
+      .orderBy(asc(knowledgeQa.createdAt))
+    return ok(rows)
+  }
+
   const rows = await db
     .select({
       id: knowledgeQa.id,
       question: knowledgeQa.question,
       answer: knowledgeQa.answer,
       imageId: knowledgeQa.imageId,
+      sourceId: knowledgeQa.sourceId,
+      sourceName: knowledgeSources.name,
+      sourceCreatedAt: knowledgeSources.createdAt,
     })
     .from(knowledgeQa)
-    .where(eq(knowledgeQa.sourceId, sourceId))
-    .orderBy(asc(knowledgeQa.createdAt))
+    .innerJoin(knowledgeSources, eq(knowledgeQa.sourceId, knowledgeSources.id))
+    .orderBy(desc(knowledgeSources.createdAt), asc(knowledgeQa.createdAt))
   return ok(rows)
 }
 

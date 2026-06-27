@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server'
 import { del } from '@vercel/blob'
 import { z } from 'zod'
-import { desc, eq } from 'drizzle-orm'
+import { count, desc, eq, isNotNull } from 'drizzle-orm'
 import { db } from '@/lib/db'
-import { images } from '@/lib/db/schema'
+import { images, knowledgeQa, materials } from '@/lib/db/schema'
 import { embed } from '@/lib/ai/embed'
 
 /**
@@ -24,21 +24,42 @@ function embedText(name: string, description: string, tags: string[]): string {
   return [name, description, tags.join(', ')].filter(Boolean).join('. ')
 }
 
-// GET — lista de medios (sin el embedding)
+// GET — lista de medios (sin el embedding) + en cuántos materiales y preguntas
+// está vinculado cada uno (visibilidad del wiring).
 export async function GET() {
-  const rows = await db
-    .select({
-      id: images.id,
-      type: images.type,
-      name: images.name,
-      description: images.description,
-      tags: images.tags,
-      url: images.url,
-      updatedAt: images.updatedAt,
-    })
-    .from(images)
-    .orderBy(desc(images.createdAt))
-  return ok(rows)
+  const [rows, matUses, qaUses] = await Promise.all([
+    db
+      .select({
+        id: images.id,
+        type: images.type,
+        name: images.name,
+        description: images.description,
+        tags: images.tags,
+        url: images.url,
+        updatedAt: images.updatedAt,
+      })
+      .from(images)
+      .orderBy(desc(images.createdAt)),
+    db
+      .select({ imageId: materials.imageId, n: count() })
+      .from(materials)
+      .where(isNotNull(materials.imageId))
+      .groupBy(materials.imageId),
+    db
+      .select({ imageId: knowledgeQa.imageId, n: count() })
+      .from(knowledgeQa)
+      .where(isNotNull(knowledgeQa.imageId))
+      .groupBy(knowledgeQa.imageId),
+  ])
+
+  const matMap = new Map(matUses.map((r) => [r.imageId, r.n]))
+  const qaMap = new Map(qaUses.map((r) => [r.imageId, r.n]))
+  const data = rows.map((r) => ({
+    ...r,
+    materialUses: matMap.get(r.id) ?? 0,
+    qaUses: qaMap.get(r.id) ?? 0,
+  }))
+  return ok(data)
 }
 
 const createSchema = z.object({

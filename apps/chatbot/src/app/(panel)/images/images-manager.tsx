@@ -15,7 +15,17 @@ interface Img {
   description: string;
   tags: string[];
   url: string;
+  materialUses: number;
+  qaUses: number;
   updatedAt: string | null;
+}
+
+// "Usado en N materiales · M preguntas" (o "Sin vincular").
+function usageLabel(img: { materialUses: number; qaUses: number }): string {
+  const parts: string[] = [];
+  if (img.materialUses > 0) parts.push(`${img.materialUses} material${img.materialUses === 1 ? "" : "es"}`);
+  if (img.qaUses > 0) parts.push(`${img.qaUses} pregunta${img.qaUses === 1 ? "" : "s"}`);
+  return parts.length ? `Usado en ${parts.join(" · ")}` : "Sin vincular";
 }
 
 const inputCls =
@@ -244,7 +254,18 @@ function ImageCard({
   }
 
   async function remove() {
-    if (!(await confirm({ title: `¿Borrar la imagen "${img.name}"?`, confirmLabel: "Borrar", destructive: true }))) return;
+    const inUse = img.materialUses + img.qaUses;
+    if (
+      !(await confirm({
+        title: `¿Borrar "${img.name}"?`,
+        description: inUse
+          ? `Está vinculado en ${usageLabel(img).replace("Usado en ", "")}; esos vínculos quedarán sin medio. Irreversible.`
+          : "Esta acción no se puede deshacer.",
+        confirmLabel: "Borrar",
+        destructive: true,
+      }))
+    )
+      return;
     setBusy(true);
     await fetch(`/api/panel/images?id=${img.id}`, { method: "DELETE" });
     onDelete();
@@ -296,6 +317,14 @@ function ImageCard({
               </div>
             </div>
             {img.description && <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{img.description}</p>}
+            <p
+              className={cn(
+                "mt-1.5 text-xs font-medium",
+                img.materialUses + img.qaUses > 0 ? "text-success" : "text-muted-foreground",
+              )}
+            >
+              {usageLabel(img)}
+            </p>
             {img.tags.length > 0 && (
               <div className="mt-2 flex flex-wrap gap-1">
                 {img.tags.map((t) => (

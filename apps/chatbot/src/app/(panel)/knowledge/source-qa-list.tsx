@@ -16,7 +16,7 @@ import { cn } from "@/lib/utils";
 import { useConfirm } from "@/components/panel/confirm-dialog";
 import { MediaPicker } from "@/components/panel/media-picker";
 
-interface Qa {
+export interface Qa {
   id: string;
   question: string;
   answer: string;
@@ -148,7 +148,7 @@ export function SourceQaList({
   );
 }
 
-function QaRow({
+export function QaRow({
   qa,
   onUpdated,
   onDeleted,

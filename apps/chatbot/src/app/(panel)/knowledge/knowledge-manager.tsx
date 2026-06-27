@@ -20,6 +20,7 @@ import { cn } from "@/lib/utils";
 import { useConfirm } from "@/components/panel/confirm-dialog";
 import { SourceEditor, type EditorDraft } from "./source-editor";
 import { SourceQaList } from "./source-qa-list";
+import { AllQuestions } from "./all-questions";
 
 interface Source {
   id: string;
@@ -49,6 +50,7 @@ export function KnowledgeManager() {
   const [sources, setSources] = useState<Source[]>([]);
   const [editor, setEditor] = useState<EditorDraft | null>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [view, setView] = useState<"fuentes" | "preguntas">("fuentes");
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const confirm = useConfirm();
 
@@ -104,6 +106,26 @@ export function KnowledgeManager() {
 
   return (
     <div className="space-y-8">
+      {/* Toggle de vistas: por fuente vs todas las preguntas */}
+      <div className="flex gap-1 rounded-lg border border-border bg-card p-1 text-sm shadow-sm sm:w-fit">
+        {(["fuentes", "preguntas"] as const).map((v) => (
+          <button
+            key={v}
+            onClick={() => setView(v)}
+            className={cn(
+              "flex-1 rounded-md px-4 py-1.5 font-medium transition-colors sm:flex-none",
+              view === v ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-accent",
+            )}
+          >
+            {v === "fuentes" ? "Fuentes" : "Todas las preguntas"}
+          </button>
+        ))}
+      </div>
+
+      {view === "preguntas" ? (
+        <AllQuestions onChanged={load} />
+      ) : (
+        <>
       {editor ? (
         <SourceEditor
           draft={editor}
@@ -205,6 +227,8 @@ export function KnowledgeManager() {
           </>
         )}
       </div>
+        </>
+      )}
     </div>
   );
 }
