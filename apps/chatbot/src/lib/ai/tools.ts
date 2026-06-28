@@ -301,7 +301,9 @@ export async function getLocation(): Promise<
       }
     : undefined
 
-  const ctx = [ragText, cfg?.name, cfg?.address].filter(Boolean).join('\n')
+  // La dirección OFICIAL es la de Ajustes (la misma que la tarjeta/coordenadas): va
+  // primero para que el bot la diga, y el contexto del RAG queda como complemento.
+  const ctx = [cfg?.name, cfg?.address, ragText].filter(Boolean).join('\n')
   if (!ctx && !location) return { found: false }
   // Nota para el modelo: la tarjeta de ubicación (mapa + botón) se envía aparte.
   return { found: true, context: ctx || 'Se enviará la tarjeta de ubicación.', location }
