@@ -3,12 +3,14 @@ import { currentUser } from "@clerk/nextjs/server";
 import { eq, sql, type SQL } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
+  botConfig,
   conversations,
   knowledgeGaps,
   knowledgeSources,
   leads,
   materials,
 } from "@/lib/db/schema";
+import { CheckCircle2, Circle, ArrowRight } from "lucide-react";
 
 // Cuenta filas de una tabla con un filtro opcional.
 async function countRows(table: Parameters<typeof db.$count>[0], where?: SQL): Promise<number> {
@@ -29,6 +31,26 @@ export default async function DashboardPage() {
       countRows(materials, eq(materials.active, true)),
     ]);
 
+  // Puesta a punto (onboarding): qué falta para tener el bot listo.
+  const [cfg] = await db
+    .select({
+      welcome: botConfig.welcomeMessage,
+      lat: botConfig.locationLat,
+      admin: botConfig.adminWhatsapp,
+    })
+    .from(botConfig)
+    .where(eq(botConfig.id, 1));
+
+  const checklist = [
+    { label: "Cargar precios", done: activeMaterials > 0, href: "/pricing", hint: "Tus materiales y precios para cotizar" },
+    { label: "Subir conocimiento", done: readySources > 0, href: "/knowledge", hint: "Documentos o FAQs que el bot usa" },
+    { label: "Mensaje de bienvenida", done: !!cfg?.welcome?.trim(), href: "/settings", hint: "El saludo del bot" },
+    { label: "Ubicación de la sede", done: cfg?.lat != null, href: "/settings", hint: "Para la tarjeta de mapa" },
+    { label: "WhatsApp del administrador", done: !!cfg?.admin?.trim(), href: "/settings", hint: "Para recibir avisos de leads" },
+  ];
+  const doneCount = checklist.filter((c) => c.done).length;
+  const allDone = doneCount === checklist.length;
+
   const KPIS = [
     { label: "Conversaciones", value: totalConv, hint: "en los 3 canales", href: "/conversations" },
     { label: "Relevos activos", value: handoffs, hint: "esperando a un humano", href: "/conversations" },
@@ -44,6 +66,34 @@ export default async function DashboardPage() {
         <h1 className="text-xl font-semibold text-foreground sm:text-2xl">Dashboard</h1>
         <p className="mt-1 text-sm text-muted-foreground">Hola, {name}. Resumen de la operación.</p>
       </header>
+
+      {!allDone && (
+        <section className="mb-6 rounded-xl border border-primary/30 bg-primary/5 p-5 shadow-sm">
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <h2 className="text-sm font-semibold text-foreground">Puesta a punto del bot</h2>
+            <span className="text-xs text-muted-foreground">{doneCount} de {checklist.length} listo</span>
+          </div>
+          <ul className="space-y-1.5">
+            {checklist.map((c) => (
+              <li key={c.label}>
+                {c.done ? (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <CheckCircle2 className="size-4 shrink-0 text-success" />
+                    <span className="line-through">{c.label}</span>
+                  </div>
+                ) : (
+                  <Link href={c.href} className="group flex items-center gap-2 text-sm text-foreground">
+                    <Circle className="size-4 shrink-0 text-muted-foreground" />
+                    <span className="font-medium">{c.label}</span>
+                    <span className="text-xs text-muted-foreground">· {c.hint}</span>
+                    <ArrowRight className="size-3.5 text-primary opacity-0 transition-opacity group-hover:opacity-100" />
+                  </Link>
+                )}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {KPIS.map((kpi) => (

@@ -1,6 +1,7 @@
 import {
   LayoutDashboard,
   BookOpen,
+  MessageCircleQuestion,
   Image,
   FlaskConical,
   Tags,
@@ -22,6 +23,7 @@ export interface NavItem {
 export const NAV: readonly NavItem[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/knowledge", label: "Conocimiento", icon: BookOpen },
+  { href: "/faqs", label: "FAQs rápidas", icon: MessageCircleQuestion },
   { href: "/images", label: "Medios", icon: Image },
   { href: "/playground", label: "Probar", icon: FlaskConical },
   { href: "/pricing", label: "Precios", icon: Tags },
