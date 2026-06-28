@@ -3,6 +3,7 @@ import { and, asc, count, desc, eq, gte, isNotNull, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
   conversations,
+  customerProfiles,
   images,
   knowledgeGaps,
   knowledgeQa,
@@ -160,6 +161,86 @@ export async function listQuotes() {
   });
 }
 export type QuoteListRow = Awaited<ReturnType<typeof listQuotes>>[number];
+
+export async function listCustomers() {
+  const [profiles, convCounts, leadCounts] = await Promise.all([
+    db
+      .select({
+        id: customerProfiles.id,
+        name: customerProfiles.name,
+        company: customerProfiles.company,
+        contact: customerProfiles.contact,
+        channel: customerProfiles.channel,
+        lastSeenAt: customerProfiles.lastSeenAt,
+      })
+      .from(customerProfiles)
+      .orderBy(desc(customerProfiles.lastSeenAt)),
+    db.select({ customerId: conversations.customerId, n: count() }).from(conversations).where(isNotNull(conversations.customerId)).groupBy(conversations.customerId),
+    db
+      .select({ customerId: conversations.customerId, n: count(leads.id) })
+      .from(leads)
+      .innerJoin(conversations, eq(leads.conversationId, conversations.id))
+      .where(and(isNotNull(conversations.customerId), eq(leads.test, false)))
+      .groupBy(conversations.customerId),
+  ]);
+  const convMap = new Map(convCounts.map((r) => [r.customerId, r.n]));
+  const leadMap = new Map(leadCounts.map((r) => [r.customerId, r.n]));
+  return profiles.map((p) => ({
+    ...p,
+    lastSeenAt: p.lastSeenAt ? p.lastSeenAt.toISOString() : null,
+    conversations: convMap.get(p.id) ?? 0,
+    leads: leadMap.get(p.id) ?? 0,
+  }));
+}
+export type CustomerRow = Awaited<ReturnType<typeof listCustomers>>[number];
+
+export async function getCustomer(id: string) {
+  const [profile] = await db.select().from(customerProfiles).where(eq(customerProfiles.id, id));
+  if (!profile) return null;
+  const [convs, leadRows] = await Promise.all([
+    db
+      .select({
+        id: conversations.id,
+        channel: conversations.channel,
+        status: conversations.status,
+        lastMessageAt: conversations.lastMessageAt,
+        messageCount: sql<number>`count(${messages.id})::int`,
+      })
+      .from(conversations)
+      .leftJoin(messages, eq(messages.conversationId, conversations.id))
+      .where(eq(conversations.customerId, id))
+      .groupBy(conversations.id)
+      .orderBy(desc(conversations.lastMessageAt)),
+    db
+      .select({
+        ref: leads.ref,
+        interest: leads.interest,
+        materialName: materials.name,
+        status: leads.status,
+        agreedPriceCop: leads.agreedPriceCop,
+        conversationId: leads.conversationId,
+        createdAt: leads.createdAt,
+      })
+      .from(leads)
+      .innerJoin(conversations, eq(leads.conversationId, conversations.id))
+      .leftJoin(materials, eq(leads.materialId, materials.id))
+      .where(and(eq(conversations.customerId, id), eq(leads.test, false)))
+      .orderBy(desc(leads.createdAt)),
+  ]);
+  return {
+    profile: {
+      id: profile.id,
+      name: profile.name,
+      company: profile.company,
+      contact: profile.contact,
+      channel: profile.channel,
+      facts: (profile.facts ?? null) as unknown,
+      lastSeenAt: profile.lastSeenAt ? profile.lastSeenAt.toISOString() : null,
+    },
+    conversations: convs.map((c) => ({ ...c, lastMessageAt: c.lastMessageAt ? c.lastMessageAt.toISOString() : null })),
+    leads: leadRows.map((l) => ({ ...l, createdAt: l.createdAt ? l.createdAt.toISOString() : null })),
+  };
+}
 
 export async function listImages() {
   const [rows, matUses, qaUses] = await Promise.all([
