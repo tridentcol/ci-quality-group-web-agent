@@ -80,6 +80,10 @@ export default async function DashboardPage() {
     recentLeads,
     recentGaps,
     cfgRows,
+    wonCount,
+    lostCount,
+    revenueRows,
+    leadsByChannel,
   ] = await Promise.all([
     db.$count(conversations),
     db.$count(conversations, gte(conversations.createdAt, since7)),
@@ -129,6 +133,18 @@ export default async function DashboardPage() {
       .select({ welcome: botConfig.welcomeMessage, lat: botConfig.locationLat, admin: botConfig.adminWhatsapp })
       .from(botConfig)
       .where(eq(botConfig.id, 1)),
+    db.$count(leads, and(eq(leads.test, false), eq(leads.status, "won"))),
+    db.$count(leads, and(eq(leads.test, false), eq(leads.status, "lost"))),
+    db
+      .select({ total: sql<string>`coalesce(sum(${leads.agreedPriceCop}),0)` })
+      .from(leads)
+      .where(and(eq(leads.test, false), eq(leads.status, "won"))),
+    db
+      .select({ channel: conversations.channel, n: sql<number>`count(*)::int` })
+      .from(leads)
+      .leftJoin(conversations, eq(leads.conversationId, conversations.id))
+      .where(eq(leads.test, false))
+      .groupBy(conversations.channel),
   ]);
 
   const cfg = cfgRows[0];
@@ -147,6 +163,16 @@ export default async function DashboardPage() {
   const funnel = FUNNEL.map((s) => ({ ...s, value: statusMap.get(s.key) ?? 0 }));
   const maxFunnel = Math.max(1, ...funnel.map((s) => s.value));
   const won = statusMap.get("won") ?? 0;
+
+  // Métricas de venta.
+  const closed = wonCount + lostCount;
+  const closeRate = closed > 0 ? Math.round((wonCount / closed) * 100) : null;
+  const revenueWon = Number(revenueRows[0]?.total ?? 0);
+  const channelLeads = leadsByChannel
+    .map((r) => ({ label: r.channel ?? "otro", value: r.n }))
+    .sort((a, b) => b.value - a.value);
+  const maxChannel = Math.max(1, ...channelLeads.map((c) => c.value));
+  const cop = new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 });
 
   const checklist = [
     { label: "Cargar precios", done: activeMaterials > 0, href: "/pricing", hint: "Tus materiales y precios" },
@@ -246,6 +272,42 @@ export default async function DashboardPage() {
               </div>
             ))}
           </div>
+        </section>
+      </div>
+
+      {/* Métricas de venta */}
+      <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <div className="grid grid-cols-2 gap-4 lg:col-span-2">
+          <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
+            <p className="text-sm font-medium text-muted-foreground">Tasa de cierre</p>
+            <p className="mt-2 text-3xl font-semibold text-foreground">{closeRate != null ? `${closeRate}%` : "—"}</p>
+            <p className="mt-1 text-xs text-muted-foreground">{wonCount} ganados · {lostCount} perdidos</p>
+          </div>
+          <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
+            <p className="text-sm font-medium text-muted-foreground">Ingresos ganados</p>
+            <p className="mt-2 text-2xl font-semibold text-foreground">{cop.format(revenueWon)}</p>
+            <p className="mt-1 text-xs text-muted-foreground">suma de leads ganados (acordado)</p>
+          </div>
+        </div>
+        <section className="rounded-xl border border-border bg-card p-5 shadow-sm">
+          <h2 className="mb-3 text-sm font-semibold text-foreground">Leads por canal</h2>
+          {channelLeads.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Sin leads todavía.</p>
+          ) : (
+            <div className="space-y-2.5">
+              {channelLeads.map((c) => (
+                <div key={c.label}>
+                  <div className="mb-1 flex items-center justify-between text-xs">
+                    <span className="capitalize text-muted-foreground">{c.label}</span>
+                    <span className="font-medium text-foreground">{c.value}</span>
+                  </div>
+                  <div className="h-2 overflow-hidden rounded-full bg-accent">
+                    <div className="h-full rounded-full bg-primary/70" style={{ width: `${(c.value / maxChannel) * 100}%` }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </section>
       </div>
 
