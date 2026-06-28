@@ -59,6 +59,13 @@ const patchSchema = z
     retentionMonths: z.coerce.number().int().min(1).max(120).optional(),
     maxAutoDiscountPct: z.coerce.number().min(0).max(100).optional(),
     qaGenerationEnabled: z.boolean().optional(),
+    // Afinación (null = volver al valor por defecto del código).
+    ragK: z.union([z.coerce.number().int().min(1).max(20), z.null()]).optional(),
+    ragMinScore: z.union([z.coerce.number().min(0).max(1), z.null()]).optional(),
+    mediaMinScore: z.union([z.coerce.number().min(0).max(1), z.null()]).optional(),
+    temperature: z.union([z.coerce.number().min(0).max(1), z.null()]).optional(),
+    maxAttachments: z.union([z.coerce.number().int().min(0).max(6), z.null()]).optional(),
+    extraInstructions: z.string().trim().nullable().optional(),
   })
   .refine((d) => Object.keys(d).length > 0, 'Nada que actualizar.')
 
@@ -85,6 +92,13 @@ export async function PATCH(req: Request) {
   if (d.retentionMonths !== undefined) set.retentionMonths = d.retentionMonths
   if (d.maxAutoDiscountPct !== undefined) set.maxAutoDiscountPct = String(d.maxAutoDiscountPct)
   if (d.qaGenerationEnabled !== undefined) set.qaGenerationEnabled = d.qaGenerationEnabled
+  // Afinación: número→string para numeric; null se conserva (= usar default).
+  if (d.ragK !== undefined) set.ragK = d.ragK
+  if (d.ragMinScore !== undefined) set.ragMinScore = d.ragMinScore === null ? null : String(d.ragMinScore)
+  if (d.mediaMinScore !== undefined) set.mediaMinScore = d.mediaMinScore === null ? null : String(d.mediaMinScore)
+  if (d.temperature !== undefined) set.temperature = d.temperature === null ? null : String(d.temperature)
+  if (d.maxAttachments !== undefined) set.maxAttachments = d.maxAttachments
+  if (d.extraInstructions !== undefined) set.extraInstructions = d.extraInstructions || null
 
   const [row] = await db.update(botConfig).set(set).where(eq(botConfig.id, 1)).returning()
   if (!row) return fail('bot_config no inicializado (corre el seed).', 404, 'NOT_FOUND')

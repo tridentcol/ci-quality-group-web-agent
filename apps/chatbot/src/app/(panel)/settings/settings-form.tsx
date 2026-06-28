@@ -35,7 +35,17 @@ export interface SettingsInitial {
   retentionMonths: number;
   maxAutoDiscountPct: number;
   qaGenerationEnabled: boolean;
+  // Afinación (null/string del numeric de Drizzle) + reglas extra.
+  ragK: number | null;
+  ragMinScore: number | string | null;
+  mediaMinScore: number | string | null;
+  temperature: number | string | null;
+  maxAttachments: number | null;
+  extraInstructions: string | null;
 }
+
+// Valores por defecto (cuando el campo está vacío = usar el del código).
+const TUNING_DEFAULTS = { ragK: 5, ragMinScore: 0.25, mediaMinScore: 0.38, temperature: 0.3, maxAttachments: 2 };
 
 const DAYS = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
 const WD: DayHours = { open: "07:00", close: "17:00" };
@@ -54,6 +64,12 @@ export function SettingsForm({ initial }: { initial: SettingsInitial }) {
     locationLat: initial.locationLat != null ? String(initial.locationLat) : "",
     locationLng: initial.locationLng != null ? String(initial.locationLng) : "",
     locationMapsUrl: initial.locationMapsUrl ?? "",
+    ragK: initial.ragK != null ? String(initial.ragK) : "",
+    ragMinScore: initial.ragMinScore != null ? String(initial.ragMinScore) : "",
+    mediaMinScore: initial.mediaMinScore != null ? String(initial.mediaMinScore) : "",
+    temperature: initial.temperature != null ? String(initial.temperature) : "",
+    maxAttachments: initial.maxAttachments != null ? String(initial.maxAttachments) : "",
+    extraInstructions: initial.extraInstructions ?? "",
   });
   const [busy, setBusy] = useState(false);
 
@@ -98,6 +114,12 @@ export function SettingsForm({ initial }: { initial: SettingsInitial }) {
           retentionMonths: f.retentionMonths,
           maxAutoDiscountPct: f.maxAutoDiscountPct,
           qaGenerationEnabled: f.qaGenerationEnabled,
+          ragK: f.ragK === "" ? null : Number(f.ragK),
+          ragMinScore: f.ragMinScore === "" ? null : Number(f.ragMinScore),
+          mediaMinScore: f.mediaMinScore === "" ? null : Number(f.mediaMinScore),
+          temperature: f.temperature === "" ? null : Number(f.temperature),
+          maxAttachments: f.maxAttachments === "" ? null : Number(f.maxAttachments),
+          extraInstructions: f.extraInstructions,
         }),
       });
       const json = await res.json();
@@ -125,6 +147,19 @@ export function SettingsForm({ initial }: { initial: SettingsInitial }) {
         </Field>
         <Field label="Mensaje fuera de horario">
           <textarea rows={2} className={inputCls} value={f.afterHoursMessage} onChange={(e) => set("afterHoursMessage", e.target.value)} />
+        </Field>
+        <Field label="Reglas / instrucciones adicionales (opcional)">
+          <textarea
+            rows={4}
+            className={inputCls}
+            placeholder="Ej.: No prometas tiempos de recogida; siempre pide foto del material; el horario de pago es de 8 a 11 am…"
+            value={f.extraInstructions}
+            onChange={(e) => set("extraInstructions", e.target.value)}
+          />
+          <span className="mt-1 block text-xs text-muted-foreground">
+            Se agregan al cerebro del bot sin tocar código. Complementan las reglas base (no
+            sustituyen la seguridad ni los precios reales).
+          </span>
         </Field>
       </Card>
 
@@ -271,6 +306,31 @@ export function SettingsForm({ initial }: { initial: SettingsInitial }) {
               Pon Latitud y Longitud arriba para ver el mapa.
             </p>
           )}
+        </div>
+      </Card>
+
+      {/* Afinación del bot */}
+      <Card title="Afinación (avanzado)">
+        <p className="-mt-1 text-xs text-muted-foreground">
+          Deja un campo VACÍO para usar el valor recomendado (entre paréntesis). Mide el efecto en
+          el Playground antes de cambiar. Cambios grandes pueden afectar calidad o costo.
+        </p>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <Field label={`Fragmentos a recuperar — RAG (def. ${TUNING_DEFAULTS.ragK})`}>
+            <input type="number" min={1} max={20} step={1} className={inputCls} placeholder={String(TUNING_DEFAULTS.ragK)} value={f.ragK} onChange={(e) => set("ragK", e.target.value)} />
+          </Field>
+          <Field label={`Umbral de relevancia — RAG (def. ${TUNING_DEFAULTS.ragMinScore})`}>
+            <input type="number" min={0} max={1} step={0.05} className={inputCls} placeholder={String(TUNING_DEFAULTS.ragMinScore)} value={f.ragMinScore} onChange={(e) => set("ragMinScore", e.target.value)} />
+          </Field>
+          <Field label={`Umbral para adjuntar medios (def. ${TUNING_DEFAULTS.mediaMinScore})`}>
+            <input type="number" min={0} max={1} step={0.05} className={inputCls} placeholder={String(TUNING_DEFAULTS.mediaMinScore)} value={f.mediaMinScore} onChange={(e) => set("mediaMinScore", e.target.value)} />
+          </Field>
+          <Field label={`Creatividad — temperatura (def. ${TUNING_DEFAULTS.temperature})`}>
+            <input type="number" min={0} max={1} step={0.05} className={inputCls} placeholder={String(TUNING_DEFAULTS.temperature)} value={f.temperature} onChange={(e) => set("temperature", e.target.value)} />
+          </Field>
+          <Field label={`Máx. medios por respuesta (def. ${TUNING_DEFAULTS.maxAttachments})`}>
+            <input type="number" min={0} max={6} step={1} className={inputCls} placeholder={String(TUNING_DEFAULTS.maxAttachments)} value={f.maxAttachments} onChange={(e) => set("maxAttachments", e.target.value)} />
+          </Field>
         </div>
       </Card>
 

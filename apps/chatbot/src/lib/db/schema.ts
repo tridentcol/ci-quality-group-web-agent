@@ -44,6 +44,14 @@ export const botConfig = pgTable('bot_config', {
   // Generar preguntas frecuentes (Q&A) al ingerir documentos (gpt-4o-mini).
   // Toggle de costo: el admin puede apagarlo desde Ajustes.
   qaGenerationEnabled: boolean('qa_generation_enabled').notNull().default(true),
+  // Afinación del bot (no-code). NULL = usar el valor por defecto del código.
+  ragK: integer('rag_k'), // nº de fragmentos a recuperar
+  ragMinScore: numeric('rag_min_score'), // umbral de similitud [0..1]
+  mediaMinScore: numeric('media_min_score'), // umbral para adjuntar medios [0..1]
+  temperature: numeric('temperature'), // creatividad del modelo [0..1]
+  maxAttachments: integer('max_attachments'), // tope de medios por respuesta
+  // Reglas/instrucciones extra que el admin agrega al system prompt (no-code).
+  extraInstructions: text('extra_instructions'),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
 })
 

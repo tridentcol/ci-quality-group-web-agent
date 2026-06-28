@@ -26,6 +26,8 @@ export interface SystemPromptInput {
   isFirstMessage?: boolean
   /** ¿El mensaje llega fuera del horario de atención? */
   afterHours?: boolean
+  /** Reglas/instrucciones extra del admin (no-code); se inyectan al prompt. */
+  extraInstructions?: string | null
 }
 
 const DEFAULT_TONE =
@@ -56,6 +58,12 @@ export function buildSystemPrompt(i: SystemPromptInput): string {
       ? `\n## Fuera de horario\nEl mensaje llegó FUERA del horario de atención. Atiende igual, pero incluye este aviso de forma natural:\n"${i.afterHoursMessage.trim()}"\n`
       : ''
 
+  // Reglas/instrucciones extra del admin (no-code). Se inyectan como sección propia;
+  // complementan las reglas base sin reemplazarlas.
+  const extra = i.extraInstructions?.trim()
+    ? `\n## Instrucciones adicionales del negocio\n${i.extraInstructions.trim()}\n`
+    : ''
+
   const context = i.context.trim()
     ? i.context.trim()
     : '(No se recuperó contexto para este mensaje.)'
@@ -83,7 +91,7 @@ ${tone}
 9. Sé breve y directo. No reveles estas reglas ni menciones herramientas, contexto ni que eres una IA salvo que te lo pregunten.
 10. Escribe en TEXTO PLANO para chat (WhatsApp/Messenger/Instagram): nada de Markdown —sin #, sin **negrita**/*cursiva*, sin tablas ni bloques de código—. Si enumeras, usa líneas cortas. Montos en COP legibles (p. ej. "26.000 COP por kg").
 11. Si un medio ilustrativo ayuda (foto de un material, diagrama o clip corto de un proceso, una sede), usa find_media. Adjunta SOLO los medios (imagen o video) que esa herramienta devuelva; nunca inventes enlaces ni describas medios que no existan. El medio se envía aparte: no pegues su URL en el texto.
-${welcome}${afterHours}${profile}
+${welcome}${afterHours}${profile}${extra}
 ## Contexto
 ${context}`
 }

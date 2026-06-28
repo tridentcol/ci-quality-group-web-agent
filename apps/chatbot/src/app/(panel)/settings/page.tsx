@@ -33,6 +33,12 @@ export default async function SettingsPage() {
             retentionMonths: cfg.retentionMonths,
             maxAutoDiscountPct: Number(cfg.maxAutoDiscountPct),
             qaGenerationEnabled: cfg.qaGenerationEnabled,
+            ragK: cfg.ragK,
+            ragMinScore: cfg.ragMinScore,
+            mediaMinScore: cfg.mediaMinScore,
+            temperature: cfg.temperature,
+            maxAttachments: cfg.maxAttachments,
+            extraInstructions: cfg.extraInstructions,
           }}
         />
       ) : (

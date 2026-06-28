@@ -36,6 +36,8 @@ export interface ToolContext {
   conversationId?: string
   /** Modo de ejecución (default 'live'). */
   mode?: ToolMode
+  /** Umbral de similitud para adjuntar medios (afinación; default MEDIA_MIN_SCORE). */
+  mediaMinScore?: number
 }
 
 // Enlace directo a la conversación en el panel (para responder el relevo ahí mismo).
@@ -330,7 +332,7 @@ const findMediaArgs = z.object({ query: z.string().trim().min(1) })
 
 // Umbral de similitud para adjuntar (evita medios irrelevantes). Coseno sobre
 // nombre+descripción+etiquetas; 0.38 deja fuera coincidencias tangenciales.
-const MEDIA_MIN_SCORE = 0.38
+export const MEDIA_MIN_SCORE = 0.38 // umbral por defecto (configurable en Ajustes → Afinación)
 
 export type FindMediaResult =
   | { found: true; url: string; caption: string; type: 'image' | 'video'; similarity: number }
@@ -338,7 +340,9 @@ export type FindMediaResult =
 
 export async function findMedia(
   args: z.infer<typeof findMediaArgs>,
+  ctx: ToolContext = {},
 ): Promise<FindMediaResult> {
+  const minScore = ctx.mediaMinScore ?? MEDIA_MIN_SCORE
   const queryEmbedding = await embed(args.query)
   const similarity = sql<number>`1 - (${cosineDistance(images.embedding, queryEmbedding)})`
   const [m] = await db
@@ -353,7 +357,7 @@ export async function findMedia(
     .orderBy(desc(similarity))
     .limit(1)
 
-  if (!m || m.similarity < MEDIA_MIN_SCORE) return { found: false }
+  if (!m || m.similarity < minScore) return { found: false }
   return {
     found: true,
     url: m.url,
@@ -554,7 +558,7 @@ export async function executeTool(
       getLocationArgs.parse(parsed)
       return getLocation()
     case 'find_media':
-      return findMedia(findMediaArgs.parse(parsed))
+      return findMedia(findMediaArgs.parse(parsed), ctx)
     case 'log_knowledge_gap':
       return logKnowledgeGap(logGapArgs.parse(parsed), ctx)
     default:

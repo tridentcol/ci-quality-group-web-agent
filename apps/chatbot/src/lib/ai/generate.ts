@@ -6,9 +6,9 @@ import { botConfig } from '@/lib/db/schema'
 import { retrieve } from './retrieve'
 import { buildSystemPrompt } from './system-prompt'
 import { selectModel } from './router'
-import { executeTool, toolDefinitions, type ToolContext, type ToolMode, type LocationCard } from './tools'
+import { executeTool, toolDefinitions, MEDIA_MIN_SCORE, type ToolContext, type ToolMode, type LocationCard } from './tools'
 import { RAG_K, RAG_MIN_SCORE } from './rag-config'
-import { isAfterHours, type BusinessHours } from './hours'
+import { isAfterHours } from './hours'
 
 /**
  * Motor de generación (blueprint §9 Step 9): arma el system prompt (tono +
@@ -85,6 +85,10 @@ export interface AssembledGeneration {
   /** Medios vinculados a las FAQ recuperadas (adjunto determinista por Q&A). */
   linkedMedia: MediaAttachment[]
   messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[]
+  /** Afinación efectiva (config o defaults) que usa el turno. */
+  temperature: number
+  maxAttachments: number
+  mediaMinScore: number
 }
 
 /**
@@ -94,8 +98,17 @@ export interface AssembledGeneration {
  * muestra sea EXACTAMENTE lo que usa el bot (sin desincronización).
  */
 export async function assembleGeneration(input: GenerateInput): Promise<AssembledGeneration> {
-  // 1) RAG: recuperar contexto para el mensaje actual.
-  const chunks = await retrieve(input.message, RAG_K, RAG_MIN_SCORE)
+  // 0) Config del bot (incluye AFINACIÓN). Se carga primero porque afina el RAG.
+  //    NULL en una columna = usar el valor por defecto del código.
+  const [cfg] = await db.select().from(botConfig).where(eq(botConfig.id, 1))
+  const ragK = cfg?.ragK ?? RAG_K
+  const ragMinScore = cfg?.ragMinScore != null ? Number(cfg.ragMinScore) : RAG_MIN_SCORE
+  const temperature = cfg?.temperature != null ? Number(cfg.temperature) : TEMPERATURE
+  const maxAttachments = cfg?.maxAttachments ?? MAX_ATTACHMENTS
+  const mediaMinScore = cfg?.mediaMinScore != null ? Number(cfg.mediaMinScore) : MEDIA_MIN_SCORE
+
+  // 1) RAG: recuperar contexto para el mensaje actual (con la afinación configurada).
+  const chunks = await retrieve(input.message, ragK, ragMinScore)
   const contextUsed = chunks.length > 0
   const context = chunks.map((c) => c.content).join('\n\n---\n\n')
   const retrieved: RetrievedChunkPreview[] = chunks.map((c) => ({
@@ -121,9 +134,8 @@ export async function assembleGeneration(input: GenerateInput): Promise<Assemble
 
   // 3) System prompt con identidad/tono (bot_config) + memoria + contexto +
   //    bienvenida (en el primer mensaje) y aviso fuera de horario.
-  const [cfg] = await db.select().from(botConfig).where(eq(botConfig.id, 1))
   const isFirstMessage = !(input.history && input.history.length > 0)
-  const afterHours = isAfterHours((cfg?.businessHours as BusinessHours | null) ?? null)
+  const afterHours = isAfterHours(cfg?.businessHours ?? null)
   const system = buildSystemPrompt({
     botName: cfg?.botName ?? 'Asistente de CI Quality Group',
     tonePrompt: cfg?.tonePrompt ?? '',
@@ -134,6 +146,7 @@ export async function assembleGeneration(input: GenerateInput): Promise<Assemble
     afterHoursMessage: cfg?.afterHoursMessage ?? null,
     isFirstMessage,
     afterHours,
+    extraInstructions: cfg?.extraInstructions ?? null,
   })
 
   const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
@@ -150,14 +163,29 @@ export async function assembleGeneration(input: GenerateInput): Promise<Assemble
     { role: 'user', content: input.message },
   ]
 
-  return { system, model, routerReason: reason, contextUsed, retrieved, linkedMedia, messages }
+  return {
+    system,
+    model,
+    routerReason: reason,
+    contextUsed,
+    retrieved,
+    linkedMedia,
+    messages,
+    temperature,
+    maxAttachments,
+    mediaMinScore,
+  }
 }
 
 export async function generateReply(input: GenerateInput): Promise<GenerateResult> {
-  const { model, routerReason: reason, contextUsed, retrieved, linkedMedia, messages } =
+  const { model, routerReason: reason, contextUsed, retrieved, linkedMedia, messages, temperature, maxAttachments, mediaMinScore } =
     await assembleGeneration(input)
 
-  const ctx: ToolContext = { conversationId: input.conversationId, mode: input.mode ?? 'live' }
+  const ctx: ToolContext = {
+    conversationId: input.conversationId,
+    mode: input.mode ?? 'live',
+    mediaMinScore,
+  }
   const executed: ExecutedTool[] = []
 
   // Adjuntos por fuente, con prioridad: material-vinculado (lookup_price) →
@@ -169,7 +197,7 @@ export async function generateReply(input: GenerateInput): Promise<GenerateResul
   const finalAttachments = (): MediaAttachment[] => {
     const out: MediaAttachment[] = []
     for (const a of [...materialMedia, ...linkedMedia, ...semanticMedia]) {
-      if (a.url && !out.some((x) => x.url === a.url) && out.length < MAX_ATTACHMENTS) out.push(a)
+      if (a.url && !out.some((x) => x.url === a.url) && out.length < maxAttachments) out.push(a)
     }
     return out
   }
@@ -193,7 +221,7 @@ export async function generateReply(input: GenerateInput): Promise<GenerateResul
   for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
     const completion = await openai.chat.completions.create({
       model,
-      temperature: TEMPERATURE,
+      temperature,
       messages,
       tools: toolDefinitions,
       tool_choice: 'auto',
@@ -232,7 +260,7 @@ export async function generateReply(input: GenerateInput): Promise<GenerateResul
   }
 
   // 5) Se agotaron las rondas: última llamada sin tools para forzar texto.
-  const final = await openai.chat.completions.create({ model, temperature: TEMPERATURE, messages })
+  const final = await openai.chat.completions.create({ model, temperature, messages })
   return {
     reply: final.choices[0]?.message?.content ?? '',
     model,
