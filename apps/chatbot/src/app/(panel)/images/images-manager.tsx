@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { upload } from "@vercel/blob/client";
 import { Upload, Loader2, Trash2, Pencil, Check, X } from "lucide-react";
 import { toast } from "sonner";
@@ -35,31 +35,22 @@ const inputCls =
 const parseTags = (s: string) =>
   s.split(",").map((t) => t.trim()).filter(Boolean);
 
-export function ImagesManager() {
-  const [items, setItems] = useState<Img[]>([]);
-  const [loading, setLoading] = useState(true);
+export function ImagesManager({ initial }: { initial: Img[] }) {
+  const [items, setItems] = useState<Img[]>(initial);
 
+  // `load` refresca tras subir/borrar (los datos iniciales llegan del servidor).
   const load = useCallback(async () => {
     invalidateMediaCache(); // el banco cambió → refresca el selector de medios
     const res = await fetch("/api/panel/images");
     const json = await res.json();
     if (json.success) setItems(json.data);
-    setLoading(false);
   }, []);
-
-  useEffect(() => {
-    load();
-  }, [load]);
 
   return (
     <div className="space-y-8">
       <AddImage onAdded={load} />
 
-      {loading ? (
-        <p className="rounded-xl border border-border bg-card py-8 text-center text-sm text-muted-foreground shadow-sm">
-          Cargando…
-        </p>
-      ) : items.length === 0 ? (
+      {items.length === 0 ? (
         <p className="rounded-xl border border-border bg-card py-8 text-center text-sm text-muted-foreground shadow-sm">
           Aún no hay medios. Sube la primera imagen o video arriba.
         </p>

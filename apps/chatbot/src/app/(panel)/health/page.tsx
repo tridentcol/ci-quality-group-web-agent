@@ -1,6 +1,8 @@
 import { HealthManager } from "./health-manager";
+import { getHealth } from "@/lib/data/panel";
 
-export default function HealthPage() {
+export default async function HealthPage() {
+  const initial = await getHealth();
   return (
     <div className="mx-auto max-w-4xl p-4 sm:p-6 lg:p-8">
       <header className="mb-6 sm:mb-8">
@@ -9,7 +11,7 @@ export default function HealthPage() {
           Errores y avisos del sistema, para detectar problemas sin esperar quejas de clientes.
         </p>
       </header>
-      <HealthManager />
+      <HealthManager initial={initial} />
     </div>
   );
 }

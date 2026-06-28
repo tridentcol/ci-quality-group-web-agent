@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { Loader2, RotateCw, Trash2, AlertTriangle, AlertCircle, Info, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -26,12 +26,13 @@ const LEVEL = {
   info: { icon: Info, cls: "text-muted-foreground", bg: "bg-accent", label: "Info" },
 } as const;
 
-export function HealthManager() {
-  const [events, setEvents] = useState<Event[] | null>(null);
-  const [summary, setSummary] = useState<Summary>({ error: 0, warning: 0, info: 0 });
+export function HealthManager({ initial }: { initial: { events: Event[]; summary: Record<string, number> } }) {
+  const [events, setEvents] = useState<Event[] | null>(initial.events);
+  const [summary, setSummary] = useState<Summary>({ error: 0, warning: 0, info: 0, ...initial.summary });
   const [busy, setBusy] = useState(false);
   const confirm = useConfirm();
 
+  // Datos iniciales del servidor; `load` refresca con el botón Actualizar y tras Limpiar.
   const load = useCallback(async () => {
     const res = await fetch("/api/panel/health");
     const json = await res.json();
@@ -40,10 +41,6 @@ export function HealthManager() {
       setSummary({ error: 0, warning: 0, info: 0, ...json.data.summary });
     }
   }, []);
-
-  useEffect(() => {
-    load();
-  }, [load]);
 
   async function clearAll() {
     if (!(await confirm({ title: "¿Limpiar la bitácora?", description: "Se borran todos los eventos registrados.", confirmLabel: "Limpiar", destructive: true }))) return;

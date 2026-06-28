@@ -32,11 +32,14 @@ const inputCls =
 export function SourceQaList({
   sourceId,
   onChanged,
+  initial,
 }: {
   sourceId: string;
   onChanged?: () => void;
+  /** Si llega del servidor, se siembra y se omite el fetch al montar (sin skeleton). */
+  initial?: Qa[];
 }) {
-  const [items, setItems] = useState<Qa[] | null>(null);
+  const [items, setItems] = useState<Qa[] | null>(initial ?? null);
   const [adding, setAdding] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
   const confirm = useConfirm();
@@ -49,7 +52,8 @@ export function SourceQaList({
   }, [sourceId]);
 
   useEffect(() => {
-    load();
+    if (!initial) load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [load]);
 
   async function regenerate() {

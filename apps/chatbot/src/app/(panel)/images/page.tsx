@@ -1,6 +1,8 @@
 import { ImagesManager } from "./images-manager";
+import { listImages } from "@/lib/data/panel";
 
-export default function ImagesPage() {
+export default async function ImagesPage() {
+  const initial = await listImages();
   return (
     <div className="mx-auto max-w-5xl p-4 sm:p-6 lg:p-8">
       <header className="mb-6 sm:mb-8">
@@ -11,7 +13,7 @@ export default function ImagesPage() {
           medio fijo a un material (en Precios) o a una pregunta; si no, lo busca por descripción/etiquetas.
         </p>
       </header>
-      <ImagesManager />
+      <ImagesManager initial={initial} />
     </div>
   );
 }

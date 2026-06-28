@@ -1,11 +1,12 @@
 import { NextResponse } from 'next/server'
 import { del } from '@vercel/blob'
 import { z } from 'zod'
-import { count, desc, eq, isNotNull } from 'drizzle-orm'
+import { eq } from 'drizzle-orm'
 import { db } from '@/lib/db'
-import { images, knowledgeQa, materials } from '@/lib/db/schema'
+import { images } from '@/lib/db/schema'
 import { embed } from '@/lib/ai/embed'
 import { env } from '@/lib/env'
+import { listImages } from '@/lib/data/panel'
 import { isVercelBlobUrl } from '@/lib/blob-name'
 import { isUuid } from '@/lib/api'
 
@@ -42,39 +43,7 @@ function embedText(name: string, description: string, tags: string[]): string {
 // GET — lista de medios (sin el embedding) + en cuántos materiales y preguntas
 // está vinculado cada uno (visibilidad del wiring).
 export async function GET() {
-  const [rows, matUses, qaUses] = await Promise.all([
-    db
-      .select({
-        id: images.id,
-        type: images.type,
-        name: images.name,
-        description: images.description,
-        tags: images.tags,
-        url: images.url,
-        updatedAt: images.updatedAt,
-      })
-      .from(images)
-      .orderBy(desc(images.createdAt)),
-    db
-      .select({ imageId: materials.imageId, n: count() })
-      .from(materials)
-      .where(isNotNull(materials.imageId))
-      .groupBy(materials.imageId),
-    db
-      .select({ imageId: knowledgeQa.imageId, n: count() })
-      .from(knowledgeQa)
-      .where(isNotNull(knowledgeQa.imageId))
-      .groupBy(knowledgeQa.imageId),
-  ])
-
-  const matMap = new Map(matUses.map((r) => [r.imageId, r.n]))
-  const qaMap = new Map(qaUses.map((r) => [r.imageId, r.n]))
-  const data = rows.map((r) => ({
-    ...r,
-    materialUses: matMap.get(r.id) ?? 0,
-    qaUses: qaMap.get(r.id) ?? 0,
-  }))
-  return ok(data)
+  return ok(await listImages())
 }
 
 const createSchema = z.object({

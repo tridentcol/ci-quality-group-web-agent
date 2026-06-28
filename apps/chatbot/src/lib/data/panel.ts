@@ -1,7 +1,17 @@
 import "server-only";
-import { desc, eq, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, gte, isNotNull, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { conversations, knowledgeGaps, knowledgeSources, leads, materials, messages } from "@/lib/db/schema";
+import {
+  conversations,
+  images,
+  knowledgeGaps,
+  knowledgeQa,
+  knowledgeSources,
+  leads,
+  materials,
+  messages,
+  systemEvents,
+} from "@/lib/db/schema";
 
 type LeadStatus = "new" | "contacted" | "quoted" | "ready" | "won" | "lost";
 
@@ -120,3 +130,120 @@ export async function listConversations() {
   }));
 }
 export type ConversationRow = Awaited<ReturnType<typeof listConversations>>[number];
+
+export async function listImages() {
+  const [rows, matUses, qaUses] = await Promise.all([
+    db
+      .select({
+        id: images.id,
+        type: images.type,
+        name: images.name,
+        description: images.description,
+        tags: images.tags,
+        url: images.url,
+        updatedAt: images.updatedAt,
+      })
+      .from(images)
+      .orderBy(desc(images.createdAt)),
+    db.select({ imageId: materials.imageId, n: count() }).from(materials).where(isNotNull(materials.imageId)).groupBy(materials.imageId),
+    db.select({ imageId: knowledgeQa.imageId, n: count() }).from(knowledgeQa).where(isNotNull(knowledgeQa.imageId)).groupBy(knowledgeQa.imageId),
+  ]);
+  const matMap = new Map(matUses.map((r) => [r.imageId, r.n]));
+  const qaMap = new Map(qaUses.map((r) => [r.imageId, r.n]));
+  return rows.map((r) => ({
+    ...r,
+    type: r.type as "image" | "video",
+    tags: (r.tags ?? []) as string[],
+    updatedAt: r.updatedAt ? r.updatedAt.toISOString() : null,
+    materialUses: matMap.get(r.id) ?? 0,
+    qaUses: qaMap.get(r.id) ?? 0,
+  }));
+}
+export type ImageRow = Awaited<ReturnType<typeof listImages>>[number];
+
+export async function getHealth() {
+  const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
+  const [events, counts] = await Promise.all([
+    db.select().from(systemEvents).orderBy(desc(systemEvents.createdAt)).limit(100),
+    db.select({ level: systemEvents.level, n: sql<number>`count(*)::int` }).from(systemEvents).where(gte(systemEvents.createdAt, since)).groupBy(systemEvents.level),
+  ]);
+  const summary: Record<string, number> = { error: 0, warning: 0, info: 0 };
+  for (const c of counts) summary[c.level] = c.n;
+  return {
+    events: events.map((e) => ({
+      id: e.id,
+      level: e.level as "error" | "warning" | "info",
+      source: e.source,
+      message: e.message,
+      context: (e.context ?? null) as Record<string, unknown> | null,
+      createdAt: e.createdAt ? e.createdAt.toISOString() : null,
+    })),
+    summary,
+  };
+}
+export type HealthData = Awaited<ReturnType<typeof getHealth>>;
+
+export async function getConversationDetail(id: string) {
+  const [conv] = await db
+    .select({
+      id: conversations.id,
+      channel: conversations.channel,
+      customerName: conversations.customerName,
+      status: conversations.status,
+      customerId: conversations.customerId,
+    })
+    .from(conversations)
+    .where(eq(conversations.id, id));
+  if (!conv) return null;
+  const thread = await db
+    .select({
+      id: messages.id,
+      role: messages.role,
+      content: messages.content,
+      metadata: messages.metadata,
+      createdAt: messages.createdAt,
+    })
+    .from(messages)
+    .where(eq(messages.conversationId, id))
+    .orderBy(asc(messages.createdAt));
+  type MsgMeta =
+    | { model?: string; routerReason?: string; contextUsed?: boolean; topScores?: number[]; tools?: string[] }
+    | null;
+  return {
+    conversation: conv,
+    messages: thread.map((m) => ({
+      ...m,
+      metadata: (m.metadata ?? null) as MsgMeta,
+      createdAt: m.createdAt ? m.createdAt.toISOString() : null,
+    })),
+  };
+}
+
+export async function listSourceQa(sourceId: string) {
+  return db
+    .select({
+      id: knowledgeQa.id,
+      question: knowledgeQa.question,
+      answer: knowledgeQa.answer,
+      imageId: knowledgeQa.imageId,
+    })
+    .from(knowledgeQa)
+    .where(eq(knowledgeQa.sourceId, sourceId))
+    .orderBy(asc(knowledgeQa.createdAt));
+}
+
+const FAQ_NAME = "Preguntas frecuentes (manual)";
+/** Asegura la fuente singleton de FAQs y devuelve su id. */
+export async function ensureFaqSource(): Promise<string> {
+  const [existing] = await db
+    .select({ id: knowledgeSources.id })
+    .from(knowledgeSources)
+    .where(and(eq(knowledgeSources.type, "faq"), eq(knowledgeSources.name, FAQ_NAME)))
+    .limit(1);
+  if (existing) return existing.id;
+  const [row] = await db
+    .insert(knowledgeSources)
+    .values({ type: "faq", name: FAQ_NAME, status: "ready" })
+    .returning({ id: knowledgeSources.id });
+  return row.id;
+}

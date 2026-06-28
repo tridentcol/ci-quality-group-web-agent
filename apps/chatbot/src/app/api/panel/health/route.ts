@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
-import { desc, gte, sql } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import { systemEvents } from '@/lib/db/schema'
+import { getHealth } from '@/lib/data/panel'
 
 /**
  * Panel de salud: últimos eventos del sistema (errores/avisos) + resumen de las
@@ -12,19 +12,7 @@ function ok(data: unknown) {
 }
 
 export async function GET() {
-  const since = new Date(Date.now() - 24 * 60 * 60 * 1000)
-  const [events, counts] = await Promise.all([
-    db.select().from(systemEvents).orderBy(desc(systemEvents.createdAt)).limit(100),
-    db
-      .select({ level: systemEvents.level, n: sql<number>`count(*)::int` })
-      .from(systemEvents)
-      .where(gte(systemEvents.createdAt, since))
-      .groupBy(systemEvents.level),
-  ])
-
-  const summary = { error: 0, warning: 0, info: 0 } as Record<string, number>
-  for (const c of counts) summary[c.level] = c.n
-  return ok({ events, summary })
+  return ok(await getHealth())
 }
 
 // DELETE — limpiar la bitácora (botón "Limpiar" del panel).

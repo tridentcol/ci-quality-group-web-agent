@@ -1,4 +1,6 @@
+import { notFound } from "next/navigation";
 import { ConversationView } from "../conversation-view";
+import { getConversationDetail } from "@/lib/data/panel";
 
 export default async function ConversationDetailPage({
   params,
@@ -6,5 +8,7 @@ export default async function ConversationDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  return <ConversationView id={id} />;
+  const data = await getConversationDetail(id);
+  if (!data) notFound();
+  return <ConversationView id={id} initial={data} />;
 }

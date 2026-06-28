@@ -1,6 +1,10 @@
-import { FaqsManager } from "./faqs-manager";
+import { SourceQaList } from "../knowledge/source-qa-list";
+import { ensureFaqSource, listSourceQa } from "@/lib/data/panel";
 
-export default function FaqsPage() {
+export default async function FaqsPage() {
+  // Server-side: asegura la fuente "manual" y trae sus preguntas ya listas (sin skeleton).
+  const sourceId = await ensureFaqSource();
+  const initial = await listSourceQa(sourceId);
   return (
     <div className="mx-auto max-w-3xl p-4 sm:p-6 lg:p-8">
       <header className="mb-6 sm:mb-8">
@@ -10,7 +14,9 @@ export default function FaqsPage() {
           puedes adjuntarles una imagen o video.
         </p>
       </header>
-      <FaqsManager />
+      <div className="rounded-xl border border-border bg-card shadow-sm">
+        <SourceQaList sourceId={sourceId} initial={initial} />
+      </div>
     </div>
   );
 }

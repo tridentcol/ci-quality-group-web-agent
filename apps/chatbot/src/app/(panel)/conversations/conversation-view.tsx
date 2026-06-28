@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Loader2, Hand, Bot, XCircle, Trash2, Info, Send } from "lucide-react";
@@ -34,27 +34,18 @@ interface Conversation {
   customerId: string | null;
 }
 
-export function ConversationView({ id }: { id: string }) {
-  const [conv, setConv] = useState<Conversation | null>(null);
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [loading, setLoading] = useState(true);
+export function ConversationView({
+  id,
+  initial,
+}: {
+  id: string;
+  initial: { conversation: Conversation; messages: Message[] };
+}) {
+  const [conv, setConv] = useState<Conversation | null>(initial.conversation);
+  const [messages, setMessages] = useState<Message[]>(initial.messages);
   const [busy, setBusy] = useState(false);
   const router = useRouter();
   const confirm = useConfirm();
-
-  const load = useCallback(async () => {
-    const res = await fetch(`/api/panel/conversations?id=${id}`);
-    const json = await res.json();
-    if (json.success) {
-      setConv(json.data.conversation);
-      setMessages(json.data.messages);
-    }
-    setLoading(false);
-  }, [id]);
-
-  useEffect(() => {
-    load();
-  }, [load]);
 
   async function setStatus(status: string) {
     setBusy(true);
@@ -88,7 +79,6 @@ export function ConversationView({ id }: { id: string }) {
     }
   }
 
-  if (loading) return <p className="p-8 text-center text-sm text-muted-foreground">Cargando…</p>;
   if (!conv) return <p className="p-8 text-center text-sm text-muted-foreground">Conversación no encontrada.</p>;
 
   return (
