@@ -93,7 +93,7 @@ export function KanbanBoard({
               setOver(null);
             }}
             className={cn(
-              "flex w-72 shrink-0 snap-start flex-col rounded-xl border bg-muted/30 transition-colors",
+              "flex w-64 shrink-0 snap-start flex-col rounded-xl border bg-muted/30 transition-colors sm:w-[17rem]",
               over === col.status ? "border-primary bg-primary/5" : "border-border",
             )}
           >

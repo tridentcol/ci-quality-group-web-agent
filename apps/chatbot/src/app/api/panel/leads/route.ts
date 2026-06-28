@@ -4,7 +4,7 @@ import { eq } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import { leads } from '@/lib/db/schema'
 import { isUuid } from '@/lib/api'
-import { listLeads } from '@/lib/data/panel'
+import { listLeads, getLead } from '@/lib/data/panel'
 
 function ok(data: unknown) {
   return NextResponse.json({ success: true, data })
@@ -68,7 +68,8 @@ export async function PATCH(req: Request) {
   if (rest.scheduledFor !== undefined) set.scheduledFor = rest.scheduledFor
   if (rest.paymentMethod !== undefined) set.paymentMethod = rest.paymentMethod
 
-  const [row] = await db.update(leads).set(set).where(eq(leads.id, id)).returning()
+  const [row] = await db.update(leads).set(set).where(eq(leads.id, id)).returning({ id: leads.id })
   if (!row) return fail('El lead no existe.', 404, 'NOT_FOUND')
-  return ok(row)
+  // Devuelve el lead enriquecido (canal + material), misma forma que la lista.
+  return ok(await getLead(id))
 }

@@ -59,6 +59,42 @@ export async function listLeads() {
 }
 export type LeadRow = Awaited<ReturnType<typeof listLeads>>[number];
 
+// Un solo lead, enriquecido igual que listLeads (con canal y material). Se usa
+// tras un PATCH para devolver la misma forma que consume el cliente (si no, el
+// badge de canal/material desaparecería hasta recargar).
+export async function getLead(id: string): Promise<LeadRow | null> {
+  const [r] = await db
+    .select({
+      id: leads.id,
+      ref: leads.ref,
+      conversationId: leads.conversationId,
+      name: leads.name,
+      contact: leads.contact,
+      interest: leads.interest,
+      materialName: materials.name,
+      quantity: leads.quantity,
+      unit: leads.unit,
+      agreedPriceCop: leads.agreedPriceCop,
+      fulfillment: leads.fulfillment,
+      scheduledFor: leads.scheduledFor,
+      paymentMethod: leads.paymentMethod,
+      requestedDiscount: leads.requestedDiscount,
+      discountApprovedPct: leads.discountApprovedPct,
+      status: leads.status,
+      notes: leads.notes,
+      test: leads.test,
+      channel: conversations.channel,
+      createdAt: leads.createdAt,
+    })
+    .from(leads)
+    .leftJoin(materials, eq(leads.materialId, materials.id))
+    .leftJoin(conversations, eq(leads.conversationId, conversations.id))
+    .where(eq(leads.id, id))
+    .limit(1);
+  if (!r) return null;
+  return { ...r, status: r.status as LeadStatus, createdAt: r.createdAt ? r.createdAt.toISOString() : null };
+}
+
 export async function listMaterials() {
   const rows = await db.select().from(materials).orderBy(desc(materials.updatedAt));
   return rows.map((r) => ({ ...r, updatedAt: r.updatedAt ? r.updatedAt.toISOString() : null }));
