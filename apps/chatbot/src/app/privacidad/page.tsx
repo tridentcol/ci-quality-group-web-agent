@@ -45,13 +45,22 @@ export default function PrivacyPage() {
           conservan mientras exista relación o hasta que solicite su supresión.
         </Section>
 
-        <Section title="5. Sus derechos">
+        <Section title="5. Proveedores tecnológicos (encargados)">
+          Para prestar el servicio nos apoyamos en proveedores que tratan datos únicamente por
+          nuestra instrucción y bajo acuerdos de confidencialidad: <strong>Meta Platforms</strong>{" "}
+          (Messenger, WhatsApp e Instagram, por donde llega su mensaje),{" "}
+          <strong>OpenAI</strong> (procesamiento del texto para generar la respuesta del asistente)
+          y proveedores de infraestructura en la nube (alojamiento y base de datos). No usamos sus
+          datos para publicidad ni los vendemos a terceros.
+        </Section>
+
+        <Section title="6. Sus derechos">
           Usted puede <strong>conocer, actualizar, rectificar y suprimir</strong> sus datos, y
           revocar la autorización de tratamiento. Para solicitar la eliminación de su perfil e
           historial, indíquelo por el canal de atención y procederemos conforme a la ley.
         </Section>
 
-        <Section title="6. Autorización">
+        <Section title="7. Autorización">
           Al continuar la conversación con nuestro asistente, usted autoriza el tratamiento de sus
           datos personales conforme a este aviso.
         </Section>
