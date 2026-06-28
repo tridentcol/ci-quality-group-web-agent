@@ -8,7 +8,7 @@ import { buildSystemPrompt } from './system-prompt'
 import { selectModel } from './router'
 import { executeTool, toolDefinitions, MEDIA_MIN_SCORE, type ToolContext, type ToolMode, type LocationCard } from './tools'
 import { RAG_K, RAG_MIN_SCORE } from './rag-config'
-import { isAfterHours } from './hours'
+import { isAfterHours, describeHours } from './hours'
 
 /**
  * Motor de generación (blueprint §9 Step 9): arma el system prompt (tono +
@@ -136,6 +136,17 @@ export async function assembleGeneration(input: GenerateInput): Promise<Assemble
   //    bienvenida (en el primer mensaje) y aviso fuera de horario.
   const isFirstMessage = !(input.history && input.history.length > 0)
   const afterHours = isAfterHours(cfg?.businessHours ?? null)
+  // Fecha/hora actual en Colombia (para que el bot razone fechas de entrega) + horario.
+  const nowText = new Date().toLocaleString('es-CO', {
+    timeZone: 'America/Bogota',
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+  const hoursSummary = describeHours(cfg?.businessHours ?? null)
   const system = buildSystemPrompt({
     botName: cfg?.botName ?? 'Asistente de CI Quality Group',
     tonePrompt: cfg?.tonePrompt ?? '',
@@ -146,6 +157,8 @@ export async function assembleGeneration(input: GenerateInput): Promise<Assemble
     afterHoursMessage: cfg?.afterHoursMessage ?? null,
     isFirstMessage,
     afterHours,
+    nowText,
+    hoursSummary,
     extraInstructions: cfg?.extraInstructions ?? null,
   })
 

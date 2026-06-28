@@ -71,3 +71,22 @@ export function isAfterHours(hoursRaw: unknown, now: Date = new Date()): boolean
   const open = minutes >= toMinutes(sched.open) && minutes < toMinutes(sched.close)
   return !open
 }
+
+const DAY_NAMES = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
+
+/**
+ * Descripción legible del horario (para inyectarla al system prompt: el bot la usa
+ * para agendar entregas/recogidas solo en días/horas hábiles).
+ */
+export function describeHours(hoursRaw: unknown): string {
+  const hours = normalizeHours(hoursRaw)
+  if (!hours) return 'No hay horario de atención configurado.'
+  const order = [1, 2, 3, 4, 5, 6, 0] // lunes → domingo
+  const lines = order.map((d) => {
+    const s = hours.schedule[d]
+    return `${DAY_NAMES[d]}: ${s && s.open && s.close ? `${s.open} a ${s.close}` : 'cerrado'}`
+  })
+  let out = lines.join('; ')
+  if (hours.holidays?.length) out += `. Días cerrados por feriado: ${hours.holidays.join(', ')}`
+  return out
+}
