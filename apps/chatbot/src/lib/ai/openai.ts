@@ -6,4 +6,11 @@ if (!env.OPENAI_API_KEY) {
 }
 
 // Cliente único de OpenAI (generación + embeddings comparten la misma API key).
-export const openai = new OpenAI({ apiKey: env.OPENAI_API_KEY })
+// timeout + maxRetries: el SDK reintenta solo ante fallos transitorios (429, 5xx,
+// red, timeout) con backoff exponencial, que es la causa más común de que un turno
+// del bot se caiga. Sin esto, un blip de OpenAI dejaba al cliente sin respuesta.
+export const openai = new OpenAI({
+  apiKey: env.OPENAI_API_KEY,
+  timeout: 60_000, // 60s por petición
+  maxRetries: 3,
+})

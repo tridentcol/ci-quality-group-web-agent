@@ -2,6 +2,7 @@ import { eq } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import { images } from '@/lib/db/schema'
 import { env } from '@/lib/env'
+import { isVercelBlobUrl } from '@/lib/blob-name'
 
 /**
  * Proxy PÚBLICO de medios. El store de Blob es privado, pero Meta
@@ -23,6 +24,10 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
     .from(images)
     .where(eq(images.id, id))
   if (!row?.blobUrl) return new Response('Not found', { status: 404 })
+
+  // SSRF: SOLO se reenvía el token a hosts de Vercel Blob. Un blobUrl hacia otro
+  // dominio (p. ej. inyectado en el registro) nunca recibe el Authorization.
+  if (!isVercelBlobUrl(row.blobUrl)) return new Response('Not found', { status: 404 })
 
   // El blob privado se accede con Authorization: Bearer <BLOB_READ_WRITE_TOKEN>.
   const upstream = await fetch(row.blobUrl, {

@@ -11,7 +11,9 @@ export const EMBEDDING_DIMENSIONS = 1536
 export async function embed(text: string): Promise<number[]> {
   const input = text.replace(/\n/g, ' ').trim()
   const res = await openai.embeddings.create({ model: EMBEDDING_MODEL, input })
-  return res.data[0].embedding
+  const vector = res.data[0]?.embedding
+  if (!vector) throw new Error('Embeddings: respuesta de OpenAI sin datos.')
+  return vector
 }
 
 /** Embebe varios textos en una sola llamada (más barato al ingerir). */
@@ -20,5 +22,11 @@ export async function embedBatch(texts: string[]): Promise<number[][]> {
   const input = texts.map((t) => t.replace(/\n/g, ' ').trim())
   const res = await openai.embeddings.create({ model: EMBEDDING_MODEL, input })
   // La API conserva el orden de entrada; ordenamos por index por seguridad.
-  return res.data.sort((a, b) => a.index - b.index).map((d) => d.embedding)
+  const out = res.data.sort((a, b) => a.index - b.index).map((d) => d.embedding)
+  // Garantía de alineación: cada texto debe tener su vector (si no, abortar; un
+  // desfase silencioso embebería el texto equivocado en el chunk equivocado).
+  if (out.length !== input.length) {
+    throw new Error(`Embeddings: se esperaban ${input.length} vectores y llegaron ${out.length}.`)
+  }
+  return out
 }

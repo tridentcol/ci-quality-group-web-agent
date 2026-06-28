@@ -4,6 +4,8 @@ import { botConfig, conversations, customerProfiles, webhookEvents } from '@/lib
 import { generateReply } from '@/lib/ai/generate'
 import { appendMessage, countMessages, loadMemory } from '@/lib/ai/memory'
 import { inngest } from '@/inngest/client'
+import { notifyAdmin } from './notify'
+import { env } from '@/lib/env'
 import { sendText, sendMedia, sendLocation } from './send'
 import type { Channel, NormalizedEvent } from './normalize'
 
@@ -72,44 +74,57 @@ export async function handleEvent(e: NormalizedEvent): Promise<void> {
   // 4b) Si el canal está desactivado en Ajustes, no responder (queda registrado).
   if (!(await channelEnabled(e.channel))) return
 
-  // 5) Generar respuesta (RAG + router + tools) con la memoria cargada.
-  const res = await generateReply({
-    message: e.text,
-    history: mem.history,
-    conversationId: mem.conversationId,
-    customerSummary: mem.customerSummary,
-    conversationSummary: mem.summary,
-  })
-
-  // 6) Enviar PRIMERO y persistir después: así no queda registrado como enviado
-  //    un mensaje que el envío no logró entregar.
-  if (res.reply.trim()) {
-    await sendText(e.channel, e.externalId, res.reply)
-    await appendMessage(mem.conversationId, 'assistant', res.reply, undefined, {
-      model: res.model,
-      routerReason: res.routerReason,
-      contextUsed: res.contextUsed,
-      topScores: res.retrieved.slice(0, 3).map((r) => Number(r.similarity.toFixed(3))),
-      tools: res.toolCalls.map((t) => t.name),
+  // 5-6) Generar (RAG + router + tools) y enviar. Si falla (OpenAI/Send API tras los
+  //   reintentos), NO debe quedar silencioso: el mensaje entrante ya está guardado
+  //   (paso 3, visible en el panel) y se avisa al admin para que un humano responda.
+  try {
+    const res = await generateReply({
+      message: e.text,
+      history: mem.history,
+      conversationId: mem.conversationId,
+      customerSummary: mem.customerSummary,
+      conversationSummary: mem.summary,
     })
-  }
 
-  // 6b) Medios ilustrativos (imagen/video) que acompañan la respuesta.
-  for (const att of res.attachments) {
-    try {
-      await sendMedia(e.channel, e.externalId, att)
-    } catch {
-      // si falla el envío de un medio, no rompemos la conversación
+    // Enviar PRIMERO y persistir después: así no queda registrado como enviado un
+    // mensaje que el envío no logró entregar.
+    if (res.reply.trim()) {
+      await sendText(e.channel, e.externalId, res.reply)
+      await appendMessage(mem.conversationId, 'assistant', res.reply, undefined, {
+        model: res.model,
+        routerReason: res.routerReason,
+        contextUsed: res.contextUsed,
+        topScores: res.retrieved.slice(0, 3).map((r) => Number(r.similarity.toFixed(3))),
+        tools: res.toolCalls.map((t) => t.name),
+      })
     }
-  }
 
-  // 6c) Tarjeta de ubicación (mapa) cuando el bot usó get_location y hay sede.
-  if (res.location) {
-    try {
-      await sendLocation(e.channel, e.externalId, res.location)
-    } catch {
-      // si falla la tarjeta, el texto ya llevó la dirección: no rompemos nada
+    // Medios ilustrativos (imagen/video) que acompañan la respuesta.
+    for (const att of res.attachments) {
+      try {
+        await sendMedia(e.channel, e.externalId, att)
+      } catch {
+        // si falla el envío de un medio, no rompemos la conversación
+      }
     }
+
+    // Tarjeta de ubicación (mapa) cuando el bot usó get_location y hay sede.
+    if (res.location) {
+      try {
+        await sendLocation(e.channel, e.externalId, res.location)
+      } catch {
+        // si falla la tarjeta, el texto ya llevó la dirección: no rompemos nada
+      }
+    }
+  } catch (err) {
+    // Degradación elegante: avisar al admin (no quedarse callado) y relanzar para log.
+    const base = (env.APP_URL ?? '').replace(/\/$/, '')
+    const link = /^https?:\/\//.test(base) ? `\n${base}/conversations/${mem.conversationId}` : ''
+    await notifyAdmin(
+      `⚠️ El bot no pudo responder a un cliente (${e.channel}). El mensaje quedó guardado; ` +
+        `respóndele desde el panel.${link}`,
+    )
+    throw err
   }
 
   // 7) Resumen periódico para acotar tokens en conversaciones largas.

@@ -6,6 +6,7 @@ import { db } from '@/lib/db'
 import { images, knowledgeQa, materials } from '@/lib/db/schema'
 import { embed } from '@/lib/ai/embed'
 import { env } from '@/lib/env'
+import { isVercelBlobUrl } from '@/lib/blob-name'
 
 // Base pública absoluta para la URL del proxy. Se prefiere APP_URL si es un https
 // real (config de prod); si no, se deriva del host de la petición (el dominio por el
@@ -76,7 +77,8 @@ export async function GET() {
 }
 
 const createSchema = z.object({
-  url: z.string().url(),
+  // Debe ser una URL de Vercel Blob: el proxy reenvía el token solo a ese dominio.
+  url: z.string().url().refine(isVercelBlobUrl, 'La URL no es de Vercel Blob.'),
   type: z.enum(['image', 'video']).default('image'),
   name: z.string().trim().min(1),
   description: z.string().trim().default(''),
@@ -86,19 +88,19 @@ const createSchema = z.object({
 // POST — registra un medio ya subido a Blob (lo embebe por su texto)
 export async function POST(req: Request) {
   const parsed = createSchema.safeParse(await req.json().catch(() => null))
-  if (!parsed.success) return fail('Faltan datos: url y name son obligatorios.')
+  if (!parsed.success) return fail(parsed.error.issues[0]?.message ?? 'Faltan datos: url y name.')
   const { url, type, name, description, tags } = parsed.data
 
   const embedding = await embed(embedText(name, description, tags))
-  // `url` que llega del cliente es la URL del blob PRIVADO → se guarda en blobUrl.
-  // La `url` pública es el proxy /api/media/<id> (se calcula con el id ya generado).
-  const [row] = await db
+  // Insert ATÓMICO: el id se genera en la app para fijar la url del proxy en la MISMA
+  // fila, sin el paso intermedio que podía dejar url='' permanente si fallaba el update.
+  // `url` del cliente es el blob PRIVADO → blobUrl; la url pública es el proxy.
+  const id = crypto.randomUUID()
+  const publicUrl = `${publicBase(req)}/api/media/${id}`
+  await db
     .insert(images)
-    .values({ url: '', blobUrl: url, type, name, description, tags, embedding })
-    .returning({ id: images.id })
-  const publicUrl = `${publicBase(req)}/api/media/${row.id}`
-  await db.update(images).set({ url: publicUrl }).where(eq(images.id, row.id))
-  return ok({ id: row.id, url: publicUrl })
+    .values({ id, url: publicUrl, blobUrl: url, type, name, description, tags, embedding })
+  return ok({ id, url: publicUrl })
 }
 
 const patchSchema = z.object({

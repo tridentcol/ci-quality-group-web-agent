@@ -199,7 +199,8 @@ export async function generateReply(input: GenerateInput): Promise<GenerateResul
       tool_choice: 'auto',
     })
 
-    const msg = completion.choices[0].message
+    const msg = completion.choices[0]?.message
+    if (!msg) throw new Error('OpenAI no devolvió ninguna opción de respuesta.')
     messages.push(msg)
 
     const toolCalls = msg.tool_calls ?? []
@@ -233,7 +234,7 @@ export async function generateReply(input: GenerateInput): Promise<GenerateResul
   // 5) Se agotaron las rondas: última llamada sin tools para forzar texto.
   const final = await openai.chat.completions.create({ model, temperature: TEMPERATURE, messages })
   return {
-    reply: final.choices[0].message.content ?? '',
+    reply: final.choices[0]?.message?.content ?? '',
     model,
     routerReason: reason,
     contextUsed,
