@@ -43,6 +43,24 @@ export interface Location {
   longitude: number
   name?: string
   address?: string
+  /** Enlace de Maps (opcional); si falta se deriva de lat/lng. */
+  mapsUrl?: string
+}
+
+// Enlace a Google Maps para el botón/desenrollado.
+function mapsLinkFor(loc: Location): string {
+  return loc.mapsUrl || `https://www.google.com/maps/search/?api=1&query=${loc.latitude},${loc.longitude}`
+}
+
+// Imagen de mapa (Google Static Maps) para la tarjeta de Messenger/IG. null si no
+// hay GOOGLE_MAPS_API_KEY: la tarjeta entonces va sin imagen.
+function staticMapUrl(loc: Location): string | null {
+  if (!env.GOOGLE_MAPS_API_KEY) return null
+  const c = `${loc.latitude},${loc.longitude}`
+  return (
+    `https://maps.googleapis.com/maps/api/staticmap?center=${c}&zoom=16&size=600x320&scale=2` +
+    `&markers=color:red%7C${c}&key=${env.GOOGLE_MAPS_API_KEY}`
+  )
 }
 
 async function post(url: string, token: string, payload: unknown): Promise<unknown> {
@@ -101,7 +119,8 @@ async function sendTextChunk(
         messaging_product: 'whatsapp',
         to,
         type: 'text',
-        text: { body: text, preview_url: false },
+        // Si el mensaje trae un enlace, WhatsApp lo "desenrolla" con vista previa.
+        text: { body: text, preview_url: /https?:\/\/\S+/.test(text) },
       })
     }
     case 'messenger': {
@@ -202,8 +221,15 @@ export async function sendMedia(
     : sendImage(channel, to, media.url, media.caption)
 }
 
-/** Tarjeta de ubicación nativa en WhatsApp; en los demás canales cae a texto. */
+/**
+ * Tarjeta de ubicación por canal:
+ *  - WhatsApp: tarjeta NATIVA interactiva (mapa).
+ *  - Messenger/Instagram: tarjeta (generic template) con imagen de mapa (Google
+ *    Static Maps si hay clave) + botón "Abrir en Google Maps".
+ */
 export async function sendLocation(channel: Channel, to: string, loc: Location): Promise<unknown> {
+  const mapsLink = mapsLinkFor(loc)
+
   if (channel === 'whatsapp') {
     if (!env.WHATSAPP_PHONE_NUMBER_ID || !env.WHATSAPP_ACCESS_TOKEN)
       throw new Error('WhatsApp no configurado')
@@ -219,8 +245,30 @@ export async function sendLocation(channel: Channel, to: string, loc: Location):
       },
     })
   }
-  const text = [loc.name, loc.address, `Mapa: https://maps.google.com/?q=${loc.latitude},${loc.longitude}`]
-    .filter(Boolean)
-    .join('\n')
-  return sendText(channel, to, text)
+
+  // Messenger / Instagram → generic template (tarjeta con botón y, si hay clave, mapa).
+  const image = staticMapUrl(loc)
+  const element: Record<string, unknown> = {
+    title: (loc.name ?? 'Nuestra ubicación').slice(0, 80),
+    default_action: { type: 'web_url', url: mapsLink },
+    buttons: [{ type: 'web_url', url: mapsLink, title: 'Abrir en Google Maps' }],
+  }
+  if (loc.address) element.subtitle = loc.address.slice(0, 80)
+  if (image) element.image_url = image
+
+  const payload = {
+    recipient: { id: to },
+    messaging_type: 'RESPONSE',
+    message: {
+      attachment: { type: 'template', payload: { template_type: 'generic', elements: [element] } },
+    },
+  }
+
+  if (channel === 'messenger') {
+    if (!env.MESSENGER_PAGE_ID || !env.MESSENGER_PAGE_ACCESS_TOKEN)
+      throw new Error('Messenger no configurado')
+    return post(`${GRAPH}/${env.MESSENGER_PAGE_ID}/messages`, env.MESSENGER_PAGE_ACCESS_TOKEN, payload)
+  }
+  if (!env.IG_ACCOUNT_ID || !env.INSTAGRAM_ACCESS_TOKEN) throw new Error('Instagram no configurado')
+  return post(`${GRAPH}/${env.IG_ACCOUNT_ID}/messages`, env.INSTAGRAM_ACCESS_TOKEN, payload)
 }

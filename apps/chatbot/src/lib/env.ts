@@ -25,6 +25,10 @@ const envSchema = z.object({
   // siendo válida. Configurable por env para no tocar código en cada upgrade.
   GRAPH_API_VERSION: z.string().optional(),
 
+  // Imagen de mapa para la tarjeta de ubicación en Messenger/IG (Google Static Maps).
+  // Opcional: si falta, la tarjeta va sin imagen (solo dirección + botón "Abrir en Maps").
+  GOOGLE_MAPS_API_KEY: z.string().optional(),
+
   // Canal Messenger (Step 10/16)
   MESSENGER_PAGE_ID: z.string().optional(),
   MESSENGER_PAGE_ACCESS_TOKEN: z.string().optional(),

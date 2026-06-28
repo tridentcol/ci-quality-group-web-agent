@@ -28,6 +28,7 @@ export async function GET() {
       agreedPriceCop: leads.agreedPriceCop,
       fulfillment: leads.fulfillment,
       scheduledFor: leads.scheduledFor,
+      paymentMethod: leads.paymentMethod,
       requestedDiscount: leads.requestedDiscount,
       discountApprovedPct: leads.discountApprovedPct,
       status: leads.status,
@@ -67,6 +68,7 @@ const patchSchema = z
     agreedPriceCop: moneyOrNull,
     fulfillment: textOrNull,
     scheduledFor: textOrNull,
+    paymentMethod: textOrNull,
   })
   .refine((d) => Object.keys(d).length > 1, 'Nada que actualizar.')
 
@@ -88,6 +90,7 @@ export async function PATCH(req: Request) {
   if (rest.agreedPriceCop !== undefined) set.agreedPriceCop = num(rest.agreedPriceCop)
   if (rest.fulfillment !== undefined) set.fulfillment = rest.fulfillment
   if (rest.scheduledFor !== undefined) set.scheduledFor = rest.scheduledFor
+  if (rest.paymentMethod !== undefined) set.paymentMethod = rest.paymentMethod
 
   const [row] = await db.update(leads).set(set).where(eq(leads.id, id)).returning()
   if (!row) return fail('El lead no existe.', 404, 'NOT_FOUND')

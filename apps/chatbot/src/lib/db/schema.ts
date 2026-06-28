@@ -29,6 +29,16 @@ export const botConfig = pgTable('bot_config', {
     .notNull()
     .default({ messenger: true, whatsapp: true, instagram: true }),
   adminWhatsapp: text('admin_whatsapp'),
+  // Ubicación de la sede para la TARJETA de ubicación que envía el bot:
+  //  - WhatsApp: tarjeta nativa interactiva (usa lat/lng + nombre/dirección).
+  //  - Messenger/IG: tarjeta (template) con imagen de mapa (Google Static Maps si hay
+  //    GOOGLE_MAPS_API_KEY) + botón "Abrir en Maps".
+  locationName: text('location_name'),
+  locationAddress: text('location_address'),
+  locationLat: numeric('location_lat'),
+  locationLng: numeric('location_lng'),
+  // Enlace de Maps (opcional); si falta se deriva de lat/lng.
+  locationMapsUrl: text('location_maps_url'),
   retentionMonths: integer('retention_months').notNull().default(12), // Habeas Data
   maxAutoDiscountPct: numeric('max_auto_discount_pct').notNull().default('0'),
   // Generar preguntas frecuentes (Q&A) al ingerir documentos (gpt-4o-mini).
@@ -210,6 +220,7 @@ export const leads = pgTable('leads', {
   agreedPriceCop: numeric('agreed_price_cop'), // precio final pactado (con descuento)
   fulfillment: text('fulfillment'), // logística: lleva a planta / recogemos + dirección
   scheduledFor: text('scheduled_for'), // fecha/horario acordado (texto del cliente)
+  paymentMethod: text('payment_method'), // método de pago acordado (efectivo/transferencia…)
   status: text('status').notNull().default('new'), // new|contacted|quoted|ready|won|lost
   notes: text('notes'),
   // Lead de PRUEBA (capturado desde el playground): visible pero claramente

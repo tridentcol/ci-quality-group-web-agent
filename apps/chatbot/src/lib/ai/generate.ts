@@ -6,7 +6,7 @@ import { botConfig } from '@/lib/db/schema'
 import { retrieve } from './retrieve'
 import { buildSystemPrompt } from './system-prompt'
 import { selectModel } from './router'
-import { executeTool, toolDefinitions, type ToolContext, type ToolMode } from './tools'
+import { executeTool, toolDefinitions, type ToolContext, type ToolMode, type LocationCard } from './tools'
 import { RAG_K, RAG_MIN_SCORE } from './rag-config'
 import { isAfterHours, type BusinessHours } from './hours'
 
@@ -54,6 +54,8 @@ export interface GenerateResult {
   retrieved: RetrievedChunkPreview[]
   /** Medios (imagen/video) a adjuntar: material-vinculado, Q&A-vinculado o semántico. */
   attachments: MediaAttachment[]
+  /** Tarjeta de ubicación a enviar (si el bot usó get_location y hay sede configurada). */
+  location?: LocationCard
 }
 
 export interface MediaAttachment {
@@ -163,6 +165,7 @@ export async function generateReply(input: GenerateInput): Promise<GenerateResul
   // toman los MAX_ATTACHMENTS primeros por prioridad.
   const materialMedia: MediaAttachment[] = []
   const semanticMedia: MediaAttachment[] = []
+  let locationCard: LocationCard | undefined
   const finalAttachments = (): MediaAttachment[] => {
     const out: MediaAttachment[] = []
     for (const a of [...materialMedia, ...linkedMedia, ...semanticMedia]) {
@@ -180,6 +183,9 @@ export async function generateReply(input: GenerateInput): Promise<GenerateResul
     } else if (name === 'lookup_price') {
       const r = result as { available?: boolean; mediaUrl?: string | null; mediaType?: 'image' | 'video' | null; material?: string }
       if (r.available && r.mediaUrl) materialMedia.push({ url: r.mediaUrl, caption: r.material ?? '', type: r.mediaType ?? 'image' })
+    } else if (name === 'get_location') {
+      const r = result as { found?: boolean; location?: LocationCard }
+      if (r.found && r.location) locationCard = r.location
     }
   }
 
@@ -206,6 +212,7 @@ export async function generateReply(input: GenerateInput): Promise<GenerateResul
         toolCalls: executed,
         retrieved,
         attachments: finalAttachments(),
+        location: locationCard,
       }
     }
 
@@ -233,5 +240,6 @@ export async function generateReply(input: GenerateInput): Promise<GenerateResul
     toolCalls: executed,
     retrieved,
     attachments: finalAttachments(),
+    location: locationCard,
   }
 }

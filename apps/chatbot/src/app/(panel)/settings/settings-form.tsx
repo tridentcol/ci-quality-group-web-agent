@@ -23,6 +23,11 @@ export interface SettingsInitial {
   businessHours: BusinessHours | null;
   channelsEnabled: Channels;
   adminWhatsapp: string | null;
+  locationName: string | null;
+  locationAddress: string | null;
+  locationLat: number | string | null;
+  locationLng: number | string | null;
+  locationMapsUrl: string | null;
   retentionMonths: number;
   maxAutoDiscountPct: number;
   qaGenerationEnabled: boolean;
@@ -39,6 +44,11 @@ export function SettingsForm({ initial }: { initial: SettingsInitial }) {
     ...initial,
     businessHours: initial.businessHours ?? DEFAULT_HOURS,
     adminWhatsapp: initial.adminWhatsapp ?? "",
+    locationName: initial.locationName ?? "",
+    locationAddress: initial.locationAddress ?? "",
+    locationLat: initial.locationLat != null ? String(initial.locationLat) : "",
+    locationLng: initial.locationLng != null ? String(initial.locationLng) : "",
+    locationMapsUrl: initial.locationMapsUrl ?? "",
   });
   const [busy, setBusy] = useState(false);
 
@@ -66,6 +76,11 @@ export function SettingsForm({ initial }: { initial: SettingsInitial }) {
           businessHours: f.businessHours,
           channelsEnabled: f.channelsEnabled,
           adminWhatsapp: f.adminWhatsapp,
+          locationName: f.locationName,
+          locationAddress: f.locationAddress,
+          locationLat: f.locationLat === "" ? null : Number(f.locationLat),
+          locationLng: f.locationLng === "" ? null : Number(f.locationLng),
+          locationMapsUrl: f.locationMapsUrl,
           retentionMonths: f.retentionMonths,
           maxAutoDiscountPct: f.maxAutoDiscountPct,
           qaGenerationEnabled: f.qaGenerationEnabled,
@@ -142,6 +157,33 @@ export function SettingsForm({ initial }: { initial: SettingsInitial }) {
             </label>
           ))}
         </div>
+      </Card>
+
+      {/* Ubicación */}
+      <Card title="Ubicación de la sede (tarjeta de mapa)">
+        <p className="-mt-1 text-xs text-muted-foreground">
+          El bot envía una tarjeta de ubicación cuando preguntan dónde están: en WhatsApp es un mapa
+          nativo; en Messenger/Instagram una tarjeta con botón &quot;Abrir en Maps&quot; (y mapa si
+          configuraste GOOGLE_MAPS_API_KEY en Vercel). Las coordenadas las sacas de Google Maps
+          (clic derecho sobre el punto → copia los números).
+        </p>
+        <Field label="Nombre del lugar">
+          <input className={inputCls} placeholder="CI Quality Group — Mamonal" value={f.locationName} onChange={(e) => set("locationName", e.target.value)} />
+        </Field>
+        <Field label="Dirección">
+          <input className={inputCls} placeholder="Kra 67 #9-315, vía Arroz Barato, Cartagena" value={f.locationAddress} onChange={(e) => set("locationAddress", e.target.value)} />
+        </Field>
+        <div className="flex flex-col gap-3 sm:flex-row">
+          <Field label="Latitud">
+            <input className={inputCls} placeholder="10.3245" value={f.locationLat} onChange={(e) => set("locationLat", e.target.value)} />
+          </Field>
+          <Field label="Longitud">
+            <input className={inputCls} placeholder="-75.5012" value={f.locationLng} onChange={(e) => set("locationLng", e.target.value)} />
+          </Field>
+        </div>
+        <Field label="Enlace de Google Maps (opcional; si lo dejas vacío se genera de lat/lng)">
+          <input className={inputCls} placeholder="https://maps.app.goo.gl/..." value={f.locationMapsUrl} onChange={(e) => set("locationMapsUrl", e.target.value)} />
+        </Field>
       </Card>
 
       {/* Operación / privacidad */}

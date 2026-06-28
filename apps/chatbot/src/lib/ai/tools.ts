@@ -2,7 +2,7 @@ import type OpenAI from 'openai'
 import { z } from 'zod'
 import { and, cosineDistance, desc, eq, ilike, sql } from 'drizzle-orm'
 import { db } from '@/lib/db'
-import { conversations, images, knowledgeGaps, leads, materials } from '@/lib/db/schema'
+import { botConfig, conversations, images, knowledgeGaps, leads, materials } from '@/lib/db/schema'
 import { notifyAdmin } from '@/lib/meta/notify'
 import { env } from '@/lib/env'
 import { embed } from './embed'
@@ -121,6 +121,7 @@ const captureLeadArgs = z.object({
   agreed_price: z.coerce.number().nonnegative().optional(),
   fulfillment: z.string().trim().min(1).optional(),
   scheduled_for: z.string().trim().min(1).optional(),
+  payment_method: z.string().trim().min(1).optional(),
   requested_discount: z.boolean().optional(),
 })
 
@@ -190,6 +191,7 @@ export async function captureLead(
     agreedPriceCop: args.agreed_price != null ? String(args.agreed_price) : (existing?.agreedPriceCop ?? null),
     fulfillment: args.fulfillment ?? existing?.fulfillment ?? null,
     scheduledFor: args.scheduled_for ?? existing?.scheduledFor ?? null,
+    paymentMethod: args.payment_method ?? existing?.paymentMethod ?? null,
     requestedDiscount: args.requested_discount ?? existing?.requestedDiscount ?? false,
   }
 
@@ -223,6 +225,7 @@ export async function captureLead(
       merged.agreedPriceCop ? `precio acordado: $${Number(merged.agreedPriceCop).toLocaleString('es-CO')}` : null,
       merged.fulfillment ? `logística: ${merged.fulfillment}` : null,
       merged.scheduledFor ? `cuándo: ${merged.scheduledFor}` : null,
+      merged.paymentMethod ? `pago: ${merged.paymentMethod}` : null,
     ]
       .filter(Boolean)
       .join(' · ')
@@ -262,12 +265,46 @@ export async function requestHumanHandoff(
 
 const getLocationArgs = z.object({}).optional()
 
+export interface LocationCard {
+  latitude: number
+  longitude: number
+  name?: string
+  address?: string
+  mapsUrl?: string
+}
+
 export async function getLocation(): Promise<
-  { found: true; context: string } | { found: false }
+  { found: true; context: string; location?: LocationCard } | { found: false }
 > {
+  const [cfg] = await db
+    .select({
+      name: botConfig.locationName,
+      address: botConfig.locationAddress,
+      lat: botConfig.locationLat,
+      lng: botConfig.locationLng,
+      mapsUrl: botConfig.locationMapsUrl,
+    })
+    .from(botConfig)
+    .where(eq(botConfig.id, 1))
+
   const chunks = await retrieve('ubicación dirección sede oficina dónde están ciudad', 3, RAG_MIN_SCORE)
-  if (chunks.length === 0) return { found: false }
-  return { found: true, context: chunks.map((c) => c.content).join('\n\n') }
+  const ragText = chunks.map((c) => c.content).join('\n\n')
+
+  const hasCoords = cfg?.lat != null && cfg?.lng != null
+  const location: LocationCard | undefined = hasCoords
+    ? {
+        latitude: Number(cfg!.lat),
+        longitude: Number(cfg!.lng),
+        name: cfg?.name ?? undefined,
+        address: cfg?.address ?? undefined,
+        mapsUrl: cfg?.mapsUrl ?? undefined,
+      }
+    : undefined
+
+  const ctx = [ragText, cfg?.name, cfg?.address].filter(Boolean).join('\n')
+  if (!ctx && !location) return { found: false }
+  // Nota para el modelo: la tarjeta de ubicación (mapa + botón) se envía aparte.
+  return { found: true, context: ctx || 'Se enviará la tarjeta de ubicación.', location }
 }
 
 // ─── find_media ───────────────────────────────────────────────────────────────
@@ -406,6 +443,7 @@ export const toolDefinitions: OpenAI.Chat.Completions.ChatCompletionTool[] = [
               'Logística acordada: si el cliente lleva a la planta o si lo recogen (con dirección).',
           },
           scheduled_for: { type: 'string', description: 'Fecha/horario acordado para entrega o recogida' },
+          payment_method: { type: 'string', description: 'Método de pago acordado (efectivo, transferencia, etc.)' },
           requested_discount: { type: 'boolean', description: 'Si pidió un descuento' },
         },
         additionalProperties: false,

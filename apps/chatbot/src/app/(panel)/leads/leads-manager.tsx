@@ -22,6 +22,7 @@ interface Lead {
   agreedPriceCop: string | null;
   fulfillment: string | null;
   scheduledFor: string | null;
+  paymentMethod: string | null;
   requestedDiscount: boolean;
   discountApprovedPct: string | null;
   status: Status;
@@ -274,9 +275,9 @@ function LeadRow({
           {lead.test && <TestBadge />}
         </div>
         <div className="text-xs text-muted-foreground">{lead.contact ?? "sin contacto"}</div>
-        {(lead.fulfillment || lead.scheduledFor) && (
+        {(lead.fulfillment || lead.scheduledFor || lead.paymentMethod) && (
           <div className="mt-0.5 text-xs text-muted-foreground">
-            {[lead.fulfillment, lead.scheduledFor].filter(Boolean).join(" · ")}
+            {[lead.fulfillment, lead.scheduledFor, lead.paymentMethod].filter(Boolean).join(" · ")}
           </div>
         )}
       </td>
@@ -369,6 +370,12 @@ function LeadCard({
           <div>
             <dt className="text-xs text-muted-foreground">Fecha/horario</dt>
             <dd className="text-foreground">{lead.scheduledFor}</dd>
+          </div>
+        )}
+        {lead.paymentMethod && (
+          <div>
+            <dt className="text-xs text-muted-foreground">Pago</dt>
+            <dd className="text-foreground">{lead.paymentMethod}</dd>
           </div>
         )}
       </dl>

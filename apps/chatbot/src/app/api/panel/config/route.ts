@@ -42,6 +42,11 @@ const patchSchema = z
       })
       .optional(),
     adminWhatsapp: z.string().trim().nullable().optional(),
+    locationName: z.string().trim().nullable().optional(),
+    locationAddress: z.string().trim().nullable().optional(),
+    locationLat: z.union([z.coerce.number().min(-90).max(90), z.null()]).optional(),
+    locationLng: z.union([z.coerce.number().min(-180).max(180), z.null()]).optional(),
+    locationMapsUrl: z.union([z.string().trim().url('Enlace de Maps inválido.'), z.literal(''), z.null()]).optional(),
     retentionMonths: z.coerce.number().int().min(1).max(120).optional(),
     maxAutoDiscountPct: z.coerce.number().min(0).max(100).optional(),
     qaGenerationEnabled: z.boolean().optional(),
@@ -63,6 +68,11 @@ export async function PATCH(req: Request) {
   if (d.businessHours !== undefined) set.businessHours = d.businessHours
   if (d.channelsEnabled !== undefined) set.channelsEnabled = d.channelsEnabled
   if (d.adminWhatsapp !== undefined) set.adminWhatsapp = d.adminWhatsapp || null
+  if (d.locationName !== undefined) set.locationName = d.locationName || null
+  if (d.locationAddress !== undefined) set.locationAddress = d.locationAddress || null
+  if (d.locationLat !== undefined) set.locationLat = d.locationLat === null ? null : String(d.locationLat)
+  if (d.locationLng !== undefined) set.locationLng = d.locationLng === null ? null : String(d.locationLng)
+  if (d.locationMapsUrl !== undefined) set.locationMapsUrl = d.locationMapsUrl || null
   if (d.retentionMonths !== undefined) set.retentionMonths = d.retentionMonths
   if (d.maxAutoDiscountPct !== undefined) set.maxAutoDiscountPct = String(d.maxAutoDiscountPct)
   if (d.qaGenerationEnabled !== undefined) set.qaGenerationEnabled = d.qaGenerationEnabled
