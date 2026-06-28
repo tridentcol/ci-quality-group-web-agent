@@ -40,11 +40,20 @@ export interface ToolContext {
   mediaMinScore?: number
 }
 
-// Enlace directo a la conversación en el panel (para responder el relevo ahí mismo).
+// Base pública del panel para los enlaces de los avisos. Usa APP_URL si es un https
+// real; si no (no configurada o localhost), cae al dominio del panel para que el enlace
+// SIEMPRE aparezca en el correo/Telegram. notifyAdmin corre en background del webhook,
+// sin request del que derivar el host, por eso el respaldo es necesario.
+function panelBaseUrl(): string {
+  const app = (env.APP_URL ?? '').replace(/\/$/, '')
+  if (/^https:\/\//.test(app) && !app.includes('localhost')) return app
+  return 'https://bot.ci-quality-group.com'
+}
+
+// Enlace directo a la conversación del lead en el panel (para abrir el chat ahí mismo).
 function panelConvLink(conversationId?: string | null): string {
-  const base = (env.APP_URL ?? '').replace(/\/$/, '')
-  if (!conversationId || !/^https?:\/\//.test(base)) return ''
-  return `\nResponder en el panel: ${base}/conversations/${conversationId}`
+  if (!conversationId) return ''
+  return `\nAbrir el chat: ${panelBaseUrl()}/conversations/${conversationId}`
 }
 
 // ─── lookup_price ────────────────────────────────────────────────────────────
@@ -230,10 +239,13 @@ export async function captureLead(
       ref = row.ref
     }
 
-    // Aviso SOLO en producción y solo cuando aporta: al crear el lead o al quedar
-    // "casi cerrado" (ready). Se arma aquí pero se envía fuera de la transacción.
+    // Aviso SOLO en producción y solo cuando APORTA: cuando se captura el CONTACTO por
+    // primera vez (lead accionable) o cuando queda "listo para cerrar". Antes avisaba al
+    // crear el lead aunque no tuviera nombre ni contacto → correo inútil. Se arma aquí
+    // pero se envía fuera de la transacción.
+    const becameContactable = !!merged.contact && !existing?.contact
     const becameReady = status === 'ready' && existing?.status !== 'ready'
-    if (mode === 'live' && (!existing || becameReady)) {
+    if (mode === 'live' && (becameContactable || becameReady)) {
       const tag = ref != null ? `Lead #${ref} — ` : ''
       const header = becameReady ? `🟢 ${tag}LISTO para cerrar` : `🆕 ${tag}Nuevo lead`
       const deal = [
