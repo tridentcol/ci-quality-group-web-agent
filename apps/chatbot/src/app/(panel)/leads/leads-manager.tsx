@@ -214,6 +214,7 @@ function DiscountControl({ lead, onChange }: { lead: Lead; onChange: (l: Lead) =
         min={0}
         max={100}
         placeholder="%"
+        aria-label="Descuento aprobado (%)"
         value={discount}
         onChange={(e) => setDiscount(e.target.value)}
         className={cn(inputCls, "w-16")}
@@ -246,6 +247,7 @@ function StatusControl({
     <select
       value={lead.status}
       disabled={busy}
+      aria-label="Estado del lead"
       onChange={(e) => patch({ status: e.target.value })}
       className={cn(inputCls, className)}
     >

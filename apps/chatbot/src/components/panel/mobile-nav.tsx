@@ -76,6 +76,10 @@ export function MobileNav() {
 
       {/* Drawer */}
       <aside
+        role="dialog"
+        aria-modal="true"
+        aria-label="Menú de navegación"
+        aria-hidden={!open}
         className={cn(
           "fixed inset-y-0 left-0 z-50 flex w-64 max-w-[80%] flex-col border-r border-sidebar-border bg-sidebar shadow-xl transition-transform duration-200 ease-out",
           open ? "translate-x-0" : "-translate-x-full",

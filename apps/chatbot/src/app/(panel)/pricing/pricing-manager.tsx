@@ -260,12 +260,14 @@ function PriceRow({
       <td className="px-4 py-2 align-top">
         <input
           className={inputCls}
+          aria-label="Nombre del material"
           value={draft.name}
           onChange={(e) => setDraft({ ...draft, name: e.target.value })}
         />
         <input
           className={cn(inputCls, "mt-1 text-xs text-muted-foreground")}
           placeholder="Categoría (opcional)"
+          aria-label="Categoría"
           value={draft.category ?? ""}
           onChange={(e) => setDraft({ ...draft, category: e.target.value })}
         />
@@ -275,6 +277,7 @@ function PriceRow({
         <input
           className={cn(inputCls, "w-20")}
           list="unit-suggestions"
+          aria-label="Unidad"
           value={draft.unit}
           placeholder="kg"
           onChange={(e) => setDraft({ ...draft, unit: e.target.value })}
@@ -285,6 +288,7 @@ function PriceRow({
           type="number"
           min={0}
           className={cn(inputCls, "w-28")}
+          aria-label="Precio minorista (COP)"
           value={draft.retailPriceCop}
           onChange={(e) => setDraft({ ...draft, retailPriceCop: e.target.value })}
         />
@@ -297,6 +301,7 @@ function PriceRow({
           type="number"
           min={0}
           className={cn(inputCls, "w-28")}
+          aria-label="Precio mayorista (COP)"
           value={draft.wholesalePriceCop ?? ""}
           onChange={(e) => setDraft({ ...draft, wholesalePriceCop: e.target.value })}
         />
@@ -310,6 +315,7 @@ function PriceRow({
           min={0}
           className={cn(inputCls, "w-24")}
           placeholder="—"
+          aria-label="Umbral mayorista"
           value={draft.wholesaleThreshold ?? ""}
           onChange={(e) => setDraft({ ...draft, wholesaleThreshold: e.target.value })}
         />
@@ -320,6 +326,7 @@ function PriceRow({
           min={0}
           className={cn(inputCls, "w-28")}
           placeholder="—"
+          aria-label="Precio mayorista 2 (COP)"
           value={draft.wholesalePrice2Cop ?? ""}
           onChange={(e) => setDraft({ ...draft, wholesalePrice2Cop: e.target.value })}
         />
@@ -333,6 +340,7 @@ function PriceRow({
           min={0}
           className={cn(inputCls, "w-24")}
           placeholder="—"
+          aria-label="Umbral mayorista 2"
           value={draft.wholesaleThreshold2 ?? ""}
           onChange={(e) => setDraft({ ...draft, wholesaleThreshold2: e.target.value })}
         />
@@ -343,6 +351,7 @@ function PriceRow({
           min={0}
           className={cn(inputCls, "w-24")}
           placeholder="—"
+          aria-label="Mínimo de pedido"
           value={draft.minOrder ?? ""}
           onChange={(e) => setDraft({ ...draft, minOrder: e.target.value })}
         />

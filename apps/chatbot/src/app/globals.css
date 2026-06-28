@@ -32,9 +32,10 @@
   --input: #e2e8f0;
   --ring: #15803d;
 
-  /* Estados semánticos del panel (verde=ready, ámbar=pendiente, rojo=fallido). */
-  --success: #16a34a;
-  --warning: #d97706;
+  /* Estados semánticos del panel (verde=ready, ámbar=pendiente, rojo=fallido).
+     Tonos oscurecidos para cumplir contraste AA como texto pequeño (badges). */
+  --success: #15803d;
+  --warning: #b45309;
 
   --chart-1: #15803d;
   --chart-2: #16a34a;
