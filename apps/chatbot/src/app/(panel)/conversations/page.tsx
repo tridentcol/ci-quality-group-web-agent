@@ -1,6 +1,8 @@
 import { ConversationsList } from "./conversations-list";
+import { listConversations } from "@/lib/data/panel";
 
-export default function ConversationsPage() {
+export default async function ConversationsPage() {
+  const initial = await listConversations();
   return (
     <div className="mx-auto max-w-5xl p-4 sm:p-6 lg:p-8">
       <header className="mb-6 sm:mb-8">
@@ -9,7 +11,7 @@ export default function ConversationsPage() {
           Hilos de los 3 canales. Entra a una para ver el historial y tomar o liberar el control.
         </p>
       </header>
-      <ConversationsList />
+      <ConversationsList initial={initial} />
     </div>
   );
 }

@@ -1,6 +1,8 @@
 import { KnowledgeManager } from "./knowledge-manager";
+import { listKnowledgeSources } from "@/lib/data/panel";
 
-export default function KnowledgePage() {
+export default async function KnowledgePage() {
+  const initial = await listKnowledgeSources();
   return (
     <div className="mx-auto max-w-5xl p-4 sm:p-6 lg:p-8">
       <header className="mb-6 sm:mb-8">
@@ -9,7 +11,7 @@ export default function KnowledgePage() {
           Sube documentos, enlaces o texto. El bot solo responde con esta información verificada.
         </p>
       </header>
-      <KnowledgeManager />
+      <KnowledgeManager initial={initial} />
     </div>
   );
 }

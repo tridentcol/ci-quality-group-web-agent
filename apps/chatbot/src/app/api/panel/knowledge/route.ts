@@ -1,11 +1,12 @@
 import { NextResponse } from 'next/server'
 import { del } from '@vercel/blob'
 import { z } from 'zod'
-import { desc, eq } from 'drizzle-orm'
+import { eq } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import { knowledgeSources } from '@/lib/db/schema'
 import { isUuid } from '@/lib/api'
 import { inngest } from '@/inngest/client'
+import { listKnowledgeSources } from '@/lib/data/panel'
 
 /**
  * Fuentes de conocimiento. El flujo de alta es en dos pasos:
@@ -59,21 +60,7 @@ export async function GET(req: Request) {
     return ok(src)
   }
 
-  const sources = await db
-    .select({
-      id: knowledgeSources.id,
-      type: knowledgeSources.type,
-      name: knowledgeSources.name,
-      status: knowledgeSources.status,
-      error: knowledgeSources.error,
-      chunkCount: knowledgeSources.chunkCount,
-      qaCount: knowledgeSources.qaCount,
-      createdAt: knowledgeSources.createdAt,
-      updatedAt: knowledgeSources.updatedAt,
-    })
-    .from(knowledgeSources)
-    .orderBy(desc(knowledgeSources.createdAt))
-  return ok(sources)
+  return ok(await listKnowledgeSources())
 }
 
 // POST — crea una fuente con el texto plano ya revisado y dispara la ingesta.

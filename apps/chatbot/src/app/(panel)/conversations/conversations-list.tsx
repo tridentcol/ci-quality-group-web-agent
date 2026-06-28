@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ChannelBadge, ConversationStatusBadge } from "@/components/panel/channel-badge";
 
@@ -13,26 +12,9 @@ interface ConversationRow {
   messageCount: number;
 }
 
-export function ConversationsList() {
-  const [items, setItems] = useState<ConversationRow[]>([]);
-  const [loading, setLoading] = useState(true);
+export function ConversationsList({ initial }: { initial: ConversationRow[] }) {
+  const items = initial;
 
-  useEffect(() => {
-    fetch("/api/panel/conversations")
-      .then((r) => r.json())
-      .then((j) => {
-        if (j.success) setItems(j.data);
-        setLoading(false);
-      });
-  }, []);
-
-  if (loading) {
-    return (
-      <div className="rounded-xl border border-border bg-card py-8 text-center text-sm text-muted-foreground shadow-sm">
-        Cargando…
-      </div>
-    );
-  }
   if (items.length === 0) {
     return (
       <div className="rounded-xl border border-border bg-card py-8 text-center text-sm text-muted-foreground shadow-sm">

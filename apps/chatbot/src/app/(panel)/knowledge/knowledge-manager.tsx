@@ -47,8 +47,8 @@ const STATUS: Record<Source["status"], { label: string; cls: string; Icon: typeo
 const fmtDate = (d: string | null) =>
   d ? new Date(d).toLocaleDateString("es-CO", { day: "2-digit", month: "short", year: "numeric" }) : "—";
 
-export function KnowledgeManager() {
-  const [sources, setSources] = useState<Source[]>([]);
+export function KnowledgeManager({ initial }: { initial: Source[] }) {
+  const [sources, setSources] = useState<Source[]>(initial);
   const [editor, setEditor] = useState<EditorDraft | null>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [view, setView] = useState<"fuentes" | "preguntas">("fuentes");
@@ -57,15 +57,13 @@ export function KnowledgeManager() {
 
   const toggleQa = (id: string) => setExpanded((cur) => (cur === id ? null : id));
 
+  // Las fuentes iniciales llegan del servidor (sin skeleton). `load` se reutiliza para
+  // refrescar tras subir/borrar y para el polling de ingesta.
   const load = useCallback(async () => {
     const res = await fetch("/api/panel/knowledge");
     const json = await res.json();
     if (json.success) setSources(json.data);
   }, []);
-
-  useEffect(() => {
-    load();
-  }, [load]);
 
   // Polling mientras haya fuentes en proceso (alta o re-ingesta).
   useEffect(() => {

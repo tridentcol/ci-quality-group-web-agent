@@ -1,7 +1,7 @@
 import "server-only";
-import { desc, eq } from "drizzle-orm";
+import { desc, eq, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { conversations, knowledgeGaps, leads, materials } from "@/lib/db/schema";
+import { conversations, knowledgeGaps, knowledgeSources, leads, materials, messages } from "@/lib/db/schema";
 
 type LeadStatus = "new" | "contacted" | "quoted" | "ready" | "won" | "lost";
 
@@ -75,3 +75,48 @@ export async function listGaps(status: "open" | "resolved" | "all" = "open") {
   }));
 }
 export type GapRow = Awaited<ReturnType<typeof listGaps>>[number];
+
+export async function listKnowledgeSources() {
+  const rows = await db
+    .select({
+      id: knowledgeSources.id,
+      type: knowledgeSources.type,
+      name: knowledgeSources.name,
+      status: knowledgeSources.status,
+      error: knowledgeSources.error,
+      chunkCount: knowledgeSources.chunkCount,
+      qaCount: knowledgeSources.qaCount,
+      createdAt: knowledgeSources.createdAt,
+      updatedAt: knowledgeSources.updatedAt,
+    })
+    .from(knowledgeSources)
+    .orderBy(desc(knowledgeSources.createdAt));
+  return rows.map((r) => ({
+    ...r,
+    status: r.status as "pending" | "processing" | "ready" | "failed",
+    createdAt: r.createdAt ? r.createdAt.toISOString() : null,
+    updatedAt: r.updatedAt ? r.updatedAt.toISOString() : null,
+  }));
+}
+export type SourceRow = Awaited<ReturnType<typeof listKnowledgeSources>>[number];
+
+export async function listConversations() {
+  const rows = await db
+    .select({
+      id: conversations.id,
+      channel: conversations.channel,
+      customerName: conversations.customerName,
+      status: conversations.status,
+      lastMessageAt: conversations.lastMessageAt,
+      messageCount: sql<number>`count(${messages.id})::int`,
+    })
+    .from(conversations)
+    .leftJoin(messages, eq(messages.conversationId, conversations.id))
+    .groupBy(conversations.id)
+    .orderBy(desc(conversations.lastMessageAt));
+  return rows.map((r) => ({
+    ...r,
+    lastMessageAt: r.lastMessageAt ? r.lastMessageAt.toISOString() : null,
+  }));
+}
+export type ConversationRow = Awaited<ReturnType<typeof listConversations>>[number];

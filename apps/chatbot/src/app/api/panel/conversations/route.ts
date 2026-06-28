@@ -1,9 +1,10 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
-import { asc, desc, eq, sql } from 'drizzle-orm'
+import { asc, eq } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import { conversations, customerProfiles, messages } from '@/lib/db/schema'
 import { isUuid } from '@/lib/api'
+import { listConversations } from '@/lib/data/panel'
 import { inngest } from '@/inngest/client'
 
 function ok(data: unknown) {
@@ -37,20 +38,7 @@ export async function GET(req: Request) {
     return ok({ conversation: conv, messages: thread })
   }
 
-  const rows = await db
-    .select({
-      id: conversations.id,
-      channel: conversations.channel,
-      customerName: conversations.customerName,
-      status: conversations.status,
-      lastMessageAt: conversations.lastMessageAt,
-      messageCount: sql<number>`count(${messages.id})::int`,
-    })
-    .from(conversations)
-    .leftJoin(messages, eq(messages.conversationId, conversations.id))
-    .groupBy(conversations.id)
-    .orderBy(desc(conversations.lastMessageAt))
-  return ok(rows)
+  return ok(await listConversations())
 }
 
 const patchSchema = z.object({
