@@ -5,6 +5,7 @@ import { Loader2, Check, Plus, X, MapPin } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { normalizeHours } from "@/lib/ai/hours";
+import { NotificationsCard } from "./notifications-card";
 
 export interface DayHours {
   open: string;
@@ -378,68 +379,8 @@ export function SettingsForm({ initial }: { initial: SettingsInitial }) {
         </p>
       </Card>
 
-      {/* Centro de notificaciones */}
-      <Card title="Notificaciones de leads y relevos">
-        <p className="-mt-1 text-xs text-muted-foreground">
-          Cada lead nuevo o relevo se avisa por TODOS los canales que actives. El mensaje incluye un
-          enlace directo a la conversación en el panel. Si un envío falla, lo verás en Salud.
-        </p>
-
-        {/* Telegram */}
-        <div className="rounded-lg border border-border p-3">
-          <Switch
-            label="Telegram (recomendado · gratis e instantáneo)"
-            checked={f.notifications.telegram.enabled}
-            onChange={(v) => setNotif("telegram", { enabled: v })}
-          />
-          {f.notifications.telegram.enabled && (
-            <div className="mt-2 space-y-2">
-              <input className={inputCls} placeholder="Token del bot (de @BotFather)" value={f.notifications.telegram.token} onChange={(e) => setNotif("telegram", { token: e.target.value })} />
-              <input className={inputCls} placeholder="Chat ID (tu chat o el del grupo)" value={f.notifications.telegram.chatId} onChange={(e) => setNotif("telegram", { chatId: e.target.value })} />
-              <p className="text-xs text-muted-foreground">
-                Crea un bot con @BotFather, escríbele, y obtén tu chat id (p. ej. con @userinfobot). Sin
-                ventana de 24 h ni aprobaciones.
-              </p>
-            </div>
-          )}
-        </div>
-
-        {/* Email */}
-        <div className="rounded-lg border border-border p-3">
-          <Switch
-            label="Email"
-            checked={f.notifications.email.enabled}
-            onChange={(v) => setNotif("email", { enabled: v })}
-          />
-          {f.notifications.email.enabled && (
-            <div className="mt-2 space-y-2">
-              <input className={inputCls} placeholder="Correo destino (a quién avisar)" value={f.notifications.email.to} onChange={(e) => setNotif("email", { to: e.target.value })} />
-              <input className={inputCls} placeholder="Resend API key (re_...)" value={f.notifications.email.resendKey} onChange={(e) => setNotif("email", { resendKey: e.target.value })} />
-              <input className={inputCls} placeholder="Remitente (opcional; ej. Avisos <avisos@tudominio.com>)" value={f.notifications.email.from} onChange={(e) => setNotif("email", { from: e.target.value })} />
-              <p className="text-xs text-muted-foreground">
-                Usa <a href="https://resend.com" target="_blank" rel="noreferrer" className="text-primary hover:underline">Resend</a> (capa gratuita). Para enviar a cualquier correo necesitas verificar un dominio;
-                sin dominio, solo llega a tu propio correo de la cuenta.
-              </p>
-            </div>
-          )}
-        </div>
-
-        {/* WhatsApp */}
-        <div className="rounded-lg border border-border p-3">
-          <Switch
-            label="WhatsApp"
-            checked={f.notifications.whatsapp.enabled}
-            onChange={(v) => setNotif("whatsapp", { enabled: v })}
-          />
-          {f.notifications.whatsapp.enabled && (
-            <p className="mt-2 text-xs text-muted-foreground">
-              Usa el número del administrador (arriba) y requiere WhatsApp Cloud API conectado. Ojo:
-              WhatsApp solo permite mensajes libres dentro de una ventana de 24 h, o con plantilla
-              aprobada — por eso Telegram o Email son más confiables para avisos.
-            </p>
-          )}
-        </div>
-      </Card>
+      {/* Centro de notificaciones (interactivo) */}
+      <NotificationsCard value={f.notifications} onChange={setNotif} />
 
       {/* Conocimiento */}
       <Card title="Conocimiento">
@@ -481,28 +422,6 @@ function Card({ title, children }: { title: string; children: React.ReactNode })
       <h2 className="mb-4 text-sm font-semibold text-foreground">{title}</h2>
       <div className="space-y-4">{children}</div>
     </section>
-  );
-}
-
-// Interruptor accesible (switch) con etiqueta, para los canales de notificación.
-function Switch({ label, checked, onChange }: { label: string; checked: boolean; onChange: (v: boolean) => void }) {
-  return (
-    <label className="flex cursor-pointer items-center gap-2">
-      <button
-        type="button"
-        role="switch"
-        aria-checked={checked}
-        aria-label={label}
-        onClick={() => onChange(!checked)}
-        className={cn(
-          "relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors",
-          checked ? "bg-primary" : "bg-input",
-        )}
-      >
-        <span className={cn("inline-block size-4 transform rounded-full bg-white transition-transform", checked ? "translate-x-4" : "translate-x-0.5")} />
-      </button>
-      <span className="text-sm font-medium text-foreground">{label}</span>
-    </label>
   );
 }
 
