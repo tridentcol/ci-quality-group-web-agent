@@ -6,6 +6,7 @@ import {
   numeric,
   boolean,
   integer,
+  serial,
   jsonb,
   vector,
   index,
@@ -52,6 +53,9 @@ export const botConfig = pgTable('bot_config', {
   maxAttachments: integer('max_attachments'), // tope de medios por respuesta
   // Reglas/instrucciones extra que el admin agrega al system prompt (no-code).
   extraInstructions: text('extra_instructions'),
+  // Centro de notificaciones (multi-canal, configurable desde la UI):
+  // { email:{enabled,to,resendKey,from}, telegram:{enabled,token,chatId}, whatsapp:{enabled} }
+  notifications: jsonb('notifications'),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
 })
 
@@ -220,6 +224,8 @@ export const messages = pgTable('messages', {
 // leads — solicitudes capturadas para cotización
 export const leads = pgTable('leads', {
   id: uuid('id').defaultRandom().primaryKey(),
+  // Identificador corto y legible para humanos: "Lead #<ref>" (búsqueda/notificación).
+  ref: serial('ref').notNull(),
   // Nullable: un lead del playground (o de la web sin hilo) puede no tener
   // conversación asociada.
   conversationId: uuid('conversation_id').references(() => conversations.id, {

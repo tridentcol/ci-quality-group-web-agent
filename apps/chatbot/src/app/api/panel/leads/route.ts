@@ -19,6 +19,7 @@ export async function GET() {
   const rows = await db
     .select({
       id: leads.id,
+      ref: leads.ref,
       conversationId: leads.conversationId,
       name: leads.name,
       contact: leads.contact,

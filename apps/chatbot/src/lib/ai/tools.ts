@@ -217,6 +217,7 @@ export async function captureLead(
       logistics: merged.fulfillment != null || merged.scheduledFor != null,
     })
 
+    let ref: number | null = existing?.ref ?? null
     if (existing) {
       await tx.update(leads).set({ ...merged, status }).where(eq(leads.id, existing.id))
       leadId = existing.id
@@ -224,15 +225,17 @@ export async function captureLead(
       const [row] = await tx
         .insert(leads)
         .values({ conversationId: ctx.conversationId ?? null, ...merged, status, test: isTest })
-        .returning({ id: leads.id })
+        .returning({ id: leads.id, ref: leads.ref })
       leadId = row.id
+      ref = row.ref
     }
 
     // Aviso SOLO en producción y solo cuando aporta: al crear el lead o al quedar
     // "casi cerrado" (ready). Se arma aquí pero se envía fuera de la transacción.
     const becameReady = status === 'ready' && existing?.status !== 'ready'
     if (mode === 'live' && (!existing || becameReady)) {
-      const header = becameReady ? '🟢 Lead LISTO para cerrar' : 'Nuevo lead'
+      const tag = ref != null ? `Lead #${ref} — ` : ''
+      const header = becameReady ? `🟢 ${tag}LISTO para cerrar` : `🆕 ${tag}Nuevo lead`
       const deal = [
         merged.interest ? `interés: ${merged.interest}` : null,
         merged.quantity ? `cantidad: ${merged.quantity}${merged.unit ? ' ' + merged.unit : ''}` : null,

@@ -42,6 +42,22 @@ export interface SettingsInitial {
   temperature: number | string | null;
   maxAttachments: number | null;
   extraInstructions: string | null;
+  notifications: unknown; // jsonb crudo → se normaliza en el form
+}
+
+// Estado del centro de notificaciones (en el form, con strings para los inputs).
+interface NotifState {
+  email: { enabled: boolean; to: string; resendKey: string; from: string };
+  telegram: { enabled: boolean; token: string; chatId: string };
+  whatsapp: { enabled: boolean };
+}
+function normalizeNotif(raw: unknown): NotifState {
+  const n = (raw ?? {}) as Partial<NotifState>;
+  return {
+    email: { enabled: !!n.email?.enabled, to: n.email?.to ?? "", resendKey: n.email?.resendKey ?? "", from: n.email?.from ?? "" },
+    telegram: { enabled: !!n.telegram?.enabled, token: n.telegram?.token ?? "", chatId: n.telegram?.chatId ?? "" },
+    whatsapp: { enabled: !!n.whatsapp?.enabled },
+  };
 }
 
 // Valores por defecto (cuando el campo está vacío = usar el del código).
@@ -70,10 +86,15 @@ export function SettingsForm({ initial }: { initial: SettingsInitial }) {
     temperature: initial.temperature != null ? String(initial.temperature) : "",
     maxAttachments: initial.maxAttachments != null ? String(initial.maxAttachments) : "",
     extraInstructions: initial.extraInstructions ?? "",
+    notifications: normalizeNotif(initial.notifications),
   });
   const [busy, setBusy] = useState(false);
 
   const set = <K extends keyof typeof f>(k: K, v: (typeof f)[K]) => setF((p) => ({ ...p, [k]: v }));
+
+  // Actualiza un canal del centro de notificaciones.
+  const setNotif = <C extends keyof NotifState>(channel: C, patch: Partial<NotifState[C]>) =>
+    setF((p) => ({ ...p, notifications: { ...p.notifications, [channel]: { ...p.notifications[channel], ...patch } } }));
 
   // Helpers de horario por día + feriados.
   const hours = f.businessHours;
@@ -120,6 +141,7 @@ export function SettingsForm({ initial }: { initial: SettingsInitial }) {
           temperature: f.temperature === "" ? null : Number(f.temperature),
           maxAttachments: f.maxAttachments === "" ? null : Number(f.maxAttachments),
           extraInstructions: f.extraInstructions,
+          notifications: f.notifications,
         }),
       });
       const json = await res.json();
@@ -356,6 +378,69 @@ export function SettingsForm({ initial }: { initial: SettingsInitial }) {
         </p>
       </Card>
 
+      {/* Centro de notificaciones */}
+      <Card title="Notificaciones de leads y relevos">
+        <p className="-mt-1 text-xs text-muted-foreground">
+          Cada lead nuevo o relevo se avisa por TODOS los canales que actives. El mensaje incluye un
+          enlace directo a la conversación en el panel. Si un envío falla, lo verás en Salud.
+        </p>
+
+        {/* Telegram */}
+        <div className="rounded-lg border border-border p-3">
+          <Switch
+            label="Telegram (recomendado · gratis e instantáneo)"
+            checked={f.notifications.telegram.enabled}
+            onChange={(v) => setNotif("telegram", { enabled: v })}
+          />
+          {f.notifications.telegram.enabled && (
+            <div className="mt-2 space-y-2">
+              <input className={inputCls} placeholder="Token del bot (de @BotFather)" value={f.notifications.telegram.token} onChange={(e) => setNotif("telegram", { token: e.target.value })} />
+              <input className={inputCls} placeholder="Chat ID (tu chat o el del grupo)" value={f.notifications.telegram.chatId} onChange={(e) => setNotif("telegram", { chatId: e.target.value })} />
+              <p className="text-xs text-muted-foreground">
+                Crea un bot con @BotFather, escríbele, y obtén tu chat id (p. ej. con @userinfobot). Sin
+                ventana de 24 h ni aprobaciones.
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* Email */}
+        <div className="rounded-lg border border-border p-3">
+          <Switch
+            label="Email"
+            checked={f.notifications.email.enabled}
+            onChange={(v) => setNotif("email", { enabled: v })}
+          />
+          {f.notifications.email.enabled && (
+            <div className="mt-2 space-y-2">
+              <input className={inputCls} placeholder="Correo destino (a quién avisar)" value={f.notifications.email.to} onChange={(e) => setNotif("email", { to: e.target.value })} />
+              <input className={inputCls} placeholder="Resend API key (re_...)" value={f.notifications.email.resendKey} onChange={(e) => setNotif("email", { resendKey: e.target.value })} />
+              <input className={inputCls} placeholder="Remitente (opcional; ej. Avisos <avisos@tudominio.com>)" value={f.notifications.email.from} onChange={(e) => setNotif("email", { from: e.target.value })} />
+              <p className="text-xs text-muted-foreground">
+                Usa <a href="https://resend.com" target="_blank" rel="noreferrer" className="text-primary hover:underline">Resend</a> (capa gratuita). Para enviar a cualquier correo necesitas verificar un dominio;
+                sin dominio, solo llega a tu propio correo de la cuenta.
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* WhatsApp */}
+        <div className="rounded-lg border border-border p-3">
+          <Switch
+            label="WhatsApp"
+            checked={f.notifications.whatsapp.enabled}
+            onChange={(v) => setNotif("whatsapp", { enabled: v })}
+          />
+          {f.notifications.whatsapp.enabled && (
+            <p className="mt-2 text-xs text-muted-foreground">
+              Usa el número del administrador (arriba) y requiere WhatsApp Cloud API conectado. Ojo:
+              WhatsApp solo permite mensajes libres dentro de una ventana de 24 h, o con plantilla
+              aprobada — por eso Telegram o Email son más confiables para avisos.
+            </p>
+          )}
+        </div>
+      </Card>
+
       {/* Conocimiento */}
       <Card title="Conocimiento">
         <label className="flex items-start gap-3 text-sm text-foreground">
@@ -396,6 +481,28 @@ function Card({ title, children }: { title: string; children: React.ReactNode })
       <h2 className="mb-4 text-sm font-semibold text-foreground">{title}</h2>
       <div className="space-y-4">{children}</div>
     </section>
+  );
+}
+
+// Interruptor accesible (switch) con etiqueta, para los canales de notificación.
+function Switch({ label, checked, onChange }: { label: string; checked: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <label className="flex cursor-pointer items-center gap-2">
+      <button
+        type="button"
+        role="switch"
+        aria-checked={checked}
+        aria-label={label}
+        onClick={() => onChange(!checked)}
+        className={cn(
+          "relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors",
+          checked ? "bg-primary" : "bg-input",
+        )}
+      >
+        <span className={cn("inline-block size-4 transform rounded-full bg-white transition-transform", checked ? "translate-x-4" : "translate-x-0.5")} />
+      </button>
+      <span className="text-sm font-medium text-foreground">{label}</span>
+    </label>
   );
 }
 

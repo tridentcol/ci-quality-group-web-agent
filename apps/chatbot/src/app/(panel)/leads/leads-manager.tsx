@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Loader2, Check, Trash2, MessageSquare } from "lucide-react";
+import { Loader2, Check, Trash2, MessageSquare, Search } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { ChannelBadge } from "@/components/panel/channel-badge";
@@ -12,6 +12,7 @@ type Status = "new" | "contacted" | "quoted" | "ready" | "won" | "lost";
 
 interface Lead {
   id: string;
+  ref: number;
   conversationId: string | null;
   name: string | null;
   contact: string | null;
@@ -75,6 +76,8 @@ export function LeadsManager() {
   const [items, setItems] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [hideTest, setHideTest] = useState(false);
+  const [query, setQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | Status>("all");
   const confirm = useConfirm();
 
   const load = useCallback(async () => {
@@ -98,7 +101,23 @@ export function LeadsManager() {
   };
 
   const testCount = useMemo(() => items.filter((l) => l.test).length, [items]);
-  const visible = hideTest ? items.filter((l) => !l.test) : items;
+
+  // Buscador (nombre/contacto/interés/#ref) + filtro de estado + ocultar prueba.
+  const visible = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    const qNum = q.replace(/^#/, "");
+    return items.filter((l) => {
+      if (hideTest && l.test) return false;
+      if (statusFilter !== "all" && l.status !== statusFilter) return false;
+      if (!q) return true;
+      return (
+        String(l.ref) === qNum ||
+        [l.name, l.contact, l.interest, l.materialName, l.fulfillment]
+          .filter(Boolean)
+          .some((s) => (s as string).toLowerCase().includes(q))
+      );
+    });
+  }, [items, query, statusFilter, hideTest]);
 
   if (loading) {
     return (
@@ -117,11 +136,42 @@ export function LeadsManager() {
 
   return (
     <>
+      {/* Buscador + filtros */}
+      <div className="mb-3 flex flex-wrap items-center gap-2">
+        <div className="relative min-w-[12rem] flex-1">
+          <Search className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <input
+            placeholder="Buscar por #, nombre, contacto, interés…"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            className={cn(inputCls, "w-full pl-8")}
+          />
+        </div>
+        <select
+          aria-label="Filtrar por estado"
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value as "all" | Status)}
+          className={inputCls}
+        >
+          <option value="all">Todos los estados</option>
+          {(Object.keys(STATUS_LABEL) as Status[]).map((s) => (
+            <option key={s} value={s}>{STATUS_LABEL[s]}</option>
+          ))}
+        </select>
+        <span className="text-xs text-muted-foreground">{visible.length} de {items.length}</span>
+      </div>
+
       {testCount > 0 && (
         <label className="mb-3 flex items-center gap-2 text-sm text-muted-foreground">
           <input type="checkbox" checked={hideTest} onChange={(e) => setHideTest(e.target.checked)} />
           Ocultar leads de prueba ({testCount})
         </label>
+      )}
+
+      {visible.length === 0 && (
+        <p className="rounded-xl border border-border bg-card py-8 text-center text-sm text-muted-foreground shadow-sm">
+          Ningún lead coincide con la búsqueda o el filtro.
+        </p>
       )}
 
       {/* Cards en móvil */}
@@ -273,6 +323,7 @@ function LeadRow({
     <tr className={cn("border-b border-border/60 align-top last:border-0", lead.test && "bg-warning/5")}>
       <td className="px-4 py-3">
         <div className="flex items-center gap-2">
+          <span className="font-mono text-xs text-muted-foreground">#{lead.ref}</span>
           <span className="font-medium text-foreground">{lead.name ?? "—"}</span>
           {lead.test && <TestBadge />}
         </div>
@@ -327,6 +378,7 @@ function LeadCard({
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
+            <span className="font-mono text-xs text-muted-foreground">#{lead.ref}</span>
             <span className="truncate font-medium text-foreground">{lead.name ?? "—"}</span>
             {lead.test && <TestBadge />}
           </div>

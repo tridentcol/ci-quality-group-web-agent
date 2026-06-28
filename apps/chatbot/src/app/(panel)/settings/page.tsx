@@ -39,6 +39,7 @@ export default async function SettingsPage() {
             temperature: cfg.temperature,
             maxAttachments: cfg.maxAttachments,
             extraInstructions: cfg.extraInstructions,
+            notifications: cfg.notifications,
           }}
         />
       ) : (

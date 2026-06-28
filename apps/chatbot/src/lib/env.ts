@@ -29,6 +29,11 @@ const envSchema = z.object({
   // Opcional: si falta, la tarjeta va sin imagen (solo dirección + botón "Abrir en Maps").
   GOOGLE_MAPS_API_KEY: z.string().optional(),
 
+  // Notificaciones al admin (opcional): también se pueden configurar desde la UI.
+  // El valor de la UI tiene prioridad; estos sirven como respaldo o alternativa segura.
+  TELEGRAM_BOT_TOKEN: z.string().optional(),
+  RESEND_API_KEY: z.string().optional(),
+
   // Canal Messenger (Step 10/16)
   MESSENGER_PAGE_ID: z.string().optional(),
   MESSENGER_PAGE_ACCESS_TOKEN: z.string().optional(),

@@ -66,6 +66,27 @@ const patchSchema = z
     temperature: z.union([z.coerce.number().min(0).max(1), z.null()]).optional(),
     maxAttachments: z.union([z.coerce.number().int().min(0).max(6), z.null()]).optional(),
     extraInstructions: z.string().trim().nullable().optional(),
+    // Centro de notificaciones (cada canal con su switch + datos).
+    notifications: z
+      .object({
+        email: z
+          .object({
+            enabled: z.boolean().optional(),
+            to: z.string().trim().optional(),
+            resendKey: z.string().trim().optional(),
+            from: z.string().trim().optional(),
+          })
+          .optional(),
+        telegram: z
+          .object({
+            enabled: z.boolean().optional(),
+            token: z.string().trim().optional(),
+            chatId: z.string().trim().optional(),
+          })
+          .optional(),
+        whatsapp: z.object({ enabled: z.boolean().optional() }).optional(),
+      })
+      .optional(),
   })
   .refine((d) => Object.keys(d).length > 0, 'Nada que actualizar.')
 
@@ -99,6 +120,7 @@ export async function PATCH(req: Request) {
   if (d.temperature !== undefined) set.temperature = d.temperature === null ? null : String(d.temperature)
   if (d.maxAttachments !== undefined) set.maxAttachments = d.maxAttachments
   if (d.extraInstructions !== undefined) set.extraInstructions = d.extraInstructions || null
+  if (d.notifications !== undefined) set.notifications = d.notifications
 
   const [row] = await db.update(botConfig).set(set).where(eq(botConfig.id, 1)).returning()
   if (!row) return fail('bot_config no inicializado (corre el seed).', 404, 'NOT_FOUND')
