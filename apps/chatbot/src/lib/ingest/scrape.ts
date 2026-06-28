@@ -1,16 +1,36 @@
+import { assertPublicHttpUrl } from './ssrf'
+
+const MAX_REDIRECTS = 4
+const FETCH_TIMEOUT_MS = 12_000
+
 /**
  * Extrae texto legible de una URL (blueprint §9 Step 5).
  * Implementación ligera sin dependencias: descarga el HTML y limpia
- * scripts/estilos/etiquetas. Para casos difíciles puede sustituirse por
- * un lector web más robusto más adelante.
+ * scripts/estilos/etiquetas. Anti-SSRF: se valida la URL y CADA salto de redirección
+ * contra rangos internos/metadata (las redirecciones se siguen a mano para revalidar).
  */
 export async function scrapeUrl(url: string): Promise<string> {
-  const res = await fetch(url, {
-    headers: { 'user-agent': 'CIQualityGroupBot/1.0 (+ingesta de conocimiento)' },
-    redirect: 'follow',
-  })
-  if (!res.ok) {
-    throw new Error(`No se pudo descargar ${url}: HTTP ${res.status}`)
+  let current = url
+  let res: Response | null = null
+
+  for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {
+    await assertPublicHttpUrl(current) // valida esquema + IPs resueltas en cada salto
+    res = await fetch(current, {
+      headers: { 'user-agent': 'CIQualityGroupBot/1.0 (+ingesta de conocimiento)' },
+      redirect: 'manual', // seguimos a mano para revalidar el destino
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+    })
+    if (res.status >= 300 && res.status < 400) {
+      const loc = res.headers.get('location')
+      if (!loc) break
+      current = new URL(loc, current).toString()
+      continue
+    }
+    break
+  }
+
+  if (!res || !res.ok) {
+    throw new Error(`No se pudo descargar el enlace: HTTP ${res?.status ?? '???'}`)
   }
 
   const contentType = res.headers.get('content-type') ?? ''

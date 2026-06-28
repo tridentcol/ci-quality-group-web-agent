@@ -88,7 +88,10 @@ export const knowledgeQa = pgTable(
     imageId: uuid('image_id').references(() => images.id, { onDelete: 'set null' }),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
   },
-  (t) => [index('qa_embedding_idx').using('hnsw', t.embedding.op('vector_cosine_ops'))],
+  (t) => [
+    index('qa_embedding_idx').using('hnsw', t.embedding.op('vector_cosine_ops')),
+    index('qa_source_idx').on(t.sourceId), // FK: borrar/listar Q&A por fuente
+  ],
 )
 
 // knowledge_chunks — vectores RAG (text-embedding-3-small, 1536 dim, índice HNSW cosine)
@@ -106,6 +109,7 @@ export const knowledgeChunks = pgTable(
   },
   (t) => [
     index('chunks_embedding_idx').using('hnsw', t.embedding.op('vector_cosine_ops')),
+    index('chunks_source_idx').on(t.sourceId), // FK: borrar/listar chunks por fuente
   ],
 )
 
@@ -182,7 +186,10 @@ export const conversations = pgTable(
     lastMessageAt: timestamp('last_message_at', { withTimezone: true }).defaultNow(),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
   },
-  (t) => [unique('conversations_channel_external_id_uniq').on(t.channel, t.externalId)],
+  (t) => [
+    unique('conversations_channel_external_id_uniq').on(t.channel, t.externalId),
+    index('conversations_last_msg_idx').on(t.lastMessageAt), // listado por actividad
+  ],
 )
 
 // messages — cada turno de una conversación
@@ -197,7 +204,10 @@ export const messages = pgTable('messages', {
   // Trazabilidad del turno del bot: { model, routerReason, contextUsed, topScores, tools }.
   metadata: jsonb('metadata'),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
-})
+}, (t) => [
+  // Consulta caliente: últimos mensajes de una conversación por fecha.
+  index('messages_conv_created_idx').on(t.conversationId, t.createdAt),
+])
 
 // leads — solicitudes capturadas para cotización
 export const leads = pgTable('leads', {
@@ -227,7 +237,10 @@ export const leads = pgTable('leads', {
   // marcado, no notifica al admin. Para ver el flujo como en producción.
   test: boolean('test').notNull().default(false),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
-})
+}, (t) => [
+  index('leads_conversation_idx').on(t.conversationId), // upsert/lookup por conversación
+  index('leads_created_idx').on(t.createdAt), // listado por fecha
+])
 
 // knowledge_gaps — preguntas sin respuesta (bucle de aprendizaje)
 export const knowledgeGaps = pgTable('knowledge_gaps', {
@@ -240,7 +253,7 @@ export const knowledgeGaps = pgTable('knowledge_gaps', {
   resolvedAnswer: text('resolved_answer'),
   resolvedAt: timestamp('resolved_at', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
-})
+}, (t) => [index('gaps_conversation_idx').on(t.conversationId)])
 
 // test_scenarios — escenarios de prueba del bot, editables desde el panel.
 // Cada uno define una conversación (turnos del cliente) y qué se espera del bot
