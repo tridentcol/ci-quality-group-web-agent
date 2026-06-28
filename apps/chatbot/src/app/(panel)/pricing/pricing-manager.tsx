@@ -75,14 +75,14 @@ export function PricingManager() {
       ) : (
         <>
           {/* Cards en móvil */}
-          <div className="space-y-3 md:hidden">
+          <div className="space-y-3 lg:hidden">
             {items.map((m) => (
               <PriceCard key={m.id} material={m} onChange={onChange} onDelete={() => onDelete(m.id)} />
             ))}
           </div>
 
           {/* Tabla en escritorio */}
-          <div className="hidden overflow-x-auto rounded-xl border border-border bg-card shadow-sm md:block">
+          <div className="hidden overflow-x-auto rounded-xl border border-border bg-card shadow-sm lg:block">
             <div className="border-b border-border px-5 py-3 text-sm font-semibold text-foreground">
               Materiales
             </div>
@@ -369,7 +369,7 @@ function PriceRow({
             type="button"
             onClick={remove}
             disabled={busy}
-            className="text-muted-foreground transition-colors hover:text-destructive"
+            className="-m-1.5 inline-flex size-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:text-destructive"
             aria-label="Borrar material"
           >
             <Trash2 className="size-4" />
@@ -512,7 +512,7 @@ function PriceCard({
             type="button"
             onClick={remove}
             disabled={busy}
-            className="text-muted-foreground transition-colors hover:text-destructive"
+            className="-m-1.5 inline-flex size-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:text-destructive"
             aria-label="Borrar material"
           >
             <Trash2 className="size-4" />

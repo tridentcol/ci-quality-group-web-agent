@@ -31,7 +31,7 @@ export function MobileNav() {
   return (
     <div className="lg:hidden">
       {/* Top bar */}
-      <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-sidebar-border bg-sidebar px-3">
+      <header className="pt-safe sticky top-0 z-30 flex min-h-14 items-center justify-between border-b border-sidebar-border bg-sidebar px-3">
         <div className="flex items-center gap-2">
           <button
             type="button"
@@ -81,11 +81,11 @@ export function MobileNav() {
         aria-label="Menú de navegación"
         aria-hidden={!open}
         className={cn(
-          "fixed inset-y-0 left-0 z-50 flex w-64 max-w-[80%] flex-col border-r border-sidebar-border bg-sidebar shadow-xl transition-transform duration-200 ease-out",
+          "pl-safe pb-safe fixed inset-y-0 left-0 z-50 flex w-64 max-w-[80%] flex-col border-r border-sidebar-border bg-sidebar shadow-xl transition-transform duration-200 ease-out",
           open ? "translate-x-0" : "-translate-x-full",
         )}
       >
-        <div className="flex h-14 items-center justify-between border-b border-sidebar-border px-4">
+        <div className="pt-safe flex min-h-14 items-center justify-between border-b border-sidebar-border px-4">
           <div className="flex items-center gap-2">
             <span className="size-2.5 rounded-full bg-primary" aria-hidden />
             <span className="text-sm font-semibold text-sidebar-foreground">

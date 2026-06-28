@@ -158,7 +158,7 @@ function Bubble({ turn }: { turn: Turn }) {
           fromUser ? "bg-primary text-primary-foreground" : "bg-muted text-foreground",
         )}
       >
-        <div className="whitespace-pre-wrap">{turn.content}</div>
+        <div className="whitespace-pre-wrap break-words">{turn.content}</div>
         {turn.diag?.attachments && turn.diag.attachments.length > 0 && (
           <div className="mt-2 flex flex-wrap gap-2">
             {turn.diag.attachments.map((a) =>

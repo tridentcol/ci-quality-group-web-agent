@@ -265,7 +265,7 @@ function RowActions({ onEdit, onDelete }: { onEdit: () => void; onDelete: () => 
       </button>
       <button
         onClick={onDelete}
-        className="text-muted-foreground transition-colors hover:text-destructive"
+        className="-m-1.5 inline-flex size-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:text-destructive"
         aria-label="Borrar fuente"
       >
         <Trash2 className="size-4" />

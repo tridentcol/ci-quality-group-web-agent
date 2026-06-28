@@ -156,8 +156,8 @@
     /* Áreas seguras (notch / barra de gestos) cuando se instala como app. */
     background: var(--background);
   }
-  /* Evita el ZOOM automático de iOS al enfocar un campo: requiere fuente ≥ 16px. */
-  @media (max-width: 640px) {
+  /* Evita el ZOOM automático de iOS (iPhone y iPad) al enfocar un campo: fuente ≥ 16px. */
+  @media (max-width: 1024px) {
     input,
     textarea,
     select {

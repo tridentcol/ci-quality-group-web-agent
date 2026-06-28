@@ -353,7 +353,7 @@ function LeadRow({
           <ConvLink conversationId={lead.conversationId} />
           <button
             onClick={onDelete}
-            className="text-muted-foreground transition-colors hover:text-destructive"
+            className="-m-1.5 inline-flex size-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:text-destructive"
             aria-label="Borrar lead"
           >
             <Trash2 className="size-4" />
@@ -391,7 +391,7 @@ function LeadCard({
           <ChannelBadge channel={lead.channel} />
           <button
             onClick={onDelete}
-            className="text-muted-foreground transition-colors hover:text-destructive"
+            className="-m-1.5 inline-flex size-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:text-destructive"
             aria-label="Borrar lead"
           >
             <Trash2 className="size-4" />

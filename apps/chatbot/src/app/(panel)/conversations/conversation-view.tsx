@@ -299,7 +299,7 @@ function Bubble({ message }: { message: Message }) {
         )}
       >
         {who && <div className="mb-0.5 text-xs opacity-70">{who}</div>}
-        <div className="whitespace-pre-wrap">{message.content}</div>
+        <div className="whitespace-pre-wrap break-words">{message.content}</div>
       </div>
 
       {hasMeta && (

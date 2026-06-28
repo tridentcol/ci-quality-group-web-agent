@@ -223,7 +223,7 @@ export function QaRow({
           <button
             onClick={remove}
             disabled={busy}
-            className="text-muted-foreground transition-colors hover:text-destructive"
+            className="-m-1.5 inline-flex size-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:text-destructive"
             aria-label="Borrar pregunta"
           >
             <Trash2 className="size-3.5" />

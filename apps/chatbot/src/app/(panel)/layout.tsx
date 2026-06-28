@@ -26,7 +26,7 @@ export default async function PanelLayout({
       <Sidebar />
       <div className="flex min-w-0 flex-1 flex-col">
         <MobileNav />
-        <main id="contenido" className="flex-1 overflow-y-auto bg-background">
+        <main id="contenido" className="pb-safe flex-1 overflow-y-auto overscroll-contain bg-background">
           <ConfirmProvider>{children}</ConfirmProvider>
         </main>
       </div>

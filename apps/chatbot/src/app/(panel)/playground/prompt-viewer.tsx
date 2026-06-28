@@ -82,7 +82,7 @@ export function PromptViewer() {
           <pre
             className={cn(
               "max-h-[55vh] overflow-auto rounded-lg border border-border bg-card p-4",
-              "whitespace-pre-wrap font-mono text-xs leading-relaxed text-foreground",
+              "whitespace-pre-wrap break-words font-mono text-xs leading-relaxed text-foreground",
             )}
           >
             {data.system}
