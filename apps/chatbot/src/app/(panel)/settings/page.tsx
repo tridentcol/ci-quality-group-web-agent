@@ -1,7 +1,7 @@
 import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { botConfig } from "@/lib/db/schema";
-import { SettingsForm, type BusinessHours, type Channels } from "./settings-form";
+import { SettingsForm, type Channels } from "./settings-form";
 
 export default async function SettingsPage() {
   const [cfg] = await db.select().from(botConfig).where(eq(botConfig.id, 1));
@@ -22,7 +22,7 @@ export default async function SettingsPage() {
             tonePrompt: cfg.tonePrompt,
             welcomeMessage: cfg.welcomeMessage,
             afterHoursMessage: cfg.afterHoursMessage,
-            businessHours: (cfg.businessHours as BusinessHours | null) ?? null,
+            businessHours: cfg.businessHours, // crudo: el form lo normaliza (forma nueva o antigua)
             channelsEnabled: cfg.channelsEnabled as Channels,
             adminWhatsapp: cfg.adminWhatsapp,
             locationName: cfg.locationName,

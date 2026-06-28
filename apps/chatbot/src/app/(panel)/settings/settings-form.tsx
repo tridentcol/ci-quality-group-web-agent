@@ -1,14 +1,18 @@
 "use client";
 
 import { useState } from "react";
-import { Loader2, Check } from "lucide-react";
+import { Loader2, Check, Plus, X, MapPin } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { normalizeHours } from "@/lib/ai/hours";
 
-export interface BusinessHours {
-  days: number[];
+export interface DayHours {
   open: string;
   close: string;
+}
+export interface BusinessHours {
+  schedule: (DayHours | null)[];
+  holidays?: string[];
 }
 export interface Channels {
   messenger: boolean;
@@ -20,7 +24,7 @@ export interface SettingsInitial {
   tonePrompt: string;
   welcomeMessage: string;
   afterHoursMessage: string;
-  businessHours: BusinessHours | null;
+  businessHours: unknown; // jsonb crudo (forma nueva o antigua) → se normaliza en el form
   channelsEnabled: Channels;
   adminWhatsapp: string | null;
   locationName: string | null;
@@ -33,8 +37,9 @@ export interface SettingsInitial {
   qaGenerationEnabled: boolean;
 }
 
-const DAYS = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
-const DEFAULT_HOURS: BusinessHours = { days: [1, 2, 3, 4, 5], open: "07:00", close: "17:00" };
+const DAYS = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
+const WD: DayHours = { open: "07:00", close: "17:00" };
+const DEFAULT_HOURS: BusinessHours = { schedule: [null, WD, WD, WD, WD, WD, null], holidays: [] };
 
 const inputCls =
   "w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring";
@@ -42,7 +47,7 @@ const inputCls =
 export function SettingsForm({ initial }: { initial: SettingsInitial }) {
   const [f, setF] = useState({
     ...initial,
-    businessHours: initial.businessHours ?? DEFAULT_HOURS,
+    businessHours: normalizeHours(initial.businessHours) ?? DEFAULT_HOURS,
     adminWhatsapp: initial.adminWhatsapp ?? "",
     locationName: initial.locationName ?? "",
     locationAddress: initial.locationAddress ?? "",
@@ -53,13 +58,22 @@ export function SettingsForm({ initial }: { initial: SettingsInitial }) {
   const [busy, setBusy] = useState(false);
 
   const set = <K extends keyof typeof f>(k: K, v: (typeof f)[K]) => setF((p) => ({ ...p, [k]: v }));
-  const toggleDay = (d: number) =>
-    set("businessHours", {
-      ...f.businessHours,
-      days: f.businessHours.days.includes(d)
-        ? f.businessHours.days.filter((x) => x !== d)
-        : [...f.businessHours.days, d].sort(),
-    });
+
+  // Helpers de horario por día + feriados.
+  const hours = f.businessHours;
+  const setDay = (i: number, v: DayHours | null) =>
+    set("businessHours", { ...hours, schedule: hours.schedule.map((s, idx) => (idx === i ? v : s)) });
+  const toggleOpen = (i: number) => setDay(i, hours.schedule[i] ? null : { open: "08:00", close: "18:00" });
+  const setHolidays = (h: string[]) => set("businessHours", { ...hours, holidays: h });
+  const [holidayInput, setHolidayInput] = useState("");
+
+  // Datos para la vista previa del mapa (OpenStreetMap, sin clave).
+  const lat = Number(f.locationLat);
+  const lng = Number(f.locationLng);
+  const hasLoc = f.locationLat !== "" && f.locationLng !== "" && !Number.isNaN(lat) && !Number.isNaN(lng);
+  const osmSrc = hasLoc
+    ? `https://www.openstreetmap.org/export/embed.html?bbox=${lng - 0.01}%2C${lat - 0.008}%2C${lng + 0.01}%2C${lat + 0.008}&layer=mapnik&marker=${lat}%2C${lng}`
+    : "";
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
@@ -114,32 +128,71 @@ export function SettingsForm({ initial }: { initial: SettingsInitial }) {
         </Field>
       </Card>
 
-      {/* Horarios */}
+      {/* Horarios por día + feriados */}
       <Card title="Horario de atención">
-        <div className="flex flex-wrap gap-1.5">
-          {DAYS.map((d, i) => (
-            <button
-              key={i}
-              type="button"
-              onClick={() => toggleDay(i)}
-              className={cn(
-                "rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
-                f.businessHours.days.includes(i)
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-accent text-muted-foreground hover:bg-accent/70",
-              )}
-            >
-              {d}
-            </button>
-          ))}
+        <p className="-mt-1 text-xs text-muted-foreground">
+          Define el horario de cada día (zona Colombia). Fuera de él, o en feriados, el bot sigue
+          respondiendo pero envía el mensaje de &quot;fuera de horario&quot;.
+        </p>
+        <div className="space-y-2">
+          {DAYS.map((label, i) => {
+            const d = hours.schedule[i];
+            return (
+              <div key={i} className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={!!d}
+                  aria-label={`${label} ${d ? "abierto" : "cerrado"}`}
+                  onClick={() => toggleOpen(i)}
+                  className={cn(
+                    "relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors",
+                    d ? "bg-primary" : "bg-input",
+                  )}
+                >
+                  <span className={cn("inline-block size-4 transform rounded-full bg-white transition-transform", d ? "translate-x-4" : "translate-x-0.5")} />
+                </button>
+                <span className="w-24 text-sm text-foreground">{label}</span>
+                {d ? (
+                  <>
+                    <input type="time" aria-label={`Apertura ${label}`} className={cn(inputCls, "w-auto")} value={d.open} onChange={(e) => setDay(i, { ...d, open: e.target.value })} />
+                    <span className="text-muted-foreground">a</span>
+                    <input type="time" aria-label={`Cierre ${label}`} className={cn(inputCls, "w-auto")} value={d.close} onChange={(e) => setDay(i, { ...d, close: e.target.value })} />
+                  </>
+                ) : (
+                  <span className="text-sm text-muted-foreground">Cerrado</span>
+                )}
+              </div>
+            );
+          })}
         </div>
-        <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-end">
-          <Field label="Apertura">
-            <input type="time" className={inputCls} value={f.businessHours.open} onChange={(e) => set("businessHours", { ...f.businessHours, open: e.target.value })} />
-          </Field>
-          <Field label="Cierre">
-            <input type="time" className={inputCls} value={f.businessHours.close} onChange={(e) => set("businessHours", { ...f.businessHours, close: e.target.value })} />
-          </Field>
+
+        <div className="mt-4">
+          <span className="mb-1 block text-xs font-medium text-muted-foreground">Feriados (días cerrados)</span>
+          <div className="flex flex-wrap gap-2">
+            {(hours.holidays ?? []).map((h) => (
+              <span key={h} className="inline-flex items-center gap-1 rounded-full bg-accent px-2.5 py-1 text-xs text-foreground">
+                {h}
+                <button type="button" aria-label={`Quitar feriado ${h}`} onClick={() => setHolidays((hours.holidays ?? []).filter((x) => x !== h))} className="text-muted-foreground hover:text-destructive">
+                  <X className="size-3" />
+                </button>
+              </span>
+            ))}
+          </div>
+          <div className="mt-2 flex items-center gap-2">
+            <input type="date" aria-label="Nueva fecha de feriado" className={cn(inputCls, "w-auto")} value={holidayInput} onChange={(e) => setHolidayInput(e.target.value)} />
+            <button
+              type="button"
+              onClick={() => {
+                const v = holidayInput.trim();
+                if (v && !(hours.holidays ?? []).includes(v)) setHolidays([...(hours.holidays ?? []), v].sort());
+                setHolidayInput("");
+              }}
+              className="inline-flex items-center gap-1 rounded-md bg-primary px-2.5 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90"
+            >
+              <Plus className="size-3.5" /> Agregar feriado
+            </button>
+          </div>
         </div>
       </Card>
 
@@ -184,6 +237,41 @@ export function SettingsForm({ initial }: { initial: SettingsInitial }) {
         <Field label="Enlace de Google Maps (opcional; si lo dejas vacío se genera de lat/lng)">
           <input className={inputCls} placeholder="https://maps.app.goo.gl/..." value={f.locationMapsUrl} onChange={(e) => set("locationMapsUrl", e.target.value)} />
         </Field>
+      </Card>
+
+      {/* Vista previa */}
+      <Card title="Vista previa">
+        <p className="-mt-1 text-xs text-muted-foreground">
+          Así se verán los mensajes y la ubicación que envía el bot (el mapa de Messenger usa Google;
+          este previo usa OpenStreetMap, solo para confirmar el punto).
+        </p>
+        <div className="space-y-2 rounded-lg border border-border bg-muted/40 p-3">
+          {f.welcomeMessage.trim() ? (
+            <PreviewBubble label="Bienvenida">{f.welcomeMessage}</PreviewBubble>
+          ) : (
+            <p className="text-xs text-muted-foreground">Sin mensaje de bienvenida.</p>
+          )}
+          {f.afterHoursMessage.trim() && (
+            <PreviewBubble label="Fuera de horario">{f.afterHoursMessage}</PreviewBubble>
+          )}
+        </div>
+        <div className="mt-3">
+          <span className="mb-1 flex items-center gap-1 text-xs font-medium text-muted-foreground">
+            <MapPin className="size-3.5" /> Ubicación {f.locationName ? `· ${f.locationName}` : ""}
+          </span>
+          {hasLoc ? (
+            <iframe
+              title="Vista previa de la ubicación"
+              className="h-56 w-full rounded-lg border border-border"
+              src={osmSrc}
+              loading="lazy"
+            />
+          ) : (
+            <p className="rounded-lg border border-dashed border-border p-4 text-center text-sm text-muted-foreground">
+              Pon Latitud y Longitud arriba para ver el mapa.
+            </p>
+          )}
+        </div>
       </Card>
 
       {/* Operación / privacidad */}
@@ -248,6 +336,18 @@ function Card({ title, children }: { title: string; children: React.ReactNode })
       <h2 className="mb-4 text-sm font-semibold text-foreground">{title}</h2>
       <div className="space-y-4">{children}</div>
     </section>
+  );
+}
+
+// Burbuja de chat para la vista previa de mensajes.
+function PreviewBubble({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="flex flex-col items-start">
+      <div className="max-w-[85%] rounded-2xl bg-primary px-4 py-2 text-sm text-primary-foreground">
+        <div className="mb-0.5 text-xs opacity-70">{label}</div>
+        <div className="whitespace-pre-wrap">{children}</div>
+      </div>
+    </div>
   );
 }
 

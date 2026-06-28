@@ -24,14 +24,18 @@ async function seed() {
       afterHoursMessage:
         'En este momento nuestro equipo no está disponible para atención personalizada, pero puedo ' +
         'ayudarte con tu consulta y dejar registrada tu solicitud para que te contacten pronto.',
+      // schedule por día (0=dom … 6=sáb); null = cerrado. Forma que entiende isAfterHours.
       businessHours: {
-        mon: ['08:00', '18:00'],
-        tue: ['08:00', '18:00'],
-        wed: ['08:00', '18:00'],
-        thu: ['08:00', '18:00'],
-        fri: ['08:00', '18:00'],
-        sat: ['08:00', '12:00'],
-        sun: null,
+        schedule: [
+          null, // dom
+          { open: '08:00', close: '18:00' }, // lun
+          { open: '08:00', close: '18:00' }, // mar
+          { open: '08:00', close: '18:00' }, // mié
+          { open: '08:00', close: '18:00' }, // jue
+          { open: '08:00', close: '18:00' }, // vie
+          { open: '08:00', close: '12:00' }, // sáb
+        ],
+        holidays: [],
       },
       channelsEnabled: { messenger: true, whatsapp: true, instagram: true },
       retentionMonths: 12,

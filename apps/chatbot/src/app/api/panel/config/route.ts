@@ -26,11 +26,20 @@ const patchSchema = z
     tonePrompt: z.string().optional(),
     welcomeMessage: z.string().optional(),
     afterHoursMessage: z.string().optional(),
+    // Horario POR DÍA (schedule[0..6], null=cerrado) + feriados (YYYY-MM-DD).
     businessHours: z
       .object({
-        days: z.array(z.number().int().min(0).max(6)),
-        open: z.string().regex(HHMM, 'Hora inválida (HH:MM).'),
-        close: z.string().regex(HHMM, 'Hora inválida (HH:MM).'),
+        schedule: z
+          .array(
+            z
+              .object({
+                open: z.string().regex(HHMM, 'Hora inválida (HH:MM).'),
+                close: z.string().regex(HHMM, 'Hora inválida (HH:MM).'),
+              })
+              .nullable(),
+          )
+          .length(7, 'El horario debe tener 7 días.'),
+        holidays: z.array(z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Fecha inválida (YYYY-MM-DD).')).optional(),
       })
       .nullable()
       .optional(),
