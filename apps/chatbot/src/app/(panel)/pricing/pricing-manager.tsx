@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useConfirm } from "@/components/panel/confirm-dialog";
 import { MediaPicker } from "@/components/panel/media-picker";
+import { PricingImport } from "./pricing-import";
 
 interface Material {
   id: string;
@@ -42,6 +43,13 @@ export function PricingManager({ initial }: { initial: Material[] }) {
   const onChange = (u: Material) => setItems((prev) => prev.map((x) => (x.id === u.id ? u : x)));
   const onDelete = (id: string) => setItems((prev) => prev.filter((x) => x.id !== id));
 
+  // Refresca toda la lista tras una importación masiva (no es una mutación fila a fila).
+  const refresh = async () => {
+    const res = await fetch("/api/panel/pricing");
+    const json = await res.json();
+    if (json.success) setItems(json.data);
+  };
+
   return (
     <div className="space-y-8">
       {/* Sugerencias de unidad compartidas por todos los inputs de unidad. */}
@@ -50,6 +58,12 @@ export function PricingManager({ initial }: { initial: Material[] }) {
           <option key={u} value={u} />
         ))}
       </datalist>
+      <div className="flex justify-end">
+        <PricingImport
+          existingNames={new Set(items.map((m) => m.name.toLowerCase()))}
+          onImported={refresh}
+        />
+      </div>
       <AddCard onAdded={(m) => setItems((prev) => [m, ...prev])} />
 
       {items.length === 0 ? (
