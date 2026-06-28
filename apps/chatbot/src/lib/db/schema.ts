@@ -282,3 +282,18 @@ export const webhookEvents = pgTable('webhook_events', {
   eventId: text('event_id').primaryKey(), // id del mensaje de Meta
   processedAt: timestamp('processed_at', { withTimezone: true }).defaultNow(),
 })
+
+// system_events — bitácora de salud (errores/avisos) para el Panel de salud. Antes
+// los fallos solo iban a console; aquí el admin los ve sin esperar quejas.
+export const systemEvents = pgTable(
+  'system_events',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    level: text('level').notNull(), // error | warning | info
+    source: text('source').notNull(), // webhook | generate | ingest | notify | …
+    message: text('message').notNull(),
+    context: jsonb('context'), // datos adicionales del evento
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+  },
+  (t) => [index('system_events_created_idx').on(t.createdAt)],
+)

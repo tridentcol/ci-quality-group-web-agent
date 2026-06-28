@@ -16,6 +16,7 @@ const isProtectedRoute = createRouteMatcher([
   '/leads(.*)',
   '/gaps(.*)',
   '/conversations(.*)',
+  '/health(.*)',
   '/settings(.*)',
   '/api/panel(.*)',
 ])

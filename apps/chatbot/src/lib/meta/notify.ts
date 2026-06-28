@@ -2,6 +2,7 @@ import { eq } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import { botConfig } from '@/lib/db/schema'
 import { env } from '@/lib/env'
+import { logEvent } from '@/lib/log'
 import { sendText } from './send'
 
 /**
@@ -25,6 +26,6 @@ export async function notifyAdmin(message: string): Promise<void> {
       console.log(`[notifyAdmin → ${to ?? 'sin número configurado'}] ${message}`)
     }
   } catch (err) {
-    console.error('notifyAdmin falló:', err instanceof Error ? err.message : err)
+    await logEvent('warning', 'notify', `No se pudo avisar al admin: ${err instanceof Error ? err.message : err}`)
   }
 }

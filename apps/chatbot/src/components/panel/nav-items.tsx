@@ -7,6 +7,7 @@ import {
   Users,
   HelpCircle,
   MessagesSquare,
+  Activity,
   Settings,
   type LucideIcon,
 } from "lucide-react";
@@ -27,6 +28,7 @@ export const NAV: readonly NavItem[] = [
   { href: "/leads", label: "Leads", icon: Users },
   { href: "/gaps", label: "Huecos", icon: HelpCircle },
   { href: "/conversations", label: "Conversaciones", icon: MessagesSquare },
+  { href: "/health", label: "Salud", icon: Activity },
   { href: "/settings", label: "Ajustes", icon: Settings },
 ] as const;
 

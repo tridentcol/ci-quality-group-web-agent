@@ -2,6 +2,7 @@ import { after } from 'next/server'
 import { verifySignature, verifyWebhookChallenge } from '@/lib/meta/verify'
 import { normalize } from '@/lib/meta/normalize'
 import { handleEvent } from '@/lib/meta/handle'
+import { logEvent } from '@/lib/log'
 
 // Webhook unificado de Meta (Messenger/WhatsApp/Instagram) — blueprint §9 Step 10.
 // Público: NO usa Clerk; se protege con verify_token (GET) y firma HMAC (POST).
@@ -43,8 +44,11 @@ export async function POST(req: Request) {
       try {
         await handleEvent(event)
       } catch (err) {
-        // Nunca propagamos: el error se loguea y no afecta a Meta (ya respondimos 200).
-        console.error('webhook/meta handleEvent error:', err instanceof Error ? err.message : err)
+        // Nunca propagamos: el error se registra (Panel de salud) y no afecta a Meta
+        // (ya respondimos 200).
+        await logEvent('error', 'webhook', err instanceof Error ? err.message : String(err), {
+          channel: event.channel,
+        })
       }
     }
   })
