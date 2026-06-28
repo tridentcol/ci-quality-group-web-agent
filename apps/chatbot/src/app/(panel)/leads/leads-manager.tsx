@@ -2,16 +2,17 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Loader2, Check, Trash2, MessageSquare, Search, FileText } from "lucide-react";
+import { Loader2, Check, Trash2, MessageSquare, Search, FileText, List, Columns3 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { ChannelBadge } from "@/components/panel/channel-badge";
 import { useConfirm } from "@/components/panel/confirm-dialog";
 import { QuoteModal } from "./quote-modal";
+import { KanbanBoard } from "./kanban-board";
 
-type Status = "new" | "contacted" | "quoted" | "ready" | "won" | "lost";
+export type Status = "new" | "contacted" | "quoted" | "ready" | "won" | "lost";
 
-interface Lead {
+export interface Lead {
   id: string;
   ref: number;
   conversationId: string | null;
@@ -78,6 +79,7 @@ export function LeadsManager({ initial }: { initial: Lead[] }) {
   const [hideTest, setHideTest] = useState(false);
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | Status>("all");
+  const [view, setView] = useState<"list" | "board">("list");
   const [quoteLead, setQuoteLead] = useState<Lead | null>(null);
   const confirm = useConfirm();
 
@@ -109,6 +111,23 @@ export function LeadsManager({ initial }: { initial: Lead[] }) {
     });
   }, [items, query, statusFilter, hideTest]);
 
+  // Tablero: respeta búsqueda + ocultar prueba, pero NO el filtro de estado
+  // (cada estado es su propia columna).
+  const boardItems = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    const qNum = q.replace(/^#/, "");
+    return items.filter((l) => {
+      if (hideTest && l.test) return false;
+      if (!q) return true;
+      return (
+        String(l.ref) === qNum ||
+        [l.name, l.contact, l.interest, l.materialName, l.fulfillment]
+          .filter(Boolean)
+          .some((s) => (s as string).toLowerCase().includes(q))
+      );
+    });
+  }, [items, query, hideTest]);
+
   if (items.length === 0) {
     return (
       <div className="rounded-xl border border-border bg-card py-8 text-center text-sm text-muted-foreground shadow-sm">
@@ -130,18 +149,46 @@ export function LeadsManager({ initial }: { initial: Lead[] }) {
             className={cn(inputCls, "w-full pl-8")}
           />
         </div>
-        <select
-          aria-label="Filtrar por estado"
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value as "all" | Status)}
-          className={inputCls}
-        >
-          <option value="all">Todos los estados</option>
-          {(Object.keys(STATUS_LABEL) as Status[]).map((s) => (
-            <option key={s} value={s}>{STATUS_LABEL[s]}</option>
-          ))}
-        </select>
-        <span className="text-xs text-muted-foreground">{visible.length} de {items.length}</span>
+        {view === "list" && (
+          <select
+            aria-label="Filtrar por estado"
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value as "all" | Status)}
+            className={inputCls}
+          >
+            <option value="all">Todos los estados</option>
+            {(Object.keys(STATUS_LABEL) as Status[]).map((s) => (
+              <option key={s} value={s}>{STATUS_LABEL[s]}</option>
+            ))}
+          </select>
+        )}
+        <div className="inline-flex rounded-md border border-input p-0.5">
+          <button
+            onClick={() => setView("list")}
+            aria-label="Vista de lista"
+            aria-pressed={view === "list"}
+            className={cn(
+              "inline-flex items-center gap-1 rounded px-2 py-1 text-xs font-medium transition-colors",
+              view === "list" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground",
+            )}
+          >
+            <List className="size-3.5" /> Lista
+          </button>
+          <button
+            onClick={() => setView("board")}
+            aria-label="Vista de tablero"
+            aria-pressed={view === "board"}
+            className={cn(
+              "inline-flex items-center gap-1 rounded px-2 py-1 text-xs font-medium transition-colors",
+              view === "board" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground",
+            )}
+          >
+            <Columns3 className="size-3.5" /> Tablero
+          </button>
+        </div>
+        <span className="text-xs text-muted-foreground">
+          {view === "list" ? `${visible.length} de ${items.length}` : `${boardItems.length} leads`}
+        </span>
       </div>
 
       {testCount > 0 && (
@@ -151,6 +198,35 @@ export function LeadsManager({ initial }: { initial: Lead[] }) {
         </label>
       )}
 
+      {view === "board" ? (
+        <KanbanBoard items={boardItems} onChange={onChange} />
+      ) : (
+        <LeadsList
+          visible={visible}
+          onChange={onChange}
+          onDelete={onDelete}
+          onQuote={setQuoteLead}
+        />
+      )}
+
+      {quoteLead && <QuoteModal lead={quoteLead} onClose={() => setQuoteLead(null)} />}
+    </>
+  );
+}
+
+function LeadsList({
+  visible,
+  onChange,
+  onDelete,
+  onQuote,
+}: {
+  visible: Lead[];
+  onChange: (l: Lead) => void;
+  onDelete: (id: string) => void;
+  onQuote: (l: Lead) => void;
+}) {
+  return (
+    <>
       {visible.length === 0 && (
         <p className="rounded-xl border border-border bg-card py-8 text-center text-sm text-muted-foreground shadow-sm">
           Ningún lead coincide con la búsqueda o el filtro.
@@ -160,7 +236,7 @@ export function LeadsManager({ initial }: { initial: Lead[] }) {
       {/* Cards en móvil */}
       <div className="space-y-3 md:hidden">
         {visible.map((l) => (
-          <LeadCard key={l.id} lead={l} onChange={onChange} onDelete={() => onDelete(l.id)} onQuote={() => setQuoteLead(l)} />
+          <LeadCard key={l.id} lead={l} onChange={onChange} onDelete={() => onDelete(l.id)} onQuote={() => onQuote(l)} />
         ))}
       </div>
 
@@ -184,13 +260,11 @@ export function LeadsManager({ initial }: { initial: Lead[] }) {
           </thead>
           <tbody>
             {visible.map((l) => (
-              <LeadRow key={l.id} lead={l} onChange={onChange} onDelete={() => onDelete(l.id)} onQuote={() => setQuoteLead(l)} />
+              <LeadRow key={l.id} lead={l} onChange={onChange} onDelete={() => onDelete(l.id)} onQuote={() => onQuote(l)} />
             ))}
           </tbody>
         </table>
       </div>
-
-      {quoteLead && <QuoteModal lead={quoteLead} onClose={() => setQuoteLead(null)} />}
     </>
   );
 }
