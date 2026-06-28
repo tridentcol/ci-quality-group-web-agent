@@ -1,9 +1,10 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
-import { desc, eq } from 'drizzle-orm'
+import { eq } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import { materials } from '@/lib/db/schema'
 import { isUuid } from '@/lib/api'
+import { listMaterials } from '@/lib/data/panel'
 
 function ok(data: unknown) {
   return NextResponse.json({ success: true, data })
@@ -55,10 +56,9 @@ const updateSchema = z
 const toNum = (v: number | null | undefined) =>
   v === undefined ? undefined : v === null ? null : String(v)
 
-// GET — lista de materiales (más recientes/actualizados primero)
+// GET — lista de materiales (consulta compartida con la página)
 export async function GET() {
-  const rows = await db.select().from(materials).orderBy(desc(materials.updatedAt))
-  return ok(rows)
+  return ok(await listMaterials())
 }
 
 // POST — crear material

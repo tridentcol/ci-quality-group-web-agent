@@ -1,9 +1,10 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
-import { desc, eq } from 'drizzle-orm'
+import { eq } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import { knowledgeGaps } from '@/lib/db/schema'
 import { resolveGapToKnowledge } from '@/lib/ai/gaps'
+import { listGaps } from '@/lib/data/panel'
 
 function ok(data: unknown) {
   return NextResponse.json({ success: true, data })
@@ -12,23 +13,11 @@ function fail(message: string, status = 400, code = 'VALIDATION') {
   return NextResponse.json({ success: false, error: { code, message } }, { status })
 }
 
-// GET — huecos (por defecto solo abiertos; ?status=all|resolved)
+// GET — huecos (por defecto solo abiertos; ?status=all|resolved). Compartida con la página.
 export async function GET(req: Request) {
-  const status = new URL(req.url).searchParams.get('status')
-  const base = db
-    .select({
-      id: knowledgeGaps.id,
-      question: knowledgeGaps.question,
-      status: knowledgeGaps.status,
-      resolvedAnswer: knowledgeGaps.resolvedAnswer,
-      createdAt: knowledgeGaps.createdAt,
-    })
-    .from(knowledgeGaps)
-    .orderBy(desc(knowledgeGaps.createdAt))
-
-  const rows =
-    status === 'all' ? await base : await base.where(eq(knowledgeGaps.status, status === 'resolved' ? 'resolved' : 'open'))
-  return ok(rows)
+  const s = new URL(req.url).searchParams.get('status')
+  const status = s === 'all' ? 'all' : s === 'resolved' ? 'resolved' : 'open'
+  return ok(await listGaps(status))
 }
 
 const resolveSchema = z.object({

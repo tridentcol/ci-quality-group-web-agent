@@ -1,6 +1,8 @@
 import { PricingManager } from "./pricing-manager";
+import { listMaterials } from "@/lib/data/panel";
 
-export default function PricingPage() {
+export default async function PricingPage() {
+  const initial = await listMaterials();
   return (
     <div className="mx-auto max-w-5xl p-4 sm:p-6 lg:p-8">
       <header className="mb-6 sm:mb-8">
@@ -9,7 +11,7 @@ export default function PricingPage() {
           Tabla de materiales en COP. El bot solo cotiza materiales activos con estos precios; nunca los inventa.
         </p>
       </header>
-      <PricingManager />
+      <PricingManager initial={initial} />
     </div>
   );
 }

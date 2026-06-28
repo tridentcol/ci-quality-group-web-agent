@@ -1,6 +1,8 @@
 import { GapsManager } from "./gaps-manager";
+import { listGaps } from "@/lib/data/panel";
 
-export default function GapsPage() {
+export default async function GapsPage() {
+  const initial = await listGaps("open");
   return (
     <div className="mx-auto max-w-4xl p-4 sm:p-6 lg:p-8">
       <header className="mb-6 sm:mb-8">
@@ -9,7 +11,7 @@ export default function GapsPage() {
           Preguntas que el bot no pudo responder. Al resolverlas se crea una FAQ que el bot reutiliza.
         </p>
       </header>
-      <GapsManager />
+      <GapsManager initial={initial} />
     </div>
   );
 }

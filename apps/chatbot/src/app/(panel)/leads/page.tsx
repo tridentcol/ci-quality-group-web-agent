@@ -1,6 +1,8 @@
 import { LeadsManager } from "./leads-manager";
+import { listLeads } from "@/lib/data/panel";
 
-export default function LeadsPage() {
+export default async function LeadsPage() {
+  const initial = await listLeads();
   return (
     <div className="mx-auto max-w-6xl p-4 sm:p-6 lg:p-8">
       <header className="mb-6 sm:mb-8">
@@ -9,7 +11,7 @@ export default function LeadsPage() {
           Solicitudes capturadas por el bot. Aprueba descuentos y actualiza el estado.
         </p>
       </header>
-      <LeadsManager />
+      <LeadsManager initial={initial} />
     </div>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Loader2, CheckCircle2, HelpCircle } from "lucide-react";
 import { toast } from "sonner";
 
@@ -12,21 +12,26 @@ interface Gap {
   createdAt: string | null;
 }
 
-export function GapsManager() {
-  const [items, setItems] = useState<Gap[]>([]);
-  const [loading, setLoading] = useState(true);
+export function GapsManager({ initial }: { initial: Gap[] }) {
+  const [items, setItems] = useState<Gap[]>(initial);
   const [showResolved, setShowResolved] = useState(false);
+  const firstRender = useRef(true);
 
   const load = useCallback(async () => {
     const res = await fetch(`/api/panel/gaps?status=${showResolved ? "all" : "open"}`);
     const json = await res.json();
     if (json.success) setItems(json.data);
-    setLoading(false);
   }, [showResolved]);
 
+  // Datos iniciales (abiertos) llegan del servidor → no se refetch al montar; solo al
+  // togglear "resueltos" (que necesita traer los resueltos).
   useEffect(() => {
+    if (firstRender.current) {
+      firstRender.current = false;
+      if (!showResolved) return;
+    }
     load();
-  }, [load]);
+  }, [load, showResolved]);
 
   const open = items.filter((g) => g.status === "open");
   const resolved = items.filter((g) => g.status === "resolved");
@@ -38,9 +43,7 @@ export function GapsManager() {
         Mostrar también los resueltos
       </label>
 
-      {loading ? (
-        <p className="py-8 text-center text-sm text-muted-foreground">Cargando…</p>
-      ) : open.length === 0 && resolved.length === 0 ? (
+      {open.length === 0 && resolved.length === 0 ? (
         <p className="rounded-xl border border-border bg-card py-8 text-center text-sm text-muted-foreground shadow-sm">
           No hay huecos {showResolved ? "" : "abiertos"}. 🎉
         </p>

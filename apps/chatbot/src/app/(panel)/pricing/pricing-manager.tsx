@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Plus, Trash2, Loader2, Check } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -36,20 +36,8 @@ const numOrNull = (s: string) => (s.trim() === "" ? null : Number(s));
 const inputCls =
   "w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-ring";
 
-export function PricingManager() {
-  const [items, setItems] = useState<Material[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  const load = useCallback(async () => {
-    const res = await fetch("/api/panel/pricing");
-    const json = await res.json();
-    if (json.success) setItems(json.data);
-    setLoading(false);
-  }, []);
-
-  useEffect(() => {
-    load();
-  }, [load]);
+export function PricingManager({ initial }: { initial: Material[] }) {
+  const [items, setItems] = useState<Material[]>(initial);
 
   const onChange = (u: Material) => setItems((prev) => prev.map((x) => (x.id === u.id ? u : x)));
   const onDelete = (id: string) => setItems((prev) => prev.filter((x) => x.id !== id));
@@ -64,11 +52,7 @@ export function PricingManager() {
       </datalist>
       <AddCard onAdded={(m) => setItems((prev) => [m, ...prev])} />
 
-      {loading ? (
-        <p className="rounded-xl border border-border bg-card py-8 text-center text-sm text-muted-foreground shadow-sm">
-          Cargando…
-        </p>
-      ) : items.length === 0 ? (
+      {items.length === 0 ? (
         <p className="rounded-xl border border-border bg-card py-8 text-center text-sm text-muted-foreground shadow-sm">
           Aún no hay materiales. Agrega el primero arriba.
         </p>

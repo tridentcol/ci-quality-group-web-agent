@@ -1,9 +1,10 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
-import { desc, eq } from 'drizzle-orm'
+import { eq } from 'drizzle-orm'
 import { db } from '@/lib/db'
-import { conversations, leads, materials } from '@/lib/db/schema'
+import { leads } from '@/lib/db/schema'
 import { isUuid } from '@/lib/api'
+import { listLeads } from '@/lib/data/panel'
 
 function ok(data: unknown) {
   return NextResponse.json({ success: true, data })
@@ -14,36 +15,9 @@ function fail(message: string, status = 400, code = 'VALIDATION') {
 
 const STATUSES = ['new', 'contacted', 'quoted', 'ready', 'won', 'lost'] as const
 
-// GET — lista de leads con material y canal
+// GET — lista de leads con material y canal (consulta compartida con la página)
 export async function GET() {
-  const rows = await db
-    .select({
-      id: leads.id,
-      ref: leads.ref,
-      conversationId: leads.conversationId,
-      name: leads.name,
-      contact: leads.contact,
-      interest: leads.interest,
-      materialName: materials.name,
-      quantity: leads.quantity,
-      unit: leads.unit,
-      agreedPriceCop: leads.agreedPriceCop,
-      fulfillment: leads.fulfillment,
-      scheduledFor: leads.scheduledFor,
-      paymentMethod: leads.paymentMethod,
-      requestedDiscount: leads.requestedDiscount,
-      discountApprovedPct: leads.discountApprovedPct,
-      status: leads.status,
-      notes: leads.notes,
-      test: leads.test,
-      channel: conversations.channel,
-      createdAt: leads.createdAt,
-    })
-    .from(leads)
-    .leftJoin(materials, eq(leads.materialId, materials.id))
-    .leftJoin(conversations, eq(leads.conversationId, conversations.id))
-    .orderBy(desc(leads.createdAt))
-  return ok(rows)
+  return ok(await listLeads())
 }
 
 // DELETE — borrar un lead (útil para limpiar leads de prueba del playground)

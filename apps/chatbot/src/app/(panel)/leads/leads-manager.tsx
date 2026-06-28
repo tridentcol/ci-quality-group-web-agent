@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Loader2, Check, Trash2, MessageSquare, Search } from "lucide-react";
 import { toast } from "sonner";
@@ -72,24 +72,12 @@ function ConvLink({ conversationId }: { conversationId: string | null }) {
   );
 }
 
-export function LeadsManager() {
-  const [items, setItems] = useState<Lead[]>([]);
-  const [loading, setLoading] = useState(true);
+export function LeadsManager({ initial }: { initial: Lead[] }) {
+  const [items, setItems] = useState<Lead[]>(initial);
   const [hideTest, setHideTest] = useState(false);
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | Status>("all");
   const confirm = useConfirm();
-
-  const load = useCallback(async () => {
-    const res = await fetch("/api/panel/leads");
-    const json = await res.json();
-    if (json.success) setItems(json.data);
-    setLoading(false);
-  }, []);
-
-  useEffect(() => {
-    load();
-  }, [load]);
 
   const onChange = (u: Lead) => setItems((p) => p.map((x) => (x.id === u.id ? u : x)));
 
@@ -119,13 +107,6 @@ export function LeadsManager() {
     });
   }, [items, query, statusFilter, hideTest]);
 
-  if (loading) {
-    return (
-      <div className="rounded-xl border border-border bg-card py-8 text-center text-sm text-muted-foreground shadow-sm">
-        Cargando…
-      </div>
-    );
-  }
   if (items.length === 0) {
     return (
       <div className="rounded-xl border border-border bg-card py-8 text-center text-sm text-muted-foreground shadow-sm">
