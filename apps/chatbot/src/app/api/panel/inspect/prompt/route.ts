@@ -25,15 +25,23 @@ export async function POST(req: Request) {
     )
   }
 
-  const a = await assembleGeneration({ message: parsed.data.message, history: parsed.data.history })
-  return NextResponse.json({
-    success: true,
-    data: {
-      system: a.system,
-      model: a.model,
-      routerReason: a.routerReason,
-      contextUsed: a.contextUsed,
-      retrievedCount: a.retrieved.length,
-    },
-  })
+  try {
+    const a = await assembleGeneration({ message: parsed.data.message, history: parsed.data.history })
+    return NextResponse.json({
+      success: true,
+      data: {
+        system: a.system,
+        model: a.model,
+        routerReason: a.routerReason,
+        contextUsed: a.contextUsed,
+        retrievedCount: a.retrieved.length,
+      },
+    })
+  } catch (e) {
+    console.error('inspect/prompt error:', e instanceof Error ? e.message : e)
+    return NextResponse.json(
+      { success: false, error: { code: 'INTERNAL', message: 'No se pudo armar el prompt.' } },
+      { status: 500 },
+    )
+  }
 }

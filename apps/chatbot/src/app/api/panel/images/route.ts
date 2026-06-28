@@ -7,6 +7,7 @@ import { images, knowledgeQa, materials } from '@/lib/db/schema'
 import { embed } from '@/lib/ai/embed'
 import { env } from '@/lib/env'
 import { isVercelBlobUrl } from '@/lib/blob-name'
+import { isUuid } from '@/lib/api'
 
 // Base pública absoluta para la URL del proxy. Se prefiere APP_URL si es un https
 // real (config de prod); si no, se deriva del host de la petición (el dominio por el
@@ -135,7 +136,7 @@ export async function PATCH(req: Request) {
 // DELETE — borra la imagen (blob + fila)
 export async function DELETE(req: Request) {
   const id = new URL(req.url).searchParams.get('id')
-  if (!id) return fail('Falta el id.')
+  if (!isUuid(id)) return fail('Falta el id o es inválido.')
   const [row] = await db.select({ blobUrl: images.blobUrl }).from(images).where(eq(images.id, id))
   if (!row) return fail('La imagen no existe.', 404, 'NOT_FOUND')
   if (row.blobUrl) {

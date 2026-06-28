@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { desc, eq } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import { conversations, leads, materials } from '@/lib/db/schema'
+import { isUuid } from '@/lib/api'
 
 function ok(data: unknown) {
   return NextResponse.json({ success: true, data })
@@ -47,7 +48,7 @@ export async function GET() {
 // DELETE — borrar un lead (útil para limpiar leads de prueba del playground)
 export async function DELETE(req: Request) {
   const id = new URL(req.url).searchParams.get('id')
-  if (!id) return fail('Falta el id del lead.')
+  if (!isUuid(id)) return fail('Falta el id del lead o es inválido.')
   const [row] = await db.delete(leads).where(eq(leads.id, id)).returning({ id: leads.id })
   if (!row) return fail('El lead no existe.', 404, 'NOT_FOUND')
   return ok({ deleted: id })

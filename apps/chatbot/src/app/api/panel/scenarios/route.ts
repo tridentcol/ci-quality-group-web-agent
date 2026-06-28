@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { desc, eq } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import { testScenarios } from '@/lib/db/schema'
+import { isUuid } from '@/lib/api'
 
 /** CRUD de escenarios de prueba (no-code). Bajo /api/panel → protegido por Clerk. */
 
@@ -64,7 +65,7 @@ export async function PATCH(req: Request) {
 
 export async function DELETE(req: Request) {
   const id = new URL(req.url).searchParams.get('id')
-  if (!id) return fail('Falta el id.')
+  if (!isUuid(id)) return fail('Falta el id o es inválido.')
   const [row] = await db.delete(testScenarios).where(eq(testScenarios.id, id)).returning({ id: testScenarios.id })
   if (!row) return fail('El escenario no existe.', 404, 'NOT_FOUND')
   return ok({ deleted: id })

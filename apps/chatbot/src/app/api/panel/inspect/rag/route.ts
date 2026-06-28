@@ -18,16 +18,23 @@ export async function POST(req: Request) {
     )
   }
 
-  const chunks = await retrieve(parsed.data.query, 10, 0)
-  const results = chunks.map((c) => {
-    const meta = (c.metadata ?? {}) as { qa?: boolean }
-    return {
-      content: c.content,
-      similarity: c.similarity,
-      kind: meta.qa ? 'qa' : 'chunk',
-      used: c.similarity >= RAG_MIN_SCORE,
-    }
-  })
-
-  return NextResponse.json({ success: true, data: { threshold: RAG_MIN_SCORE, results } })
+  try {
+    const chunks = await retrieve(parsed.data.query, 10, 0)
+    const results = chunks.map((c) => {
+      const meta = (c.metadata ?? {}) as { qa?: boolean }
+      return {
+        content: c.content,
+        similarity: c.similarity,
+        kind: meta.qa ? 'qa' : 'chunk',
+        used: c.similarity >= RAG_MIN_SCORE,
+      }
+    })
+    return NextResponse.json({ success: true, data: { threshold: RAG_MIN_SCORE, results } })
+  } catch (e) {
+    console.error('inspect/rag error:', e instanceof Error ? e.message : e)
+    return NextResponse.json(
+      { success: false, error: { code: 'INTERNAL', message: 'No se pudo inspeccionar el RAG.' } },
+      { status: 500 },
+    )
+  }
 }

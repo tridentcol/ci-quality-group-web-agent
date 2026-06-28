@@ -170,71 +170,86 @@ export async function captureLead(
     materialId = m?.id ?? null
   }
 
-  // Lead existente de ESTA conversación (mismo flag de prueba) para acumular.
-  const [existing] = ctx.conversationId
-    ? await db
-        .select()
-        .from(leads)
-        .where(and(eq(leads.conversationId, ctx.conversationId), eq(leads.test, isTest)))
-        .orderBy(desc(leads.createdAt))
-        .limit(1)
-    : []
+  // Read-merge-write ATÓMICO por conversación. Un lock por conversación
+  // (pg_advisory_xact_lock) serializa llamadas concurrentes —dos webhooks casi
+  // simultáneos del mismo cliente— para que SIEMPRE haya una sola fila por
+  // conversación (antes ambas no veían fila previa y creaban duplicados). El lock se
+  // libera al cerrar la transacción. El aviso al admin (red) va FUERA de la tx.
+  let leadId = ''
+  let status = 'new'
+  let shouldNotify = false
+  let notifyMessage = ''
 
-  // Mezcla: solo se sobrescribe lo que llega; lo demás conserva lo previo.
-  const merged = {
-    name: args.name ?? existing?.name ?? null,
-    contact: args.contact ?? existing?.contact ?? null,
-    interest: args.interest ?? existing?.interest ?? null,
-    materialId: materialId ?? existing?.materialId ?? null,
-    quantity: args.quantity != null ? String(args.quantity) : (existing?.quantity ?? null),
-    unit: args.unit ?? existing?.unit ?? null,
-    agreedPriceCop: args.agreed_price != null ? String(args.agreed_price) : (existing?.agreedPriceCop ?? null),
-    fulfillment: args.fulfillment ?? existing?.fulfillment ?? null,
-    scheduledFor: args.scheduled_for ?? existing?.scheduledFor ?? null,
-    paymentMethod: args.payment_method ?? existing?.paymentMethod ?? null,
-    requestedDiscount: args.requested_discount ?? existing?.requestedDiscount ?? false,
-  }
+  await db.transaction(async (tx) => {
+    if (ctx.conversationId) {
+      await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${ctx.conversationId}))`)
+    }
+    const [existing] = ctx.conversationId
+      ? await tx
+          .select()
+          .from(leads)
+          .where(and(eq(leads.conversationId, ctx.conversationId), eq(leads.test, isTest)))
+          .orderBy(desc(leads.createdAt))
+          .limit(1)
+      : []
 
-  const status = leadStage(existing?.status ?? 'new', {
-    contact: merged.contact,
-    quantity: merged.quantity,
-    agreedPrice: merged.agreedPriceCop,
-    logistics: merged.fulfillment != null || merged.scheduledFor != null,
+    // Mezcla: solo se sobrescribe lo que llega; lo demás conserva lo previo.
+    const merged = {
+      name: args.name ?? existing?.name ?? null,
+      contact: args.contact ?? existing?.contact ?? null,
+      interest: args.interest ?? existing?.interest ?? null,
+      materialId: materialId ?? existing?.materialId ?? null,
+      quantity: args.quantity != null ? String(args.quantity) : (existing?.quantity ?? null),
+      unit: args.unit ?? existing?.unit ?? null,
+      agreedPriceCop: args.agreed_price != null ? String(args.agreed_price) : (existing?.agreedPriceCop ?? null),
+      fulfillment: args.fulfillment ?? existing?.fulfillment ?? null,
+      scheduledFor: args.scheduled_for ?? existing?.scheduledFor ?? null,
+      paymentMethod: args.payment_method ?? existing?.paymentMethod ?? null,
+      requestedDiscount: args.requested_discount ?? existing?.requestedDiscount ?? false,
+    }
+
+    status = leadStage(existing?.status ?? 'new', {
+      contact: merged.contact,
+      quantity: merged.quantity,
+      agreedPrice: merged.agreedPriceCop,
+      logistics: merged.fulfillment != null || merged.scheduledFor != null,
+    })
+
+    if (existing) {
+      await tx.update(leads).set({ ...merged, status }).where(eq(leads.id, existing.id))
+      leadId = existing.id
+    } else {
+      const [row] = await tx
+        .insert(leads)
+        .values({ conversationId: ctx.conversationId ?? null, ...merged, status, test: isTest })
+        .returning({ id: leads.id })
+      leadId = row.id
+    }
+
+    // Aviso SOLO en producción y solo cuando aporta: al crear el lead o al quedar
+    // "casi cerrado" (ready). Se arma aquí pero se envía fuera de la transacción.
+    const becameReady = status === 'ready' && existing?.status !== 'ready'
+    if (mode === 'live' && (!existing || becameReady)) {
+      const header = becameReady ? '🟢 Lead LISTO para cerrar' : 'Nuevo lead'
+      const deal = [
+        merged.interest ? `interés: ${merged.interest}` : null,
+        merged.quantity ? `cantidad: ${merged.quantity}${merged.unit ? ' ' + merged.unit : ''}` : null,
+        merged.agreedPriceCop ? `precio acordado: $${Number(merged.agreedPriceCop).toLocaleString('es-CO')}` : null,
+        merged.fulfillment ? `logística: ${merged.fulfillment}` : null,
+        merged.scheduledFor ? `cuándo: ${merged.scheduledFor}` : null,
+        merged.paymentMethod ? `pago: ${merged.paymentMethod}` : null,
+      ]
+        .filter(Boolean)
+        .join(' · ')
+      shouldNotify = true
+      notifyMessage =
+        `${header}: ${merged.name ?? 'sin nombre'} (${merged.contact ?? 'sin contacto'})` +
+        `${deal ? ' — ' + deal : ''}${merged.requestedDiscount ? ' · pidió descuento' : ''}` +
+        panelConvLink(ctx.conversationId)
+    }
   })
 
-  let leadId: string
-  if (existing) {
-    await db.update(leads).set({ ...merged, status }).where(eq(leads.id, existing.id))
-    leadId = existing.id
-  } else {
-    const [row] = await db
-      .insert(leads)
-      .values({ conversationId: ctx.conversationId ?? null, ...merged, status, test: isTest })
-      .returning({ id: leads.id })
-    leadId = row.id
-  }
-
-  // Aviso al admin SOLO en producción y solo cuando aporta: al crear el lead, o al
-  // quedar "casi cerrado" (ready). Así no se spamea en cada actualización parcial.
-  const becameReady = status === 'ready' && existing?.status !== 'ready'
-  if (mode === 'live' && (!existing || becameReady)) {
-    const header = becameReady ? '🟢 Lead LISTO para cerrar' : 'Nuevo lead'
-    const deal = [
-      merged.interest ? `interés: ${merged.interest}` : null,
-      merged.quantity ? `cantidad: ${merged.quantity}${merged.unit ? ' ' + merged.unit : ''}` : null,
-      merged.agreedPriceCop ? `precio acordado: $${Number(merged.agreedPriceCop).toLocaleString('es-CO')}` : null,
-      merged.fulfillment ? `logística: ${merged.fulfillment}` : null,
-      merged.scheduledFor ? `cuándo: ${merged.scheduledFor}` : null,
-      merged.paymentMethod ? `pago: ${merged.paymentMethod}` : null,
-    ]
-      .filter(Boolean)
-      .join(' · ')
-    await notifyAdmin(
-      `${header}: ${merged.name ?? 'sin nombre'} (${merged.contact ?? 'sin contacto'})` +
-        `${deal ? ' — ' + deal : ''}${merged.requestedDiscount ? ' · pidió descuento' : ''}` +
-        panelConvLink(ctx.conversationId),
-    )
-  }
+  if (shouldNotify) await notifyAdmin(notifyMessage)
 
   return { leadId, status }
 }

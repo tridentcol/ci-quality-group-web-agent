@@ -4,6 +4,7 @@ import { z } from 'zod'
 import { desc, eq } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import { knowledgeSources } from '@/lib/db/schema'
+import { isUuid } from '@/lib/api'
 import { inngest } from '@/inngest/client'
 
 /**
@@ -41,6 +42,7 @@ async function deleteBlobQuietly(url: string | null | undefined) {
 // GET — lista de fuentes, o una sola (?id=) con su texto plano para editar.
 export async function GET(req: Request) {
   const id = new URL(req.url).searchParams.get('id')
+  if (id && !isUuid(id)) return fail('id inválido.')
   if (id) {
     const [src] = await db
       .select({
@@ -151,7 +153,7 @@ export async function PATCH(req: Request) {
 // DELETE — borrar fuente (cascade a chunks) + su blob si lo tuviera
 export async function DELETE(req: Request) {
   const id = new URL(req.url).searchParams.get('id')
-  if (!id) return fail('Falta el id de la fuente.')
+  if (!isUuid(id)) return fail('Falta el id de la fuente o es inválido.')
 
   const [src] = await db
     .select({ originalUrl: knowledgeSources.originalUrl, type: knowledgeSources.type })

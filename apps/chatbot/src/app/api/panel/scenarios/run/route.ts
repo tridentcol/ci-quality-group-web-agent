@@ -23,11 +23,18 @@ export async function POST(req: Request) {
     ? await db.select().from(testScenarios).where(eq(testScenarios.id, parsed.data.id))
     : await db.select().from(testScenarios)
 
-  const results = []
-  for (const s of rows) {
-    const r = await runScenario(s.messages as string[], (s.expectations ?? {}) as ScenarioExpectations)
-    results.push({ id: s.id, name: s.name, ...r })
+  try {
+    const results = []
+    for (const s of rows) {
+      const r = await runScenario(s.messages as string[], (s.expectations ?? {}) as ScenarioExpectations)
+      results.push({ id: s.id, name: s.name, ...r })
+    }
+    return NextResponse.json({ success: true, data: results })
+  } catch (e) {
+    console.error('scenarios/run error:', e instanceof Error ? e.message : e)
+    return NextResponse.json(
+      { success: false, error: { code: 'INTERNAL', message: 'No se pudieron correr los escenarios.' } },
+      { status: 500 },
+    )
   }
-
-  return NextResponse.json({ success: true, data: results })
 }

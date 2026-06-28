@@ -38,18 +38,26 @@ export async function POST(req: Request) {
     )
   }
 
-  const pairs = await generateQa(src.content)
-  await db.delete(knowledgeQa).where(eq(knowledgeQa.sourceId, sourceId))
-  if (pairs.length > 0) {
-    const embeddings = await embedBatch(pairs.map((p) => p.question))
-    await db.insert(knowledgeQa).values(
-      pairs.map((p, i) => ({ sourceId, question: p.question, answer: p.answer, embedding: embeddings[i] })),
+  try {
+    const pairs = await generateQa(src.content)
+    await db.delete(knowledgeQa).where(eq(knowledgeQa.sourceId, sourceId))
+    if (pairs.length > 0) {
+      const embeddings = await embedBatch(pairs.map((p) => p.question))
+      await db.insert(knowledgeQa).values(
+        pairs.map((p, i) => ({ sourceId, question: p.question, answer: p.answer, embedding: embeddings[i] })),
+      )
+    }
+    await db
+      .update(knowledgeSources)
+      .set({ qaCount: pairs.length, updatedAt: new Date() })
+      .where(eq(knowledgeSources.id, sourceId))
+
+    return NextResponse.json({ success: true, data: { count: pairs.length } })
+  } catch (e) {
+    console.error('qa/regenerate error:', e instanceof Error ? e.message : e)
+    return NextResponse.json(
+      { success: false, error: { code: 'INTERNAL', message: 'No se pudieron regenerar las preguntas.' } },
+      { status: 500 },
     )
   }
-  await db
-    .update(knowledgeSources)
-    .set({ qaCount: pairs.length, updatedAt: new Date() })
-    .where(eq(knowledgeSources.id, sourceId))
-
-  return NextResponse.json({ success: true, data: { count: pairs.length } })
 }

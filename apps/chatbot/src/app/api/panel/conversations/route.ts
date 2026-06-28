@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { asc, desc, eq, sql } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import { conversations, customerProfiles, messages } from '@/lib/db/schema'
+import { isUuid } from '@/lib/api'
 import { inngest } from '@/inngest/client'
 
 function ok(data: unknown) {
@@ -17,6 +18,7 @@ const STATUSES = ['bot_active', 'human_controlled', 'closed'] as const
 // GET — lista de conversaciones, o el hilo de una (?id=)
 export async function GET(req: Request) {
   const id = new URL(req.url).searchParams.get('id')
+  if (id && !isUuid(id)) return fail('id inválido.')
 
   if (id) {
     const [conv] = await db.select().from(conversations).where(eq(conversations.id, id))
@@ -85,7 +87,7 @@ export async function DELETE(req: Request) {
   const url = new URL(req.url)
   const id = url.searchParams.get('id')
   const erase = url.searchParams.get('erase')
-  if (!id) return fail('Falta el id de la conversación.')
+  if (!isUuid(id)) return fail('Falta el id de la conversación o es inválido.')
 
   const [conv] = await db
     .select({ customerId: conversations.customerId })

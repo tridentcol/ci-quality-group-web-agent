@@ -38,8 +38,9 @@ export async function POST(req: Request) {
     })
     return NextResponse.json({ success: true, data: res })
   } catch (e) {
+    console.error('playground generate error:', e instanceof Error ? e.message : e)
     return NextResponse.json(
-      { success: false, error: { code: 'GENERATE', message: e instanceof Error ? e.message : 'Error' } },
+      { success: false, error: { code: 'GENERATE', message: 'No se pudo generar la respuesta. Reintenta.' } },
       { status: 500 },
     )
   }

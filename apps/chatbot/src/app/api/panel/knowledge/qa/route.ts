@@ -3,6 +3,7 @@ import { asc, desc, eq } from 'drizzle-orm'
 import { z } from 'zod'
 import { db } from '@/lib/db'
 import { knowledgeQa, knowledgeSources } from '@/lib/db/schema'
+import { isUuid } from '@/lib/api'
 import { embed } from '@/lib/ai/embed'
 
 /**
@@ -34,6 +35,7 @@ async function syncQaCount(sourceId: string) {
 // con el nombre de su fuente (para la vista global "Todas las preguntas").
 export async function GET(req: Request) {
   const sourceId = new URL(req.url).searchParams.get('sourceId')
+  if (sourceId && !isUuid(sourceId)) return fail('sourceId inválido.')
 
   if (sourceId) {
     const rows = await db
@@ -129,7 +131,7 @@ export async function PATCH(req: Request) {
 // DELETE ?id= — borrar una pregunta
 export async function DELETE(req: Request) {
   const id = new URL(req.url).searchParams.get('id')
-  if (!id) return fail('Falta el id.')
+  if (!isUuid(id)) return fail('Falta el id o es inválido.')
   const [row] = await db
     .delete(knowledgeQa)
     .where(eq(knowledgeQa.id, id))

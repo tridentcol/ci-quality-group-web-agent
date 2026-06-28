@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { desc, eq } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import { materials } from '@/lib/db/schema'
+import { isUuid } from '@/lib/api'
 
 function ok(data: unknown) {
   return NextResponse.json({ success: true, data })
@@ -116,7 +117,7 @@ export async function PATCH(req: Request) {
 // DELETE — borrar material (leads.material_id → set null por la FK)
 export async function DELETE(req: Request) {
   const id = new URL(req.url).searchParams.get('id')
-  if (!id) return fail('Falta el id del material.')
+  if (!isUuid(id)) return fail('Falta el id del material o es inválido.')
   const [row] = await db.delete(materials).where(eq(materials.id, id)).returning({ id: materials.id })
   if (!row) return fail('El material no existe.', 404, 'NOT_FOUND')
   return ok({ id: row.id })
