@@ -2,11 +2,12 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Loader2, Check, Trash2, MessageSquare, Search } from "lucide-react";
+import { Loader2, Check, Trash2, MessageSquare, Search, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { ChannelBadge } from "@/components/panel/channel-badge";
 import { useConfirm } from "@/components/panel/confirm-dialog";
+import { QuoteModal } from "./quote-modal";
 
 type Status = "new" | "contacted" | "quoted" | "ready" | "won" | "lost";
 
@@ -77,6 +78,7 @@ export function LeadsManager({ initial }: { initial: Lead[] }) {
   const [hideTest, setHideTest] = useState(false);
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | Status>("all");
+  const [quoteLead, setQuoteLead] = useState<Lead | null>(null);
   const confirm = useConfirm();
 
   const onChange = (u: Lead) => setItems((p) => p.map((x) => (x.id === u.id ? u : x)));
@@ -158,7 +160,7 @@ export function LeadsManager({ initial }: { initial: Lead[] }) {
       {/* Cards en móvil */}
       <div className="space-y-3 md:hidden">
         {visible.map((l) => (
-          <LeadCard key={l.id} lead={l} onChange={onChange} onDelete={() => onDelete(l.id)} />
+          <LeadCard key={l.id} lead={l} onChange={onChange} onDelete={() => onDelete(l.id)} onQuote={() => setQuoteLead(l)} />
         ))}
       </div>
 
@@ -182,11 +184,13 @@ export function LeadsManager({ initial }: { initial: Lead[] }) {
           </thead>
           <tbody>
             {visible.map((l) => (
-              <LeadRow key={l.id} lead={l} onChange={onChange} onDelete={() => onDelete(l.id)} />
+              <LeadRow key={l.id} lead={l} onChange={onChange} onDelete={() => onDelete(l.id)} onQuote={() => setQuoteLead(l)} />
             ))}
           </tbody>
         </table>
       </div>
+
+      {quoteLead && <QuoteModal lead={quoteLead} onClose={() => setQuoteLead(null)} />}
     </>
   );
 }
@@ -295,10 +299,12 @@ function LeadRow({
   lead,
   onChange,
   onDelete,
+  onQuote,
 }: {
   lead: Lead;
   onChange: (l: Lead) => void;
   onDelete: () => void;
+  onQuote: () => void;
 }) {
   return (
     <tr className={cn("border-b border-border/60 align-top last:border-0", lead.test && "bg-warning/5")}>
@@ -331,6 +337,14 @@ function LeadRow({
       </td>
       <td className="px-2 py-3 text-right">
         <div className="flex items-center justify-end gap-2">
+          <button
+            onClick={onQuote}
+            className="-m-1.5 inline-flex size-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:text-primary"
+            aria-label="Crear cotización"
+            title="Crear cotización"
+          >
+            <FileText className="size-4" />
+          </button>
           <ConvLink conversationId={lead.conversationId} />
           <button
             onClick={onDelete}
@@ -349,10 +363,12 @@ function LeadCard({
   lead,
   onChange,
   onDelete,
+  onQuote,
 }: {
   lead: Lead;
   onChange: (l: Lead) => void;
   onDelete: () => void;
+  onQuote: () => void;
 }) {
   return (
     <div className={cn("rounded-xl border border-border bg-card p-4 shadow-sm", lead.test && "bg-warning/5")}>
@@ -368,6 +384,13 @@ function LeadCard({
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <button
+            onClick={onQuote}
+            className="-m-1.5 inline-flex size-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:text-primary"
+            aria-label="Crear cotización"
+          >
+            <FileText className="size-4" />
+          </button>
           <ConvLink conversationId={lead.conversationId} />
           <ChannelBadge channel={lead.channel} />
           <button

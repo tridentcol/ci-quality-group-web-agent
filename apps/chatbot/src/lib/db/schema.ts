@@ -289,6 +289,21 @@ export const webhookEvents = pgTable('webhook_events', {
   processedAt: timestamp('processed_at', { withTimezone: true }).defaultNow(),
 })
 
+// quotes — cotizaciones formales generadas desde un lead (o a mano). Snapshot editable
+// con líneas; se comparten por un enlace público imprimible (/cotizacion/<id>).
+export const quotes = pgTable('quotes', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  ref: serial('ref').notNull(), // "Cotización #N"
+  leadId: uuid('lead_id').references(() => leads.id, { onDelete: 'set null' }),
+  customerName: text('customer_name'),
+  customerContact: text('customer_contact'),
+  // [{ description, quantity, unit, unitPriceCop }]
+  items: jsonb('items').notNull().default([]),
+  notes: text('notes'),
+  validDays: integer('valid_days').notNull().default(8), // vigencia en días
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+})
+
 // system_events — bitácora de salud (errores/avisos) para el Panel de salud. Antes
 // los fallos solo iban a console; aquí el admin los ve sin esperar quejas.
 export const systemEvents = pgTable(

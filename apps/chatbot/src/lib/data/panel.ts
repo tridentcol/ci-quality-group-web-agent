@@ -10,6 +10,7 @@ import {
   leads,
   materials,
   messages,
+  quotes,
   systemEvents,
 } from "@/lib/db/schema";
 
@@ -130,6 +131,35 @@ export async function listConversations() {
   }));
 }
 export type ConversationRow = Awaited<ReturnType<typeof listConversations>>[number];
+
+export async function listQuotes() {
+  const rows = await db
+    .select({
+      id: quotes.id,
+      ref: quotes.ref,
+      customerName: quotes.customerName,
+      customerContact: quotes.customerContact,
+      items: quotes.items,
+      createdAt: quotes.createdAt,
+    })
+    .from(quotes)
+    .orderBy(desc(quotes.createdAt));
+  type Item = { quantity: number | null; unitPriceCop: number };
+  return rows.map((r) => {
+    const items = (r.items ?? []) as Item[];
+    const total = items.reduce((a, it) => a + (it.quantity != null ? it.quantity * it.unitPriceCop : it.unitPriceCop), 0);
+    return {
+      id: r.id,
+      ref: r.ref,
+      customerName: r.customerName,
+      customerContact: r.customerContact,
+      lines: items.length,
+      total,
+      createdAt: r.createdAt ? r.createdAt.toISOString() : null,
+    };
+  });
+}
+export type QuoteListRow = Awaited<ReturnType<typeof listQuotes>>[number];
 
 export async function listImages() {
   const [rows, matUses, qaUses] = await Promise.all([
