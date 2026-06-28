@@ -148,5 +148,33 @@
   }
   body {
     @apply bg-background text-foreground;
+    /* Sin "rebote" de scroll y sin resaltado azul al tocar (sensación de app). */
+    overscroll-behavior-y: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  html {
+    /* Áreas seguras (notch / barra de gestos) cuando se instala como app. */
+    background: var(--background);
+  }
+  /* Evita el ZOOM automático de iOS al enfocar un campo: requiere fuente ≥ 16px. */
+  @media (max-width: 640px) {
+    input,
+    textarea,
+    select {
+      font-size: 16px;
+    }
+  }
+}
+
+/* Utilidades de área segura para usar en barras/encabezados en modo standalone. */
+@layer utilities {
+  .pt-safe {
+    padding-top: env(safe-area-inset-top);
+  }
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .pl-safe {
+    padding-left: env(safe-area-inset-left);
   }
 }
