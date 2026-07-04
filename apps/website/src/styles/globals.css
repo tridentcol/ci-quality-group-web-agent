@@ -63,6 +63,7 @@ body {
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+  overflow-x: hidden; /* ningún elemento debe provocar scroll horizontal */
 }
 
 img,
@@ -82,6 +83,13 @@ a {
   max-width: var(--max-w);
   margin-inline: auto;
   padding-inline: var(--gutter);
+}
+
+/* Gutter más ajustado en móvil (más espacio útil, menos riesgo de desborde). */
+@media (max-width: 640px) {
+  :root {
+    --gutter: 20px;
+  }
 }
 
 /* Respeta usuarios que prefieren menos movimiento */

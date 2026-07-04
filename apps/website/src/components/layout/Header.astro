@@ -11,7 +11,21 @@ const nav = [
 
 <header class="ci-header">
   <div class="ci-container ci-header__inner">
-    <nav class="ci-nav" aria-label="Navegación principal">
+    <button
+      type="button"
+      class="ci-burger"
+      aria-label="Abrir menú"
+      aria-expanded="false"
+      aria-controls="ci-nav"
+    >
+      <span class="ci-burger__box" aria-hidden="true">
+        <span class="ci-burger__bar"></span>
+        <span class="ci-burger__bar"></span>
+        <span class="ci-burger__bar"></span>
+      </span>
+    </button>
+
+    <nav id="ci-nav" class="ci-nav" aria-label="Navegación principal">
       {
         nav.map((item) => (
           <a class="ci-nav__link" href={item.href}>
@@ -52,12 +66,64 @@ const nav = [
     gap: 24px;
   }
 
-  /* Nav (izquierda) */
+  /* Botón hamburguesa (solo móvil) */
+  .ci-burger {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    width: 42px;
+    height: 42px;
+    margin-left: -8px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    border-radius: 8px;
+    flex-shrink: 0;
+  }
+  .ci-burger:hover {
+    background: var(--green-pale);
+  }
+  .ci-burger__box {
+    position: relative;
+    width: 22px;
+    height: 16px;
+  }
+  .ci-burger__bar {
+    position: absolute;
+    left: 0;
+    width: 100%;
+    height: 2.5px;
+    border-radius: 2px;
+    background: var(--graphite);
+    transition: transform 0.25s ease, opacity 0.2s ease, top 0.25s ease;
+  }
+  .ci-burger__bar:nth-child(1) {
+    top: 0;
+  }
+  .ci-burger__bar:nth-child(2) {
+    top: 6.75px;
+  }
+  .ci-burger__bar:nth-child(3) {
+    top: 13.5px;
+  }
+  /* Estado abierto → X */
+  .ci-header.is-open .ci-burger__bar:nth-child(1) {
+    top: 6.75px;
+    transform: rotate(45deg);
+  }
+  .ci-header.is-open .ci-burger__bar:nth-child(2) {
+    opacity: 0;
+  }
+  .ci-header.is-open .ci-burger__bar:nth-child(3) {
+    top: 6.75px;
+    transform: rotate(-45deg);
+  }
+
+  /* Nav (izquierda en desktop) */
   .ci-nav {
     display: flex;
     align-items: center;
     gap: 34px;
-    flex-wrap: wrap;
   }
 
   .ci-nav__link {
@@ -69,6 +135,7 @@ const nav = [
     color: var(--graphite);
     text-decoration: none;
     padding-block: 4px;
+    white-space: nowrap;
   }
 
   .ci-nav__link::after {
@@ -94,6 +161,7 @@ const nav = [
     gap: 12px;
     text-decoration: none;
     flex-shrink: 0;
+    min-width: 0;
   }
 
   .ci-logo__text {
@@ -108,6 +176,7 @@ const nav = [
     font-weight: bold;
     letter-spacing: 0.02em;
     color: var(--graphite);
+    white-space: nowrap;
   }
 
   .ci-logo__accent {
@@ -119,6 +188,7 @@ const nav = [
     letter-spacing: 0.34em;
     color: var(--text-muted);
     margin-top: 4px;
+    white-space: nowrap;
   }
 
   .ci-logo__tile {
@@ -133,27 +203,88 @@ const nav = [
     flex-shrink: 0;
   }
 
-  /* ≤640px: header se apila (logo arriba, nav centrada con wrap) */
-  @media (max-width: 640px) {
+  /* ===== Móvil: hamburguesa + nav desplegable ===== */
+  @media (max-width: 720px) {
     .ci-header__inner {
-      flex-direction: column-reverse;
-      height: auto;
-      padding-block: 14px;
-      gap: 14px;
+      height: 64px;
+      gap: 12px;
     }
+    .ci-burger {
+      display: flex;
+    }
+    /* Nav pasa a panel desplegable bajo el header */
     .ci-nav {
-      justify-content: center;
-      gap: 20px 24px;
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 0;
+      background: #fff;
+      border-bottom: 1px solid var(--border-light);
+      box-shadow: 0 16px 30px rgba(13, 13, 13, 0.1);
+      padding: 6px 0;
+      /* Oculto por defecto (colapsado) */
+      max-height: 0;
+      overflow: hidden;
+      opacity: 0;
+      pointer-events: none;
+      transition: max-height 0.28s ease, opacity 0.2s ease;
     }
-    .ci-logo {
-      align-self: center;
+    .ci-header.is-open .ci-nav {
+      max-height: 320px;
+      opacity: 1;
+      pointer-events: auto;
     }
-  }
-
-  /* ≤430px: enlaces de nav a 12px */
-  @media (max-width: 430px) {
     .ci-nav__link {
-      font-size: 12px;
+      padding: 14px 32px;
+      font-size: 14px;
+      border-bottom: 1px solid #f0f5ef;
+    }
+    .ci-nav__link:last-child {
+      border-bottom: none;
+    }
+    /* En el panel, el subrayado animado no aplica bien: usar fondo al hover */
+    .ci-nav__link::after {
+      display: none;
+    }
+    .ci-nav__link:hover,
+    .ci-nav__link:focus-visible {
+      background: var(--green-pale);
+      color: var(--green-deep);
+    }
+    /* Logo más compacto en móvil */
+    .ci-logo__name {
+      font-size: 18px;
+    }
+    .ci-logo__sub {
+      font-size: 9px;
+      letter-spacing: 0.28em;
+    }
+    .ci-logo__tile {
+      width: 40px;
+      height: 40px;
     }
   }
 </style>
+
+<script>
+  const header = document.querySelector<HTMLElement>('.ci-header');
+  const burger = header?.querySelector<HTMLButtonElement>('.ci-burger');
+  const nav = header?.querySelector<HTMLElement>('.ci-nav');
+  if (header && burger && nav) {
+    const setOpen = (open: boolean) => {
+      header.classList.toggle('is-open', open);
+      burger.setAttribute('aria-expanded', String(open));
+      burger.setAttribute('aria-label', open ? 'Cerrar menú' : 'Abrir menú');
+    };
+    burger.addEventListener('click', () => setOpen(!header.classList.contains('is-open')));
+    // Cerrar al tocar un enlace
+    nav.querySelectorAll('a').forEach((a) => a.addEventListener('click', () => setOpen(false)));
+    // Cerrar con Escape
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && header.classList.contains('is-open')) setOpen(false);
+    });
+  }
+</script>
