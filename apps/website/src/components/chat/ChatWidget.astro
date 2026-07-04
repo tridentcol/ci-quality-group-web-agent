@@ -33,12 +33,7 @@ const apiUrl = CHAT.apiUrl;
         </span>
         <span class="cqg-chat__fab-icon cqg-chat__fab-icon--close" aria-hidden="true">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-            <path
-              d="M6 6l12 12M18 6L6 18"
-              stroke="#FFFFFF"
-              stroke-width="2"
-              stroke-linecap="round"
-            />
+            <path d="M6 6l12 12M18 6L6 18" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" />
           </svg>
         </span>
       </button>
@@ -46,12 +41,18 @@ const apiUrl = CHAT.apiUrl;
       {/* Panel de chat */}
       <section class="cqg-chat__panel" role="dialog" aria-label="Chat con el asistente" hidden>
         <header class="cqg-chat__header">
+          <span class="cqg-chat__hero-avatar" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+              <path d="M12 4a8 8 0 1 1-6.4 3.2" stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round" />
+              <path d="M11.4 2 L13.6 4.6 L10.2 5.8 Z" fill="#FFFFFF" />
+            </svg>
+          </span>
           <div class="cqg-chat__brand">
-            <span class="cqg-chat__brand-dot" aria-hidden="true" />
-            <div>
-              <p class="cqg-chat__brand-name">Asistente CI Quality Group</p>
-              <p class="cqg-chat__brand-status">Responde al instante</p>
-            </div>
+            <p class="cqg-chat__brand-name">Asistente CI Quality Group</p>
+            <p class="cqg-chat__brand-status">
+              <span class="cqg-chat__brand-dot" aria-hidden="true" />
+              En línea
+            </p>
           </div>
           <button type="button" class="cqg-chat__close" aria-label="Cerrar chat">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
@@ -70,29 +71,31 @@ const apiUrl = CHAT.apiUrl;
             aria-label="Mensaje"
             maxlength="2000"
           />
-          <button type="submit" class="cqg-chat__send" aria-label="Enviar">
+          <button type="submit" class="cqg-chat__send" aria-label="Enviar mensaje">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
               <path d="M4 12l16-8-6 16-2.5-6.5L4 12z" stroke="#FFFFFF" stroke-width="1.8" stroke-linejoin="round" fill="none" />
             </svg>
           </button>
         </form>
 
-        <p class="cqg-chat__legal">
-          Asistente automatizado. No compartas datos sensibles.
-        </p>
+        <p class="cqg-chat__legal">Asistente automatizado · No compartas datos sensibles</p>
       </section>
     </div>
   )
 }
 
-<style>
+<style is:global>
+  /* Global (no scoped): las burbujas/avatares se crean dinámicamente en JS y no
+     llevan el atributo data-astro-cid del scoping. Todo va namespaced bajo .cqg-. */
   .cqg-chat {
     --cqg-green: #3a8c2f;
     --cqg-green-deep: #2e7025;
+    --cqg-green-light: #7fd16f;
     --cqg-graphite: #0d0d0d;
     --cqg-pale: #eaf5e8;
     --cqg-border: #d8e8d4;
     --cqg-muted: #5a5a5a;
+    --cqg-ink: #1f2a1d;
     position: fixed;
     right: 22px;
     bottom: 22px;
@@ -108,16 +111,21 @@ const apiUrl = CHAT.apiUrl;
     border-radius: 50%;
     border: none;
     background: var(--cqg-green);
-    box-shadow: 0 8px 22px rgba(58, 140, 47, 0.4);
+    box-shadow: 0 10px 26px rgba(58, 140, 47, 0.42);
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: transform 0.18s ease, background 0.2s ease;
+    transition: transform 0.18s ease, background 0.2s ease, box-shadow 0.2s ease;
   }
   .cqg-chat__fab:hover {
     background: var(--cqg-green-deep);
     transform: translateY(-2px);
+    box-shadow: 0 14px 30px rgba(58, 140, 47, 0.5);
+  }
+  .cqg-chat__fab:focus-visible {
+    outline: 3px solid rgba(58, 140, 47, 0.4);
+    outline-offset: 2px;
   }
   .cqg-chat__fab-icon {
     position: absolute;
@@ -142,17 +150,17 @@ const apiUrl = CHAT.apiUrl;
     position: absolute;
     right: 0;
     bottom: 74px;
-    width: min(380px, calc(100vw - 32px));
-    height: min(560px, calc(100vh - 120px));
+    width: min(392px, calc(100vw - 28px));
+    height: min(580px, calc(100vh - 116px));
     background: #fff;
     border: 1px solid var(--cqg-border);
-    border-radius: 16px;
-    box-shadow: 0 24px 60px rgba(13, 13, 13, 0.22);
+    border-radius: 18px;
+    box-shadow: 0 26px 64px rgba(13, 13, 13, 0.24);
     display: flex;
     flex-direction: column;
     overflow: hidden;
     transform-origin: bottom right;
-    animation: cqg-pop 0.18s ease;
+    animation: cqg-pop 0.2s ease;
   }
   .cqg-chat__panel[hidden] {
     display: none;
@@ -160,31 +168,32 @@ const apiUrl = CHAT.apiUrl;
   @keyframes cqg-pop {
     from {
       opacity: 0;
-      transform: translateY(10px) scale(0.98);
+      transform: translateY(12px) scale(0.97);
     }
   }
 
+  /* Header */
   .cqg-chat__header {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    padding: 14px 16px;
-    background: var(--cqg-green);
+    gap: 11px;
+    padding: 13px 14px;
+    background: linear-gradient(135deg, #3a8c2f 0%, #2e7025 100%);
     color: #fff;
   }
-  .cqg-chat__brand {
+  .cqg-chat__hero-avatar {
     display: flex;
     align-items: center;
-    gap: 10px;
-  }
-  .cqg-chat__brand-dot {
-    width: 9px;
-    height: 9px;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
     border-radius: 50%;
-    background: #7fd16f;
-    box-shadow: 0 0 0 3px rgba(127, 209, 111, 0.3);
+    background: rgba(255, 255, 255, 0.16);
     flex-shrink: 0;
+  }
+  .cqg-chat__brand {
+    flex: 1;
+    min-width: 0;
   }
   .cqg-chat__brand-name {
     margin: 0;
@@ -193,77 +202,198 @@ const apiUrl = CHAT.apiUrl;
     line-height: 1.2;
   }
   .cqg-chat__brand-status {
-    margin: 2px 0 0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 3px 0 0;
     font-size: 11.5px;
-    opacity: 0.85;
+    opacity: 0.92;
+  }
+  .cqg-chat__brand-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #b6f0a6;
+    box-shadow: 0 0 0 3px rgba(182, 240, 166, 0.3);
   }
   .cqg-chat__close {
     background: transparent;
     border: none;
     color: #fff;
     cursor: pointer;
-    padding: 4px;
+    padding: 5px;
+    border-radius: 8px;
     opacity: 0.9;
     display: flex;
+    transition: background 0.15s ease;
   }
   .cqg-chat__close:hover {
     opacity: 1;
+    background: rgba(255, 255, 255, 0.14);
   }
 
   /* --- Log de mensajes --- */
   .cqg-chat__log {
     flex: 1;
     overflow-y: auto;
-    padding: 16px;
+    padding: 16px 14px 8px;
     display: flex;
     flex-direction: column;
-    gap: 10px;
-    background: #fbfdfb;
+    gap: 4px;
+    background: #f6faf5;
     scroll-behavior: smooth;
   }
-  .cqg-msg {
-    max-width: 82%;
-    padding: 10px 13px;
-    border-radius: 14px;
+  .cqg-chat__log::-webkit-scrollbar {
+    width: 8px;
+  }
+  .cqg-chat__log::-webkit-scrollbar-thumb {
+    background: #cfe3ca;
+    border-radius: 8px;
+    border: 2px solid #f6faf5;
+  }
+
+  /* Fila (avatar + burbuja) */
+  .cqg-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+    margin-top: 8px;
+    animation: cqg-msg-in 0.22s ease both;
+  }
+  .cqg-row--user {
+    flex-direction: row-reverse;
+  }
+  @keyframes cqg-msg-in {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+  }
+  .cqg-avatar {
+    flex-shrink: 0;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--cqg-pale);
+    border: 1px solid var(--cqg-border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 2px;
+  }
+  /* Agrupar: ocultar avatar si el mensaje anterior también es del bot */
+  .cqg-row--bot + .cqg-row--bot .cqg-avatar {
+    visibility: hidden;
+  }
+
+  .cqg-bubble {
+    max-width: 78%;
+    padding: 9px 12px;
+    border-radius: 16px;
     font-size: 14px;
     line-height: 1.5;
-    white-space: pre-wrap;
+    color: var(--cqg-ink);
     word-wrap: break-word;
+    overflow-wrap: anywhere;
   }
-  .cqg-msg--bot {
-    align-self: flex-start;
-    background: var(--cqg-pale);
-    color: var(--cqg-graphite);
-    border-bottom-left-radius: 4px;
+  .cqg-bubble--bot {
+    background: #fff;
+    border: 1px solid var(--cqg-border);
+    border-bottom-left-radius: 5px;
+    box-shadow: 0 1px 2px rgba(13, 13, 13, 0.04);
   }
-  .cqg-msg--user {
-    align-self: flex-end;
+  .cqg-bubble--user {
     background: var(--cqg-green);
     color: #fff;
-    border-bottom-right-radius: 4px;
+    border-bottom-right-radius: 5px;
   }
-  .cqg-msg--error {
-    align-self: flex-start;
+  .cqg-bubble--error {
     background: #fdecec;
     color: #a12020;
     border: 1px solid #f4caca;
+    border-bottom-left-radius: 5px;
   }
-  .cqg-msg__media {
+
+  /* Contenido renderizado dentro de la burbuja del bot */
+  .cqg-bubble p {
+    margin: 0;
+  }
+  .cqg-bubble p + p {
+    margin-top: 8px;
+  }
+  .cqg-bubble ul,
+  .cqg-bubble ol {
+    margin: 7px 0 0;
+    padding-left: 22px;
+  }
+  /* Reponer marcadores (Tailwind preflight resetea list-style globalmente). */
+  .cqg-bubble ul {
+    list-style: disc outside;
+  }
+  .cqg-bubble ol {
+    list-style: decimal outside;
+  }
+  .cqg-bubble li {
+    padding-left: 3px;
+  }
+  .cqg-bubble li + li {
+    margin-top: 4px;
+  }
+  .cqg-bubble ul li::marker {
+    color: var(--cqg-green);
+  }
+  .cqg-bubble strong {
+    font-weight: bold;
+    color: var(--cqg-graphite);
+  }
+  .cqg-bubble--user strong {
+    color: #fff;
+  }
+  .cqg-bubble a {
+    color: var(--cqg-green-deep);
+    text-decoration: underline;
+    font-weight: bold;
+  }
+  .cqg-bubble--user a {
+    color: #fff;
+  }
+  .cqg-bubble code {
+    font-family: ui-monospace, Menlo, Consolas, monospace;
+    font-size: 12.5px;
+    background: rgba(13, 13, 13, 0.06);
+    padding: 1px 5px;
+    border-radius: 5px;
+  }
+  .cqg-bubble__media {
     display: block;
     margin-top: 8px;
     max-width: 100%;
     border-radius: 10px;
     border: 1px solid var(--cqg-border);
   }
+
+  /* Timestamp */
+  .cqg-time {
+    align-self: flex-end;
+    font-size: 10px;
+    color: var(--cqg-muted);
+    margin: 0 4px;
+    flex-shrink: 0;
+  }
+  .cqg-row--user .cqg-time {
+    order: -1;
+  }
+
   /* Indicador de "escribiendo…" */
   .cqg-typing {
     display: inline-flex;
     gap: 4px;
     align-items: center;
+    padding: 3px 0;
   }
   .cqg-typing span {
-    width: 6px;
-    height: 6px;
+    width: 7px;
+    height: 7px;
     border-radius: 50%;
     background: var(--cqg-green);
     opacity: 0.5;
@@ -300,41 +430,49 @@ const apiUrl = CHAT.apiUrl;
     resize: none;
     max-height: 120px;
     border: 1px solid var(--cqg-border);
-    border-radius: 12px;
-    padding: 10px 12px;
+    border-radius: 20px;
+    padding: 10px 14px;
     font: inherit;
     font-size: 14px;
     line-height: 1.4;
     color: var(--cqg-graphite);
     outline: none;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  }
+  .cqg-chat__input::placeholder {
+    color: #9aa89a;
   }
   .cqg-chat__input:focus {
     border-color: var(--cqg-green);
+    box-shadow: 0 0 0 3px rgba(58, 140, 47, 0.12);
   }
   .cqg-chat__send {
     flex-shrink: 0;
-    width: 40px;
-    height: 40px;
-    border-radius: 10px;
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
     border: none;
     background: var(--cqg-green);
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: background 0.2s ease;
+    transition: background 0.2s ease, transform 0.12s ease;
   }
   .cqg-chat__send:hover {
     background: var(--cqg-green-deep);
   }
+  .cqg-chat__send:active {
+    transform: scale(0.92);
+  }
   .cqg-chat__send:disabled {
-    opacity: 0.5;
+    opacity: 0.45;
     cursor: default;
   }
   .cqg-chat__legal {
     margin: 0;
     padding: 0 14px 10px;
-    font-size: 10.5px;
+    font-size: 10px;
     color: var(--cqg-muted);
     text-align: center;
     background: #fff;
@@ -354,6 +492,7 @@ const apiUrl = CHAT.apiUrl;
     .cqg-chat__panel,
     .cqg-chat__fab,
     .cqg-chat__fab-icon,
+    .cqg-row,
     .cqg-typing span {
       animation: none !important;
       transition: none !important;
@@ -369,6 +508,96 @@ const apiUrl = CHAT.apiUrl;
     error?: { code: string; message: string };
   };
 
+  // --- Renderizado seguro del texto del bot (markdown/WhatsApp → HTML) ---
+  const escapeHtml = (s: string): string =>
+    s.replace(/[&<>"']/g, (c) => (
+      { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] as string
+    ));
+
+  // Formato inline sobre texto YA escapado.
+  const inlineFmt = (s: string): string => {
+    // Enlaces [texto](url)
+    s = s.replace(
+      /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,
+      (_m, t, u) => `<a href="${u}" target="_blank" rel="noopener noreferrer nofollow">${t}</a>`,
+    );
+    // URLs sueltas
+    s = s.replace(
+      /(^|[\s(])(https?:\/\/[^\s<]+)/g,
+      (_m, pre, url) => `${pre}<a href="${url}" target="_blank" rel="noopener noreferrer nofollow">${url}</a>`,
+    );
+    // Negrita **texto** / __texto__
+    s = s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+    s = s.replace(/__([^_]+)__/g, '<strong>$1</strong>');
+    // Negrita estilo WhatsApp *texto* (un asterisco, inline)
+    s = s.replace(/(^|[^\w*])\*([^*\n]+)\*(?=[^\w*]|$)/g, '$1<strong>$2</strong>');
+    // Cursiva _texto_
+    s = s.replace(/(^|[^\w_])_([^_\n]+)_(?=[^\w_]|$)/g, '$1<em>$2</em>');
+    // Código `texto`
+    s = s.replace(/`([^`]+)`/g, '<code>$1</code>');
+    return s;
+  };
+
+  type ListState = { type: 'ul' | 'ol'; items: string[] };
+
+  // Convierte el texto del bot en HTML armonioso: párrafos, listas, negritas, enlaces.
+  const renderMarkup = (text: string): string => {
+    const lines = escapeHtml(text.replace(/\r/g, '')).split('\n');
+    const out: string[] = [];
+    let list: ListState | null = null;
+    let para: string[] = [];
+    const flushPara = () => {
+      if (para.length) {
+        out.push('<p>' + para.map(inlineFmt).join('<br>') + '</p>');
+        para = [];
+      }
+    };
+    const flushList = () => {
+      if (list) {
+        out.push(
+          `<${list.type}>` + list.items.map((it) => '<li>' + inlineFmt(it) + '</li>').join('') + `</${list.type}>`,
+        );
+        list = null;
+      }
+    };
+    for (const raw of lines) {
+      const line = raw.trim();
+      if (!line) {
+        flushPara();
+        flushList();
+        continue;
+      }
+      const ol = line.match(/^(\d+)[.)]\s+(.*)$/);
+      const ul = line.match(/^[-*•▪·‣→»]\s+(.*)$/);
+      if (ol) {
+        flushPara();
+        if (!list || list.type !== 'ol') {
+          flushList();
+          list = { type: 'ol', items: [] };
+        }
+        list.items.push(ol[2]);
+      } else if (ul) {
+        flushPara();
+        if (!list || list.type !== 'ul') {
+          flushList();
+          list = { type: 'ul', items: [] };
+        }
+        list.items.push(ul[1]);
+      } else {
+        flushList();
+        para.push(line);
+      }
+    }
+    flushPara();
+    flushList();
+    return out.join('');
+  };
+
+  const now = (): string => {
+    const d = new Date();
+    return `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
+  };
+
   const root = document.querySelector<HTMLElement>('.cqg-chat');
   if (root) {
     const apiUrl = root.dataset.apiUrl!;
@@ -379,6 +608,9 @@ const apiUrl = CHAT.apiUrl;
     const form = root.querySelector<HTMLFormElement>('.cqg-chat__form')!;
     const input = root.querySelector<HTMLTextAreaElement>('.cqg-chat__input')!;
     const sendBtn = root.querySelector<HTMLButtonElement>('.cqg-chat__send')!;
+
+    const AVATAR_SVG =
+      '<svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M12 4a8 8 0 1 1-6.4 3.2" stroke="#3a8c2f" stroke-width="2.2" stroke-linecap="round"/><path d="M11.4 2 L13.6 4.6 L10.2 5.8 Z" fill="#3a8c2f"/></svg>';
 
     // Sesión anónima persistente (external_id del canal 'web').
     const SESSION_KEY = 'cqg_chat_session';
@@ -403,38 +635,67 @@ const apiUrl = CHAT.apiUrl;
       log.scrollTop = log.scrollHeight;
     };
 
-    const addMessage = (text: string, who: 'bot' | 'user' | 'error', attachments?: Attachment[]) => {
-      const el = document.createElement('div');
-      el.className = `cqg-msg cqg-msg--${who}`;
-      el.textContent = text;
-      for (const att of attachments ?? []) {
-        if (att.type === 'image') {
-          const img = document.createElement('img');
-          img.className = 'cqg-msg__media';
-          img.src = att.url;
-          img.alt = att.caption ?? '';
-          img.loading = 'lazy';
-          el.appendChild(img);
-        } else if (att.type === 'video') {
-          const vid = document.createElement('video');
-          vid.className = 'cqg-msg__media';
-          vid.src = att.url;
-          vid.controls = true;
-          el.appendChild(vid);
+    const addMessage = (
+      text: string,
+      who: 'bot' | 'user' | 'error',
+      attachments?: Attachment[],
+    ): HTMLElement => {
+      const row = document.createElement('div');
+      row.className = `cqg-row cqg-row--${who === 'user' ? 'user' : 'bot'}`;
+
+      if (who !== 'user') {
+        const avatar = document.createElement('span');
+        avatar.className = 'cqg-avatar';
+        avatar.setAttribute('aria-hidden', 'true');
+        avatar.innerHTML = AVATAR_SVG;
+        row.appendChild(avatar);
+      }
+
+      const bubble = document.createElement('div');
+      bubble.className = `cqg-bubble cqg-bubble--${who}`;
+      if (who === 'user') {
+        bubble.textContent = text;
+      } else {
+        bubble.innerHTML = renderMarkup(text);
+        for (const att of attachments ?? []) {
+          if (att.type === 'image') {
+            const img = document.createElement('img');
+            img.className = 'cqg-bubble__media';
+            img.src = att.url;
+            img.alt = att.caption ?? '';
+            img.loading = 'lazy';
+            bubble.appendChild(img);
+          } else if (att.type === 'video') {
+            const vid = document.createElement('video');
+            vid.className = 'cqg-bubble__media';
+            vid.src = att.url;
+            vid.controls = true;
+            bubble.appendChild(vid);
+          }
         }
       }
-      log.appendChild(el);
+      row.appendChild(bubble);
+
+      const time = document.createElement('span');
+      time.className = 'cqg-time';
+      time.textContent = now();
+      row.appendChild(time);
+
+      log.appendChild(row);
       scrollDown();
-      return el;
+      return row;
     };
 
-    const showTyping = () => {
-      const el = document.createElement('div');
-      el.className = 'cqg-msg cqg-msg--bot';
-      el.innerHTML = '<span class="cqg-typing"><span></span><span></span><span></span></span>';
-      log.appendChild(el);
+    const showTyping = (): HTMLElement => {
+      const row = document.createElement('div');
+      row.className = 'cqg-row cqg-row--bot';
+      row.innerHTML =
+        '<span class="cqg-avatar" aria-hidden="true">' +
+        AVATAR_SVG +
+        '</span><div class="cqg-bubble cqg-bubble--bot"><span class="cqg-typing"><span></span><span></span><span></span></span></div>';
+      log.appendChild(row);
       scrollDown();
-      return el;
+      return row;
     };
 
     const openPanel = () => {
@@ -444,11 +705,15 @@ const apiUrl = CHAT.apiUrl;
       if (!greeted) {
         greeted = true;
         addMessage(
-          '¡Hola! Soy el asistente de CI Quality Group. ¿En qué puedo ayudarte? Cuéntame sobre lámina, valorización de residuos o servicios ambientales.',
+          '¡Hola! 👋 Soy el asistente de **CI Quality Group**. Puedo ayudarte con:\n' +
+            '- Lámina arquitectónica (acero PPGL galvalume)\n' +
+            '- Valorización de residuos y chatarra\n' +
+            '- Servicios ambientales (RESPEL, RCD)\n\n' +
+            '¿En qué estás interesado?',
           'bot',
         );
       }
-      setTimeout(() => input.focus(), 50);
+      setTimeout(() => input.focus(), 60);
     };
 
     const closePanel = () => {
@@ -479,7 +744,6 @@ const apiUrl = CHAT.apiUrl;
     const setSending = (v: boolean) => {
       sending = v;
       sendBtn.disabled = v;
-      input.disabled = v;
     };
 
     form.addEventListener('submit', async (e) => {
@@ -513,16 +777,13 @@ const apiUrl = CHAT.apiUrl;
           const msg =
             json?.error?.message ??
             (res.status === 429
-              ? 'Vas muy rápido, espera un momento.'
+              ? 'Vas muy rápido, espera un momento y vuelve a intentar.'
               : 'No pude responder ahora mismo. Intenta de nuevo en un momento.');
           addMessage(msg, 'error');
         }
       } catch {
         typing.remove();
-        addMessage(
-          'No hay conexión con el asistente. Revisa tu internet e intenta de nuevo.',
-          'error',
-        );
+        addMessage('No hay conexión con el asistente. Revisa tu internet e intenta de nuevo.', 'error');
       } finally {
         setSending(false);
         input.focus();
