@@ -1,19 +1,29 @@
 ---
 import { lineas } from '../../data/lineas';
+
+interface Props {
+  /** Ocultar el encabezado (cuando la página ya trae un hero con el título). */
+  hideHeading?: boolean;
+}
+const { hideHeading = false } = Astro.props;
 ---
 
 <section class="ci-lineas" id="lineas">
   <div class="ci-container">
-    <div class="ci-lineas__head">
-      <div class="ci-lineas__head-left">
-        <span class="ci-badge">Líneas de negocio</span>
-        <h2 class="ci-lineas__title">Tres unidades, un mismo ciclo de valor</h2>
-      </div>
-      <p class="ci-lineas__intro">
-        Cada línea aporta una etapa del ciclo: producimos, recuperamos y gestionamos —
-        integrando manufactura, valorización y servicios ambientales bajo un mismo estándar.
-      </p>
-    </div>
+    {
+      !hideHeading && (
+        <div class="ci-lineas__head">
+          <div class="ci-lineas__head-left">
+            <span class="ci-badge">Líneas de negocio</span>
+            <h2 class="ci-lineas__title">Tres unidades, un mismo ciclo de valor</h2>
+          </div>
+          <p class="ci-lineas__intro">
+            Cada línea aporta una etapa del ciclo: producimos, recuperamos y gestionamos —
+            integrando manufactura, valorización y servicios ambientales bajo un mismo estándar.
+          </p>
+        </div>
+      )
+    }
 
     <div class="ci-lineas__grid">
       {

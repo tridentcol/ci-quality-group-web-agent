@@ -79,11 +79,15 @@ const jsonLd = {
     <slot />
     <ChatWidget />
     <script is:inline>
-      // Al entrar sin ancla, empezar en el hero (no restaurar scroll previo).
+      // Al entrar sin ancla, empezar arriba (en el hero). No restaurar scroll previo
+      // ni el de bfcache (móvil). scrollTo(0,0) es instantáneo (ignora smooth).
       if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
-      window.addEventListener('load', () => {
+      var cqgToTop = function () {
         if (!location.hash) window.scrollTo(0, 0);
-      });
+      };
+      document.addEventListener('DOMContentLoaded', cqgToTop);
+      window.addEventListener('load', cqgToTop);
+      window.addEventListener('pageshow', cqgToTop);
     </script>
   </body>
 </html>
