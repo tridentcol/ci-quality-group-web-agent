@@ -1,0 +1,532 @@
+---
+import { CHAT } from './chat-config';
+
+// Si el chat está apagado por flag, no se renderiza nada (cero JS en el cliente).
+const enabled = CHAT.enabled;
+const apiUrl = CHAT.apiUrl;
+---
+
+{
+  enabled && (
+    <div class="cqg-chat" data-api-url={apiUrl}>
+      {/* Botón flotante (burbuja) */}
+      <button
+        type="button"
+        class="cqg-chat__fab"
+        aria-label="Abrir chat con el asistente"
+        aria-expanded="false"
+      >
+        <span class="cqg-chat__fab-icon cqg-chat__fab-icon--chat" aria-hidden="true">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
+            <path
+              d="M4 5.5A2.5 2.5 0 0 1 6.5 3h11A2.5 2.5 0 0 1 20 5.5v7A2.5 2.5 0 0 1 17.5 15H9l-4 4v-4H6.5"
+              stroke="#FFFFFF"
+              stroke-width="1.8"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              fill="none"
+            />
+            <circle cx="9" cy="9" r="1.05" fill="#FFFFFF" />
+            <circle cx="12.5" cy="9" r="1.05" fill="#FFFFFF" />
+            <circle cx="16" cy="9" r="1.05" fill="#FFFFFF" />
+          </svg>
+        </span>
+        <span class="cqg-chat__fab-icon cqg-chat__fab-icon--close" aria-hidden="true">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+            <path
+              d="M6 6l12 12M18 6L6 18"
+              stroke="#FFFFFF"
+              stroke-width="2"
+              stroke-linecap="round"
+            />
+          </svg>
+        </span>
+      </button>
+
+      {/* Panel de chat */}
+      <section class="cqg-chat__panel" role="dialog" aria-label="Chat con el asistente" hidden>
+        <header class="cqg-chat__header">
+          <div class="cqg-chat__brand">
+            <span class="cqg-chat__brand-dot" aria-hidden="true" />
+            <div>
+              <p class="cqg-chat__brand-name">Asistente CI Quality Group</p>
+              <p class="cqg-chat__brand-status">Responde al instante</p>
+            </div>
+          </div>
+          <button type="button" class="cqg-chat__close" aria-label="Cerrar chat">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+              <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+            </svg>
+          </button>
+        </header>
+
+        <div class="cqg-chat__log" aria-live="polite" aria-atomic="false" />
+
+        <form class="cqg-chat__form">
+          <textarea
+            class="cqg-chat__input"
+            rows="1"
+            placeholder="Escribe tu mensaje…"
+            aria-label="Mensaje"
+            maxlength="2000"
+          />
+          <button type="submit" class="cqg-chat__send" aria-label="Enviar">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+              <path d="M4 12l16-8-6 16-2.5-6.5L4 12z" stroke="#FFFFFF" stroke-width="1.8" stroke-linejoin="round" fill="none" />
+            </svg>
+          </button>
+        </form>
+
+        <p class="cqg-chat__legal">
+          Asistente automatizado. No compartas datos sensibles.
+        </p>
+      </section>
+    </div>
+  )
+}
+
+<style>
+  .cqg-chat {
+    --cqg-green: #3a8c2f;
+    --cqg-green-deep: #2e7025;
+    --cqg-graphite: #0d0d0d;
+    --cqg-pale: #eaf5e8;
+    --cqg-border: #d8e8d4;
+    --cqg-muted: #5a5a5a;
+    position: fixed;
+    right: 22px;
+    bottom: 22px;
+    z-index: 60;
+    font-family: Arial, Helvetica, sans-serif;
+  }
+
+  /* --- Burbuja flotante --- */
+  .cqg-chat__fab {
+    position: relative;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    border: none;
+    background: var(--cqg-green);
+    box-shadow: 0 8px 22px rgba(58, 140, 47, 0.4);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.18s ease, background 0.2s ease;
+  }
+  .cqg-chat__fab:hover {
+    background: var(--cqg-green-deep);
+    transform: translateY(-2px);
+  }
+  .cqg-chat__fab-icon {
+    position: absolute;
+    display: flex;
+    transition: opacity 0.18s ease, transform 0.18s ease;
+  }
+  .cqg-chat__fab-icon--close {
+    opacity: 0;
+    transform: scale(0.6) rotate(-30deg);
+  }
+  .cqg-chat.is-open .cqg-chat__fab-icon--chat {
+    opacity: 0;
+    transform: scale(0.6) rotate(30deg);
+  }
+  .cqg-chat.is-open .cqg-chat__fab-icon--close {
+    opacity: 1;
+    transform: scale(1) rotate(0);
+  }
+
+  /* --- Panel --- */
+  .cqg-chat__panel {
+    position: absolute;
+    right: 0;
+    bottom: 74px;
+    width: min(380px, calc(100vw - 32px));
+    height: min(560px, calc(100vh - 120px));
+    background: #fff;
+    border: 1px solid var(--cqg-border);
+    border-radius: 16px;
+    box-shadow: 0 24px 60px rgba(13, 13, 13, 0.22);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    transform-origin: bottom right;
+    animation: cqg-pop 0.18s ease;
+  }
+  .cqg-chat__panel[hidden] {
+    display: none;
+  }
+  @keyframes cqg-pop {
+    from {
+      opacity: 0;
+      transform: translateY(10px) scale(0.98);
+    }
+  }
+
+  .cqg-chat__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 14px 16px;
+    background: var(--cqg-green);
+    color: #fff;
+  }
+  .cqg-chat__brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .cqg-chat__brand-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: #7fd16f;
+    box-shadow: 0 0 0 3px rgba(127, 209, 111, 0.3);
+    flex-shrink: 0;
+  }
+  .cqg-chat__brand-name {
+    margin: 0;
+    font-size: 14.5px;
+    font-weight: bold;
+    line-height: 1.2;
+  }
+  .cqg-chat__brand-status {
+    margin: 2px 0 0;
+    font-size: 11.5px;
+    opacity: 0.85;
+  }
+  .cqg-chat__close {
+    background: transparent;
+    border: none;
+    color: #fff;
+    cursor: pointer;
+    padding: 4px;
+    opacity: 0.9;
+    display: flex;
+  }
+  .cqg-chat__close:hover {
+    opacity: 1;
+  }
+
+  /* --- Log de mensajes --- */
+  .cqg-chat__log {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    background: #fbfdfb;
+    scroll-behavior: smooth;
+  }
+  .cqg-msg {
+    max-width: 82%;
+    padding: 10px 13px;
+    border-radius: 14px;
+    font-size: 14px;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+  }
+  .cqg-msg--bot {
+    align-self: flex-start;
+    background: var(--cqg-pale);
+    color: var(--cqg-graphite);
+    border-bottom-left-radius: 4px;
+  }
+  .cqg-msg--user {
+    align-self: flex-end;
+    background: var(--cqg-green);
+    color: #fff;
+    border-bottom-right-radius: 4px;
+  }
+  .cqg-msg--error {
+    align-self: flex-start;
+    background: #fdecec;
+    color: #a12020;
+    border: 1px solid #f4caca;
+  }
+  .cqg-msg__media {
+    display: block;
+    margin-top: 8px;
+    max-width: 100%;
+    border-radius: 10px;
+    border: 1px solid var(--cqg-border);
+  }
+  /* Indicador de "escribiendo…" */
+  .cqg-typing {
+    display: inline-flex;
+    gap: 4px;
+    align-items: center;
+  }
+  .cqg-typing span {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--cqg-green);
+    opacity: 0.5;
+    animation: cqg-blink 1.2s infinite both;
+  }
+  .cqg-typing span:nth-child(2) {
+    animation-delay: 0.2s;
+  }
+  .cqg-typing span:nth-child(3) {
+    animation-delay: 0.4s;
+  }
+  @keyframes cqg-blink {
+    0%,
+    80%,
+    100% {
+      opacity: 0.25;
+    }
+    40% {
+      opacity: 1;
+    }
+  }
+
+  /* --- Formulario --- */
+  .cqg-chat__form {
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+    padding: 10px 12px;
+    border-top: 1px solid var(--cqg-border);
+    background: #fff;
+  }
+  .cqg-chat__input {
+    flex: 1;
+    resize: none;
+    max-height: 120px;
+    border: 1px solid var(--cqg-border);
+    border-radius: 12px;
+    padding: 10px 12px;
+    font: inherit;
+    font-size: 14px;
+    line-height: 1.4;
+    color: var(--cqg-graphite);
+    outline: none;
+  }
+  .cqg-chat__input:focus {
+    border-color: var(--cqg-green);
+  }
+  .cqg-chat__send {
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    border: none;
+    background: var(--cqg-green);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s ease;
+  }
+  .cqg-chat__send:hover {
+    background: var(--cqg-green-deep);
+  }
+  .cqg-chat__send:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+  .cqg-chat__legal {
+    margin: 0;
+    padding: 0 14px 10px;
+    font-size: 10.5px;
+    color: var(--cqg-muted);
+    text-align: center;
+    background: #fff;
+  }
+
+  @media (max-width: 640px) {
+    .cqg-chat {
+      right: 16px;
+      bottom: 16px;
+    }
+    .cqg-chat__panel {
+      bottom: 70px;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .cqg-chat__panel,
+    .cqg-chat__fab,
+    .cqg-chat__fab-icon,
+    .cqg-typing span {
+      animation: none !important;
+      transition: none !important;
+    }
+  }
+</style>
+
+<script>
+  type Attachment = { url: string; caption?: string; type: 'image' | 'video' };
+  type ApiResponse = {
+    success: boolean;
+    data?: { reply: string; handoff?: boolean; attachments?: Attachment[] };
+    error?: { code: string; message: string };
+  };
+
+  const root = document.querySelector<HTMLElement>('.cqg-chat');
+  if (root) {
+    const apiUrl = root.dataset.apiUrl!;
+    const fab = root.querySelector<HTMLButtonElement>('.cqg-chat__fab')!;
+    const panel = root.querySelector<HTMLElement>('.cqg-chat__panel')!;
+    const closeBtn = root.querySelector<HTMLButtonElement>('.cqg-chat__close')!;
+    const log = root.querySelector<HTMLElement>('.cqg-chat__log')!;
+    const form = root.querySelector<HTMLFormElement>('.cqg-chat__form')!;
+    const input = root.querySelector<HTMLTextAreaElement>('.cqg-chat__input')!;
+    const sendBtn = root.querySelector<HTMLButtonElement>('.cqg-chat__send')!;
+
+    // Sesión anónima persistente (external_id del canal 'web').
+    const SESSION_KEY = 'cqg_chat_session';
+    let sessionId = '';
+    try {
+      sessionId = localStorage.getItem(SESSION_KEY) ?? '';
+      if (!sessionId) {
+        sessionId =
+          typeof crypto !== 'undefined' && 'randomUUID' in crypto
+            ? crypto.randomUUID()
+            : `web-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+        localStorage.setItem(SESSION_KEY, sessionId);
+      }
+    } catch {
+      sessionId = `web-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    }
+
+    let greeted = false;
+    let sending = false;
+
+    const scrollDown = () => {
+      log.scrollTop = log.scrollHeight;
+    };
+
+    const addMessage = (text: string, who: 'bot' | 'user' | 'error', attachments?: Attachment[]) => {
+      const el = document.createElement('div');
+      el.className = `cqg-msg cqg-msg--${who}`;
+      el.textContent = text;
+      for (const att of attachments ?? []) {
+        if (att.type === 'image') {
+          const img = document.createElement('img');
+          img.className = 'cqg-msg__media';
+          img.src = att.url;
+          img.alt = att.caption ?? '';
+          img.loading = 'lazy';
+          el.appendChild(img);
+        } else if (att.type === 'video') {
+          const vid = document.createElement('video');
+          vid.className = 'cqg-msg__media';
+          vid.src = att.url;
+          vid.controls = true;
+          el.appendChild(vid);
+        }
+      }
+      log.appendChild(el);
+      scrollDown();
+      return el;
+    };
+
+    const showTyping = () => {
+      const el = document.createElement('div');
+      el.className = 'cqg-msg cqg-msg--bot';
+      el.innerHTML = '<span class="cqg-typing"><span></span><span></span><span></span></span>';
+      log.appendChild(el);
+      scrollDown();
+      return el;
+    };
+
+    const openPanel = () => {
+      panel.hidden = false;
+      root.classList.add('is-open');
+      fab.setAttribute('aria-expanded', 'true');
+      if (!greeted) {
+        greeted = true;
+        addMessage(
+          '¡Hola! Soy el asistente de CI Quality Group. ¿En qué puedo ayudarte? Cuéntame sobre lámina, valorización de residuos o servicios ambientales.',
+          'bot',
+        );
+      }
+      setTimeout(() => input.focus(), 50);
+    };
+
+    const closePanel = () => {
+      panel.hidden = true;
+      root.classList.remove('is-open');
+      fab.setAttribute('aria-expanded', 'false');
+    };
+
+    fab.addEventListener('click', () => (panel.hidden ? openPanel() : closePanel()));
+    closeBtn.addEventListener('click', closePanel);
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !panel.hidden) closePanel();
+    });
+
+    // Auto-crecer el textarea.
+    input.addEventListener('input', () => {
+      input.style.height = 'auto';
+      input.style.height = `${Math.min(input.scrollHeight, 120)}px`;
+    });
+    // Enter envía; Shift+Enter salta de línea.
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        form.requestSubmit();
+      }
+    });
+
+    const setSending = (v: boolean) => {
+      sending = v;
+      sendBtn.disabled = v;
+      input.disabled = v;
+    };
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const message = input.value.trim();
+      if (!message || sending) return;
+
+      addMessage(message, 'user');
+      input.value = '';
+      input.style.height = 'auto';
+      setSending(true);
+      const typing = showTyping();
+
+      try {
+        const res = await fetch(apiUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sessionId, message }),
+        });
+        const json = (await res.json().catch(() => null)) as ApiResponse | null;
+        typing.remove();
+
+        if (res.ok && json?.success && json.data) {
+          const reply = json.data.reply?.trim();
+          addMessage(
+            reply || 'Gracias por tu mensaje. Un asesor te contactará pronto.',
+            'bot',
+            json.data.attachments,
+          );
+        } else {
+          const msg =
+            json?.error?.message ??
+            (res.status === 429
+              ? 'Vas muy rápido, espera un momento.'
+              : 'No pude responder ahora mismo. Intenta de nuevo en un momento.');
+          addMessage(msg, 'error');
+        }
+      } catch {
+        typing.remove();
+        addMessage(
+          'No hay conexión con el asistente. Revisa tu internet e intenta de nuevo.',
+          'error',
+        );
+      } finally {
+        setSending(false);
+        input.focus();
+      }
+    });
+  }
+</script>
