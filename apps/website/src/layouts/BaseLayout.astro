@@ -78,5 +78,12 @@ const jsonLd = {
   <body>
     <slot />
     <ChatWidget />
+    <script is:inline>
+      // Al entrar sin ancla, empezar en el hero (no restaurar scroll previo).
+      if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+      window.addEventListener('load', () => {
+        if (!location.hash) window.scrollTo(0, 0);
+      });
+    </script>
   </body>
 </html>

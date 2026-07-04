@@ -139,10 +139,32 @@ const stats = [
 
   @media (max-width: 640px) {
     .ci-about {
-      padding-block: 72px;
+      padding-block: 54px;
+    }
+    .ci-about__grid {
+      gap: 26px;
+    }
+    .ci-about__title {
+      font-size: 25px;
+      margin-top: 14px;
+    }
+    .ci-about__p {
+      font-size: 15px;
+      line-height: 1.6;
+      margin-top: 14px;
+    }
+    .ci-about__p + .ci-about__p {
+      margin-top: 12px;
+    }
+    .ci-about__stats {
+      gap: 26px;
+      margin-top: 24px;
+    }
+    .ci-about__stat-value {
+      font-size: 26px;
     }
     .ci-about__img {
-      height: 300px;
+      height: 200px;
     }
   }
 </style>
