@@ -1,0 +1,35 @@
+---
+/**
+ * Ícono de marca: flecha circular (evoca el ciclo de economía circular).
+ * SVG inline recreado del prototipo del handoff. Sin librerías de íconos.
+ */
+interface Props {
+  size?: number;
+  color?: string;
+  strokeWidth?: number;
+  class?: string;
+}
+const {
+  size = 26,
+  color = '#FFFFFF',
+  strokeWidth = 2.3,
+  class: className,
+} = Astro.props;
+---
+
+<svg
+  width={size}
+  height={size}
+  viewBox="0 0 24 24"
+  fill="none"
+  aria-hidden="true"
+  class={className}
+>
+  <path
+    d="M12 4a8 8 0 1 1-6.4 3.2"
+    stroke={color}
+    stroke-width={strokeWidth}
+    stroke-linecap="round"
+  />
+  <path d="M11.4 2 L13.6 4.6 L10.2 5.8 Z" fill={color} />
+</svg>

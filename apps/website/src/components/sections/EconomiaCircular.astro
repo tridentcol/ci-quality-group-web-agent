@@ -1,0 +1,361 @@
+---
+import CircularArrow from '../CircularArrow.astro';
+
+const steps = [
+  { n: '01', title: 'Producir', desc: 'Lámina desde bobina de acero.', pos: 'left:192px;top:7px;' },
+  { n: '02', title: 'Valorizar', desc: 'Residuos y chatarra como recurso.', pos: 'left:352px;top:285px;' },
+  { n: '03', title: 'Gestionar', desc: 'Disposición final trazable.', pos: 'left:32px;top:285px;' },
+];
+---
+
+<section class="ci-circular" id="circular">
+  <div class="ci-circular__texture" aria-hidden="true"></div>
+
+  <div class="ci-container ci-circular__inner">
+    <div class="ci-circular__head">
+      <span class="ci-badge ci-badge--dark">Economía circular real</span>
+      <h2 class="ci-circular__title">El ciclo que cierra el residuo</h2>
+      <p class="ci-circular__lead">
+        Un flujo continuo, no una línea recta. Lo que se produce se aprovecha, y lo que no,
+        se gestiona con responsabilidad.
+      </p>
+    </div>
+
+    <!-- Escritorio (≥720px): anillo circular -->
+    <div class="ci-ring" role="img" aria-label="Ciclo: producir, valorizar y gestionar, de forma continua.">
+      <svg viewBox="0 0 500 500" width="100%" height="100%" class="ci-ring__svg" aria-hidden="true">
+        <defs>
+          <marker
+            id="ciArrow"
+            viewBox="0 0 10 10"
+            refX="6"
+            refY="5"
+            markerWidth="6"
+            markerHeight="6"
+            orient="auto-start-reverse"
+          >
+            <path d="M0 0 L10 5 L0 10 z" fill="#3A8C2F"></path>
+          </marker>
+          <filter id="ciGlow" x="-30%" y="-30%" width="160%" height="160%">
+            <feGaussianBlur stdDeviation="2.6" result="b"></feGaussianBlur>
+            <feMerge>
+              <feMergeNode in="b"></feMergeNode>
+              <feMergeNode in="SourceGraphic"></feMergeNode>
+            </feMerge>
+          </filter>
+        </defs>
+        <circle
+          cx="250"
+          cy="250"
+          r="185"
+          fill="none"
+          stroke="#213B1B"
+          stroke-width="1.5"
+          stroke-dasharray="1 9"
+          stroke-linecap="round"></circle>
+        <g filter="url(#ciGlow)">
+          <path d="M331 84 A185 185 0 0 1 435 263" fill="none" stroke="#3A8C2F" stroke-width="2.6" marker-end="url(#ciArrow)"></path>
+          <path d="M353 403 A185 185 0 0 1 147 403" fill="none" stroke="#3A8C2F" stroke-width="2.6" marker-end="url(#ciArrow)"></path>
+          <path d="M66 263 A185 185 0 0 1 169 84" fill="none" stroke="#3A8C2F" stroke-width="2.6" marker-end="url(#ciArrow)"></path>
+        </g>
+      </svg>
+
+      <div class="ci-ring__center">
+        <div class="ci-ring__center-icon">
+          <CircularArrow size={24} color="#7FD16F" strokeWidth={2} />
+        </div>
+        <div class="ci-ring__center-text">Economía<br />circular</div>
+      </div>
+
+      {
+        steps.map((s) => (
+          <div class="ci-ring__node" style={s.pos}>
+            <div class="ci-ring__node-circle">
+              <span class="ci-ring__node-num">{s.n}</span>
+            </div>
+            <h4 class="ci-ring__node-title">{s.title}</h4>
+            <p class="ci-ring__node-desc">{s.desc}</p>
+          </div>
+        ))
+      }
+    </div>
+
+    <!-- Móvil (<720px): lista vertical apilada -->
+    <div class="ci-stack">
+      {
+        steps.map((s, i) => (
+          <>
+            {i > 0 && <div class="ci-stack__connector" aria-hidden="true" />}
+            <div class="ci-stack__item">
+              <div class="ci-stack__circle">
+                <span class="ci-stack__num">{s.n}</span>
+              </div>
+              <div>
+                <h4 class="ci-stack__title">{s.title}</h4>
+                <p class="ci-stack__desc">{s.desc}</p>
+              </div>
+            </div>
+          </>
+        ))
+      }
+      <div class="ci-stack__connector ci-stack__connector--short" aria-hidden="true"></div>
+      <div class="ci-stack__loop">
+        <CircularArrow size={18} color="#7FD16F" strokeWidth={2.2} />
+        <span>Vuelve al inicio</span>
+      </div>
+    </div>
+
+    <div class="ci-circular__ribbon">
+      <span class="ci-circular__ribbon-line" aria-hidden="true"></span>
+      Ciclo continuo, sin desperdicio
+      <span class="ci-circular__ribbon-line" aria-hidden="true"></span>
+    </div>
+  </div>
+</section>
+
+<style>
+  .ci-circular {
+    position: relative;
+    overflow: hidden;
+    background: var(--graphite);
+    padding-block: 104px;
+  }
+
+  .ci-circular__texture {
+    position: absolute;
+    inset: 0;
+    opacity: 0.4;
+    background-image: repeating-linear-gradient(
+      115deg,
+      #141414 0px,
+      #141414 26px,
+      #101010 26px,
+      #101010 52px
+    );
+  }
+
+  .ci-circular__inner {
+    position: relative;
+  }
+
+  .ci-circular__head {
+    text-align: center;
+    margin-bottom: 64px;
+  }
+
+  .ci-badge--dark {
+    background: rgba(58, 140, 47, 0.16);
+    color: var(--green-light);
+    margin-bottom: 20px;
+  }
+
+  .ci-circular__title {
+    margin: 0;
+    font-size: clamp(30px, 4vw, 46px);
+    line-height: 1.1;
+    font-weight: bold;
+    color: var(--white);
+    letter-spacing: -0.01em;
+  }
+
+  .ci-circular__lead {
+    margin: 20px auto 0;
+    font-size: 16.5px;
+    line-height: 1.6;
+    color: var(--on-dark-3);
+    max-width: 56ch;
+  }
+
+  /* ---- Anillo (desktop) ---- */
+  .ci-ring {
+    position: relative;
+    width: 500px;
+    height: 500px;
+    max-width: 100%;
+    margin: 0 auto;
+  }
+
+  .ci-ring__svg {
+    position: absolute;
+    inset: 0;
+  }
+
+  .ci-ring__center {
+    position: absolute;
+    left: 50%;
+    top: 60%;
+    transform: translate(-50%, -50%);
+    width: 150px;
+    text-align: center;
+  }
+
+  .ci-ring__center-icon {
+    width: 48px;
+    height: 48px;
+    margin: 0 auto 12px;
+    border-radius: 50%;
+    border: 1.5px solid rgba(58, 140, 47, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .ci-ring__center-text {
+    font-size: 11.5px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--green-light);
+    font-weight: bold;
+    line-height: 1.55;
+  }
+
+  .ci-ring__node {
+    position: absolute;
+    width: 116px;
+    text-align: center;
+  }
+
+  .ci-ring__node-circle {
+    width: 116px;
+    height: 116px;
+    margin: 0 auto;
+    border-radius: 50%;
+    border: 2px solid var(--ci-green);
+    background: radial-gradient(circle, rgba(58, 140, 47, 0.2) 0%, #0d0d0d 78%);
+    box-shadow: 0 0 0 7px rgba(58, 140, 47, 0.05), 0 0 34px rgba(58, 140, 47, 0.26);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .ci-ring__node-num {
+    font-size: 31px;
+    font-weight: bold;
+    color: var(--green-light);
+  }
+
+  .ci-ring__node-title {
+    margin: 16px 0 0;
+    font-size: 19px;
+    font-weight: bold;
+    color: var(--white);
+  }
+
+  .ci-ring__node-desc {
+    margin: 6px 0 0;
+    font-size: 13.5px;
+    line-height: 1.5;
+    color: var(--on-dark-2);
+  }
+
+  /* ---- Lista apilada (móvil) ---- */
+  .ci-stack {
+    display: none;
+    flex-direction: column;
+    max-width: 380px;
+    margin: 0 auto;
+  }
+
+  .ci-stack__connector {
+    width: 2px;
+    height: 30px;
+    background: var(--ci-green);
+    margin: 0 auto;
+  }
+  .ci-stack__connector--short {
+    height: 22px;
+  }
+
+  .ci-stack__item {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    width: 100%;
+    background: rgba(58, 140, 47, 0.07);
+    border: 1px solid rgba(58, 140, 47, 0.28);
+    border-radius: var(--r-card);
+    padding: 16px 18px;
+  }
+
+  .ci-stack__circle {
+    flex: 0 0 auto;
+    width: 58px;
+    height: 58px;
+    border-radius: 50%;
+    border: 2px solid var(--ci-green);
+    background: radial-gradient(circle, rgba(58, 140, 47, 0.2) 0%, #0d0d0d 80%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .ci-stack__num {
+    font-size: 20px;
+    font-weight: bold;
+    color: var(--green-light);
+  }
+
+  .ci-stack__title {
+    margin: 0;
+    font-size: 17px;
+    font-weight: bold;
+    color: var(--white);
+  }
+
+  .ci-stack__desc {
+    margin: 3px 0 0;
+    font-size: 13.5px;
+    line-height: 1.5;
+    color: var(--on-dark-2);
+  }
+
+  .ci-stack__loop {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 12px;
+    border: 1px dashed rgba(58, 140, 47, 0.5);
+    border-radius: var(--r-pill);
+    font-size: 12.5px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--green-light);
+    font-weight: bold;
+  }
+
+  /* ---- Cinta inferior ---- */
+  .ci-circular__ribbon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 44px;
+    font-size: 14px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--green-light);
+  }
+
+  .ci-circular__ribbon-line {
+    width: 30px;
+    height: 1px;
+    background: var(--ci-green);
+  }
+
+  /* ≤720px: anillo → lista apilada */
+  @media (max-width: 720px) {
+    .ci-ring {
+      display: none;
+    }
+    .ci-stack {
+      display: flex;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .ci-circular {
+      padding-block: 72px;
+    }
+  }
+</style>

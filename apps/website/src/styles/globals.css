@@ -1,0 +1,98 @@
+@import "tailwindcss";
+
+/* ============================================================
+   CI Quality Group — Design tokens (fuente de verdad: handoff)
+   Paleta, radios, sombras y espaciados del diseño de alta fidelidad.
+   ============================================================ */
+:root {
+  /* Colores */
+  --graphite: #0D0D0D;      /* texto principal, secciones oscuras, footer */
+  --ci-green: #3A8C2F;      /* marca, acentos, CTAs */
+  --green-deep: #2E7025;    /* hover de botones / texto sobre verde pálido */
+  --green-light: #7FD16F;   /* acentos sobre fondo oscuro (diagrama) */
+  --green-pale: #EAF5E8;    /* fondos suaves, tarjetas, chips */
+  --border-light: #D8E8D4;  /* bordes y separadores claros */
+  --white: #FFFFFF;
+  --text-muted: #5A5A5A;    /* gris texto secundario (sobre claro) */
+  --on-dark-1: #8FA089;     /* texto secundario sobre oscuro */
+  --on-dark-2: #9AA894;
+  --on-dark-3: #C9D3C6;
+  --pale-text: #EAF5E8;     /* texto claro sobre verde/oscuro */
+  /* Texturas oscuras */
+  --dark-1: #141414;
+  --dark-2: #161616;
+  --dark-0: #101010;
+  --footer-border: #1F1F1F;
+
+  /* Layout */
+  --max-w: 1220px;
+  --gutter: 32px;
+
+  /* Radios */
+  --r-badge: 6px;
+  --r-btn: 8px;
+  --r-card: 14px;
+  --r-tile: 10px;
+  --r-pill: 100px;
+
+  /* Sombras */
+  --sh-card: 0 10px 30px rgba(13,13,13,0.05);
+  --sh-card-hover: 0 22px 46px rgba(13,13,13,0.13);
+  --sh-cta: 0 8px 22px rgba(58,140,47,0.34);
+  --sh-contact-card: 0 20px 50px rgba(0,0,0,0.18);
+
+  color-scheme: light;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: Arial, Helvetica, sans-serif;
+  color: var(--graphite);
+  background: var(--white);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+img,
+video,
+svg {
+  display: block;
+  max-width: 100%;
+}
+
+a {
+  color: inherit;
+}
+
+/* Contenedor centrado del sitio */
+.ci-container {
+  width: 100%;
+  max-width: var(--max-w);
+  margin-inline: auto;
+  padding-inline: var(--gutter);
+}
+
+/* Respeta usuarios que prefieren menos movimiento */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

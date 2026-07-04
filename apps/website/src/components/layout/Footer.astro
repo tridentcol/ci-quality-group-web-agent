@@ -1,0 +1,144 @@
+---
+const nav = [
+  { label: 'Líneas de negocio', href: '#lineas' },
+  { label: 'Economía circular', href: '#circular' },
+  { label: 'Quiénes somos', href: '#nosotros' },
+  { label: 'Contacto', href: '#contacto' },
+];
+
+const lineas = ['Manufactura', 'Valorización y chatarra', 'Servicios ambientales'];
+---
+
+<footer class="ci-footer">
+  <div class="ci-footer__bar" aria-hidden="true"></div>
+  <div class="ci-container ci-footer__inner">
+    <div class="ci-footer__grid">
+      <div>
+        <div class="ci-footer__brand">CI <span>QUALITY</span> GROUP</div>
+        <p class="ci-footer__tagline">
+          Convertimos el residuo industrial en valor. Manufactura, valorización y servicios
+          ambientales bajo economía circular.
+        </p>
+      </div>
+
+      <div>
+        <div class="ci-footer__heading">Navegación</div>
+        <nav class="ci-footer__links" aria-label="Navegación del pie">
+          {nav.map((item) => <a href={item.href}>{item.label}</a>)}
+        </nav>
+      </div>
+
+      <div>
+        <div class="ci-footer__heading">Líneas</div>
+        <div class="ci-footer__links">
+          {lineas.map((l) => <span>{l}</span>)}
+        </div>
+      </div>
+    </div>
+
+    <div class="ci-footer__legal">
+      <span class="ci-footer__legal-strong">
+        CI QUALITY GROUP S.A.S. — NIT 901.361.037 — Cartagena de Indias
+      </span>
+      <span class="ci-footer__legal-muted">© 2026 · Todos los derechos reservados</span>
+    </div>
+  </div>
+</footer>
+
+<style>
+  .ci-footer {
+    background: var(--graphite);
+    color: var(--on-dark-3);
+  }
+
+  .ci-footer__bar {
+    height: 6px;
+    background: var(--ci-green);
+  }
+
+  .ci-footer__inner {
+    padding-block: 62px 40px;
+  }
+
+  .ci-footer__grid {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr 1fr;
+    gap: 40px;
+  }
+
+  .ci-footer__brand {
+    font-size: 22px;
+    font-weight: bold;
+    color: var(--white);
+  }
+  .ci-footer__brand span {
+    color: var(--ci-green);
+  }
+
+  .ci-footer__tagline {
+    margin: 16px 0 0;
+    font-size: 14.5px;
+    line-height: 1.6;
+    color: var(--on-dark-1);
+    max-width: 38ch;
+  }
+
+  .ci-footer__heading {
+    font-size: 12px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 16px;
+  }
+
+  .ci-footer__links {
+    display: flex;
+    flex-direction: column;
+    gap: 11px;
+  }
+
+  .ci-footer__links a,
+  .ci-footer__links span {
+    font-size: 14.5px;
+    color: var(--on-dark-3);
+    text-decoration: none;
+  }
+  .ci-footer__links a:hover {
+    color: var(--white);
+  }
+
+  .ci-footer__legal {
+    margin-top: 48px;
+    padding-top: 26px;
+    border-top: 1px solid var(--footer-border);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px 24px;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .ci-footer__legal-strong {
+    font-size: 13px;
+    color: var(--on-dark-1);
+  }
+  .ci-footer__legal-muted {
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+
+  /* ≤960px: 3 → 2 columnas */
+  @media (max-width: 960px) {
+    .ci-footer__grid {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+
+  /* ≤640px: 1 columna */
+  @media (max-width: 640px) {
+    .ci-footer__grid {
+      grid-template-columns: 1fr;
+      gap: 32px;
+    }
+  }
+</style>
