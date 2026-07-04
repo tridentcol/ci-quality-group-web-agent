@@ -1,5 +1,6 @@
 ---
 import '../styles/globals.css';
+import ChatWidget from '../components/chat/ChatWidget.astro';
 
 interface Props {
   title?: string;
@@ -76,5 +77,6 @@ const jsonLd = {
   </head>
   <body>
     <slot />
+    <ChatWidget />
   </body>
 </html>
