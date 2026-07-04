@@ -136,9 +136,16 @@ const lineas = ['Manufactura', 'Valorización y chatarra', 'Servicios ambientale
 
   /* ≤640px: 1 columna */
   @media (max-width: 640px) {
+    .ci-footer__inner {
+      padding-block: 44px 32px;
+    }
     .ci-footer__grid {
       grid-template-columns: 1fr;
-      gap: 32px;
+      gap: 26px;
+    }
+    .ci-footer__legal {
+      margin-top: 32px;
+      padding-top: 22px;
     }
   }
 </style>
