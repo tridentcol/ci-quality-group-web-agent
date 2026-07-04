@@ -72,7 +72,7 @@ Header sticky · Hero (video de fondo) · Líneas de negocio (3) · Economía ci
   `public/videos/README.md`.
 - **Foto "Quiénes somos"** (placeholder rayado en `QuienesSomos.astro`).
 - **Logos de clientes** (hoy en texto, en `Clientes.astro`).
-- **Correo real** — `PUBLIC_CONTACT_EMAIL` (placeholder `contacto@ciqualitygroup.com`).
+- **Correo real** — `PUBLIC_CONTACT_EMAIL` (placeholder `contacto@ci-quality-group.com`).
 - **Dominio raíz** — `PUBLIC_SITE_URL` / `site` en `astro.config.mjs`.
 - **Página de privacidad (Ley 1581/2012)** — pendiente; añadir `/privacidad` + enlace en footer
   cuando el cliente entregue el texto legal (no está en el handoff visual).
@@ -81,8 +81,8 @@ Header sticky · Hero (video de fondo) · Líneas de negocio (3) · Economía ci
 
 | Variable | Descripción |
 |----------|-------------|
-| `PUBLIC_SITE_URL` | URL pública (canonical / OG). Default `https://ciqualitygroup.com` |
-| `PUBLIC_CONTACT_EMAIL` | Correo de contacto mostrado. Placeholder `contacto@ciqualitygroup.com` |
+| `PUBLIC_SITE_URL` | URL pública (canonical / OG). Default `https://ci-quality-group.com` |
+| `PUBLIC_CONTACT_EMAIL` | Correo de contacto mostrado. Placeholder `contacto@ci-quality-group.com` |
 
 ## Deploy (Cloudflare Pages)
 

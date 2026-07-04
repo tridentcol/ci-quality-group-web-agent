@@ -12,7 +12,7 @@ const {
     'CI Quality Group S.A.S. — empresa industrial de Cartagena de Indias. Manufactura de lámina arquitectónica, valorización de residuos y servicios ambientales bajo una lógica de economía circular real.',
 } = Astro.props;
 
-const siteUrl = import.meta.env.PUBLIC_SITE_URL ?? 'https://ciqualitygroup.com';
+const siteUrl = import.meta.env.PUBLIC_SITE_URL ?? 'https://ci-quality-group.com';
 const canonical = new URL(Astro.url.pathname, siteUrl).toString();
 
 // JSON-LD LocalBusiness (SEO local — NAP de Colombia)
@@ -23,7 +23,7 @@ const jsonLd = {
   legalName: 'CI Quality Group S.A.S.',
   taxID: '901.361.037',
   url: siteUrl,
-  email: import.meta.env.PUBLIC_CONTACT_EMAIL ?? 'contacto@ciqualitygroup.com',
+  email: import.meta.env.PUBLIC_CONTACT_EMAIL ?? 'contacto@ci-quality-group.com',
   description,
   address: {
     '@type': 'PostalAddress',
