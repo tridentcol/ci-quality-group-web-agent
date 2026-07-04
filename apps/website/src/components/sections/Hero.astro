@@ -245,5 +245,27 @@ const stats = [
       gap: 28px 40px;
       margin-top: 52px;
     }
+    /* El video landscape encuadra mal en retrato: lo tratamos como textura de fondo.
+       Overlay vertical (oscuro arriba/abajo) para que el claim se lea sin recortes raros. */
+    .ci-hero__video {
+      object-position: 50% 42%;
+    }
+    .ci-hero__overlay {
+      background: linear-gradient(
+        180deg,
+        rgba(13, 13, 13, 0.86) 0%,
+        rgba(13, 13, 13, 0.6) 40%,
+        rgba(13, 13, 13, 0.72) 72%,
+        rgba(13, 13, 13, 0.92) 100%
+      );
+    }
+    /* En móvil el glow no aporta y evita cualquier ruido/desborde. */
+    .ci-hero__glow {
+      display: none;
+    }
+    .ci-hero__title,
+    .ci-hero__lead {
+      max-width: 100%;
+    }
   }
 </style>
