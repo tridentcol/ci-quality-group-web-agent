@@ -1,0 +1,381 @@
+---
+import Page from '../layouts/Page.astro';
+import PageHero from '../components/PageHero.astro';
+import { lineas, getLinea } from '../data/lineas';
+
+export function getStaticPaths() {
+  return lineas.map((l) => ({ params: { linea: l.slug } }));
+}
+
+const { linea: slug } = Astro.params;
+const linea = getLinea(slug!)!;
+const otras = lineas.filter((l) => l.slug !== linea.slug);
+---
+
+<Page
+  title={`${linea.title} — CI Quality Group`}
+  description={linea.summary}
+>
+  <PageHero
+    eyebrow={`Línea ${linea.num} · ${linea.tag}`}
+    title={linea.title}
+    tagline={linea.tagline}
+    breadcrumb={[
+      { label: 'Inicio', href: '/' },
+      { label: 'Líneas', href: '/#lineas' },
+      { label: linea.tag, href: `/${linea.slug}` },
+    ]}
+    media={linea.media}
+    cta={{ label: 'Solicitar información', href: '/contacto' }}
+  />
+
+  <!-- Intro -->
+  <section class="ci-sec">
+    <div class="ci-container ci-detail__intro">
+      <div class="ci-detail__intro-text">
+        <span class="ci-badge">{linea.tag}</span>
+        {linea.intro.map((p) => <p class="ci-detail__p">{p}</p>)}
+        <div class="ci-detail__chips">
+          {linea.chips.map((c) => <span class="ci-chip">{c}</span>)}
+        </div>
+      </div>
+      <aside class="ci-detail__aside">
+        <p class="ci-detail__aside-label">Línea de negocio</p>
+        <p class="ci-detail__aside-num">{linea.num}</p>
+        <p class="ci-detail__aside-tag">{linea.tag}</p>
+        <a class="ci-detail__aside-cta" href="/contacto">Contáctanos →</a>
+      </aside>
+    </div>
+  </section>
+
+  <!-- Capacidades / highlights -->
+  <section class="ci-sec ci-sec--pale">
+    <div class="ci-container">
+      <h2 class="ci-detail__h2">Qué ofrecemos</h2>
+      <div class="ci-detail__grid">
+        {
+          linea.highlights.map((h) => (
+            <article class="ci-hl">
+              <h3 class="ci-hl__title">{h.title}</h3>
+              <p class="ci-hl__body">{h.body}</p>
+            </article>
+          ))
+        }
+      </div>
+    </div>
+  </section>
+
+  <!-- Galería (placeholders) -->
+  <section class="ci-sec">
+    <div class="ci-container">
+      <h2 class="ci-detail__h2">Galería</h2>
+      <p class="ci-detail__sub">Imágenes reales de la operación. <em>Pendientes de entrega por el cliente.</em></p>
+      <div class="ci-gallery">
+        {
+          [0, 1, 2].map(() => (
+            <div class="ci-gallery__item" aria-hidden="true">
+              <span>foto / video</span>
+            </div>
+          ))
+        }
+      </div>
+    </div>
+  </section>
+
+  <!-- Otras líneas -->
+  <section class="ci-sec ci-sec--pale">
+    <div class="ci-container">
+      <h2 class="ci-detail__h2">Otras líneas</h2>
+      <div class="ci-detail__otras">
+        {
+          otras.map((o) => (
+            <a class="ci-otra" href={`/${o.slug}`}>
+              <span class="ci-otra__num">{o.num}</span>
+              <span class="ci-otra__body">
+                <span class="ci-otra__title">{o.title}</span>
+                <span class="ci-otra__tag">{o.tag} →</span>
+              </span>
+            </a>
+          ))
+        }
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="ci-detail__cta-band">
+    <div class="ci-container ci-detail__cta-inner">
+      <h2 class="ci-detail__cta-title">¿Listo para dar valor a su residuo industrial?</h2>
+      <a class="ci-detail__cta-btn" href="/contacto">Contáctanos</a>
+    </div>
+  </section>
+</Page>
+
+<style>
+  .ci-sec {
+    padding-block: 84px;
+  }
+  .ci-sec--pale {
+    background: var(--green-pale);
+    border-top: 1px solid var(--border-light);
+    border-bottom: 1px solid var(--border-light);
+  }
+
+  /* Intro */
+  .ci-detail__intro {
+    display: grid;
+    grid-template-columns: 1.6fr 1fr;
+    gap: 48px;
+    align-items: start;
+  }
+  .ci-badge {
+    display: inline-block;
+    background: var(--ci-green);
+    color: var(--white);
+    font-size: 12.5px;
+    font-weight: bold;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    padding: 7px 16px;
+    border-radius: var(--r-badge);
+  }
+  .ci-detail__p {
+    margin: 20px 0 0;
+    font-size: 16.5px;
+    line-height: 1.7;
+    color: var(--text-muted);
+  }
+  .ci-detail__chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 26px;
+  }
+  .ci-chip {
+    background: var(--green-pale);
+    color: var(--green-deep);
+    border: 1px solid var(--border-light);
+    border-radius: var(--r-pill);
+    padding: 6px 12px;
+    font-size: 12.5px;
+  }
+  .ci-detail__aside {
+    border: 1px solid var(--border-light);
+    border-radius: var(--r-card);
+    padding: 26px;
+    box-shadow: var(--sh-card);
+    background: var(--white);
+  }
+  .ci-detail__aside-label {
+    margin: 0;
+    font-size: 11.5px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--on-dark-1);
+  }
+  .ci-detail__aside-num {
+    margin: 10px 0 0;
+    font-size: 46px;
+    font-weight: bold;
+    color: var(--ci-green);
+    line-height: 1;
+  }
+  .ci-detail__aside-tag {
+    margin: 4px 0 0;
+    font-size: 16px;
+    font-weight: bold;
+    color: var(--graphite);
+  }
+  .ci-detail__aside-cta {
+    display: inline-block;
+    margin-top: 20px;
+    font-size: 14px;
+    font-weight: bold;
+    color: var(--green-deep);
+    text-decoration: none;
+  }
+  .ci-detail__aside-cta:hover {
+    text-decoration: underline;
+  }
+
+  /* Headings de sección */
+  .ci-detail__h2 {
+    margin: 0;
+    font-size: clamp(24px, 3vw, 34px);
+    font-weight: bold;
+    color: var(--graphite);
+    letter-spacing: -0.01em;
+  }
+  .ci-detail__sub {
+    margin: 10px 0 0;
+    font-size: 15px;
+    color: var(--text-muted);
+  }
+
+  /* Highlights */
+  .ci-detail__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 18px;
+    margin-top: 32px;
+  }
+  .ci-hl {
+    background: var(--white);
+    border: 1px solid var(--border-light);
+    border-radius: var(--r-card);
+    padding: 24px;
+    box-shadow: var(--sh-card);
+  }
+  .ci-hl__title {
+    margin: 0;
+    font-size: 18px;
+    font-weight: bold;
+    color: var(--graphite);
+  }
+  .ci-hl__body {
+    margin: 10px 0 0;
+    font-size: 15px;
+    line-height: 1.6;
+    color: var(--text-muted);
+  }
+
+  /* Galería */
+  .ci-gallery {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 16px;
+    margin-top: 28px;
+  }
+  .ci-gallery__item {
+    aspect-ratio: 4 / 3;
+    border-radius: var(--r-card);
+    border: 1px solid var(--border-light);
+    background: repeating-linear-gradient(
+      45deg,
+      #eaf5e8 0px,
+      #eaf5e8 16px,
+      #f4faf2 16px,
+      #f4faf2 32px
+    );
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .ci-gallery__item span {
+    font-family: monospace;
+    font-size: 13px;
+    color: var(--text-muted);
+    background: var(--white);
+    padding: 8px 14px;
+    border-radius: var(--r-badge);
+    border: 1px solid var(--border-light);
+  }
+
+  /* Otras líneas */
+  .ci-detail__otras {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 16px;
+    margin-top: 28px;
+  }
+  .ci-otra {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    background: var(--white);
+    border: 1px solid var(--border-light);
+    border-radius: var(--r-card);
+    padding: 20px 22px;
+    text-decoration: none;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  }
+  .ci-otra:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--sh-card-hover);
+    border-color: var(--ci-green);
+  }
+  .ci-otra__num {
+    flex-shrink: 0;
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--green-pale);
+    border: 1px solid var(--border-light);
+    border-radius: var(--r-tile);
+    font-size: 19px;
+    font-weight: bold;
+    color: var(--ci-green);
+  }
+  .ci-otra__body {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+  .ci-otra__title {
+    font-size: 16px;
+    font-weight: bold;
+    color: var(--graphite);
+    line-height: 1.2;
+  }
+  .ci-otra__tag {
+    font-size: 13px;
+    color: var(--green-deep);
+    font-weight: bold;
+  }
+
+  /* CTA band */
+  .ci-detail__cta-band {
+    background: var(--ci-green);
+    padding-block: 64px;
+  }
+  .ci-detail__cta-inner {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+  }
+  .ci-detail__cta-title {
+    margin: 0;
+    font-size: clamp(24px, 3.4vw, 38px);
+    font-weight: bold;
+    color: var(--white);
+    letter-spacing: -0.01em;
+    max-width: 20ch;
+  }
+  .ci-detail__cta-btn {
+    display: inline-flex;
+    padding: 16px 34px;
+    font-size: 15px;
+    font-weight: bold;
+    text-decoration: none;
+    border-radius: var(--r-btn);
+    background: var(--white);
+    color: var(--green-deep);
+    transition: background 0.2s ease, color 0.2s ease;
+  }
+  .ci-detail__cta-btn:hover {
+    background: var(--graphite);
+    color: var(--white);
+  }
+
+  @media (max-width: 900px) {
+    .ci-detail__intro {
+      grid-template-columns: 1fr;
+      gap: 28px;
+    }
+  }
+  @media (max-width: 640px) {
+    .ci-sec {
+      padding-block: 52px;
+    }
+    .ci-detail__p {
+      font-size: 15.5px;
+    }
+    .ci-detail__cta-band {
+      padding-block: 48px;
+    }
+  }
+</style>

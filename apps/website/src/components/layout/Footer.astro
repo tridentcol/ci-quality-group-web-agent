@@ -1,12 +1,16 @@
 ---
 const nav = [
-  { label: 'Líneas de negocio', href: '#lineas' },
-  { label: 'Economía circular', href: '#circular' },
-  { label: 'Quiénes somos', href: '#nosotros' },
-  { label: 'Contacto', href: '#contacto' },
+  { label: 'Líneas de negocio', href: '/#lineas' },
+  { label: 'Economía circular', href: '/#circular' },
+  { label: 'Quiénes somos', href: '/nosotros' },
+  { label: 'Contacto', href: '/contacto' },
 ];
 
-const lineas = ['Manufactura', 'Valorización y chatarra', 'Servicios ambientales'];
+const lineas = [
+  { label: 'Manufactura', href: '/manufactura' },
+  { label: 'Valorización y chatarra', href: '/valorizacion' },
+  { label: 'Servicios ambientales', href: '/servicios-ambientales' },
+];
 ---
 
 <footer class="ci-footer">
@@ -30,9 +34,9 @@ const lineas = ['Manufactura', 'Valorización y chatarra', 'Servicios ambientale
 
       <div>
         <div class="ci-footer__heading">Líneas</div>
-        <div class="ci-footer__links">
-          {lineas.map((l) => <span>{l}</span>)}
-        </div>
+        <nav class="ci-footer__links" aria-label="Líneas de negocio">
+          {lineas.map((l) => <a href={l.href}>{l.label}</a>)}
+        </nav>
       </div>
     </div>
 

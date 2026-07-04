@@ -31,18 +31,37 @@ Astro 7 + TypeScript + Tailwind CSS v4 (vía `@tailwindcss/vite`). Output **stat
 (sin adapter). Sin CMS ni base de datos. Íconos SVG inline (sin librerías de íconos).
 Fuente del sistema: **Arial / Helvetica / sans-serif** (no requiere web fonts).
 
+## Arquitectura (híbrida: portada + subpáginas)
+
+La portada `/` es la landing que "vende" (hero video + resúmenes). Cada línea de
+negocio y las secciones clave tienen **subpágina propia** con hero/media propio,
+mejor SEO y más contenido.
+
+**Rutas:**
+- `/` — portada (index.astro; ensambla las secciones)
+- `/manufactura`, `/valorizacion`, `/servicios-ambientales` — detalle de línea
+  (ruta dinámica `src/pages/[linea].astro` + `getStaticPaths` desde los datos)
+- `/nosotros`, `/contacto` — páginas dedicadas
+- `/404`
+
 ## Estructura
 
-- `src/pages/index.astro` — landing (ensambla las secciones en orden)
-- `src/pages/404.astro` — no encontrado
-- `src/layouts/BaseLayout.astro` — `<head>`, meta/OG, JSON-LD `Organization` (NAP Colombia)
-- `src/components/layout/` — `Header.astro`, `Footer.astro`
-- `src/components/sections/` — `Hero`, `Lineas`, `EconomiaCircular`, `Clientes`,
-  `QuienesSomos`, `Contacto` (una sección = un componente `.astro`)
-- `src/components/CircularArrow.astro` — ícono de marca (flecha circular)
+- `src/pages/` — `index.astro`, `[linea].astro`, `nosotros.astro`, `contacto.astro`, `404.astro`
+- `src/layouts/BaseLayout.astro` — `<head>`, meta/OG, JSON-LD `Organization`
+- `src/layouts/Page.astro` — BaseLayout + Header + `<main>` + Footer (para subpáginas)
+- `src/data/lineas.ts` — **contenido de las 3 líneas** (fuente única para portada y detalle)
+- `src/components/PageHero.astro` — hero de subpágina (media real o placeholder + migas)
+- `src/components/layout/` — `Header.astro` (nav con menú hamburguesa móvil), `Footer.astro`
+- `src/components/sections/` — `Hero`, `Lineas` (tarjetas → enlazan a las subpáginas),
+  `EconomiaCircular`, `Clientes`, `QuienesSomos`, `Contacto`
+- `src/components/CircularArrow.astro` — ícono de marca
+- `src/components/chat/` — `ChatWidget.astro` (burbuja) + `chat-config.ts`
 - `src/styles/globals.css` — tokens de diseño + reset
-- `public/videos/` — poster del hero (placeholder); el video real lo entrega el cliente
-- `public/favicon.svg`, `public/og-image.svg` — assets de marca (placeholders)
+- `public/videos/` — `hero.mp4`/`hero.webm`/`hero-poster.jpg` (video del hero, entregado)
+- `public/images/` — fotos por página (PENDIENTES del cliente; hoy placeholders)
+
+> Nav: enlaces absolutos (`/#lineas`, `/#circular`, `/nosotros`, `/contacto`) para
+> funcionar desde cualquier página. Cada subpágina usa `Page.astro` + `PageHero`.
 
 ## Orden de secciones (handoff)
 

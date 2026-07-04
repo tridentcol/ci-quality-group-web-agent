@@ -1,0 +1,23 @@
+---
+import Page from '../layouts/Page.astro';
+import PageHero from '../components/PageHero.astro';
+import Contacto from '../components/sections/Contacto.astro';
+---
+
+<Page
+  title="Contacto — CI Quality Group"
+  description="Cuéntenos su necesidad de manufactura, valorización o gestión ambiental. Le respondemos con una propuesta técnica."
+>
+  <PageHero
+    eyebrow="Contacto"
+    title="Hablemos de su proyecto"
+    tagline="Manufactura, valorización o gestión ambiental: cuéntenos su necesidad y le respondemos con una propuesta técnica."
+    breadcrumb={[
+      { label: 'Inicio', href: '/' },
+      { label: 'Contacto', href: '/contacto' },
+    ]}
+    media={{ label: 'foto de planta / operación' }}
+  />
+
+  <Contacto />
+</Page>
