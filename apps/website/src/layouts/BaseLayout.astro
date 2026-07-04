@@ -1,0 +1,80 @@
+---
+import '../styles/globals.css';
+
+interface Props {
+  title?: string;
+  description?: string;
+}
+
+const {
+  title = 'CI Quality Group — Convertimos el residuo industrial en valor',
+  description =
+    'CI Quality Group S.A.S. — empresa industrial de Cartagena de Indias. Manufactura de lámina arquitectónica, valorización de residuos y servicios ambientales bajo una lógica de economía circular real.',
+} = Astro.props;
+
+const siteUrl = import.meta.env.PUBLIC_SITE_URL ?? 'https://ci-quality-group.com';
+const canonical = new URL(Astro.url.pathname, siteUrl).toString();
+
+// JSON-LD LocalBusiness (SEO local — NAP de Colombia)
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Organization',
+  name: 'CI Quality Group S.A.S.',
+  legalName: 'CI Quality Group S.A.S.',
+  taxID: '901.361.037',
+  url: siteUrl,
+  email: import.meta.env.PUBLIC_CONTACT_EMAIL ?? 'contacto@ci-quality-group.com',
+  description,
+  address: {
+    '@type': 'PostalAddress',
+    addressLocality: 'Cartagena de Indias',
+    addressRegion: 'Bolívar',
+    addressCountry: 'CO',
+  },
+  areaServed: 'CO',
+  knowsAbout: [
+    'Economía circular industrial',
+    'Lámina arquitectónica en acero PPGL galvalume',
+    'Valorización de residuos y chatarra',
+    'Gestión de residuos RESPEL y RCD',
+  ],
+};
+---
+
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="generator" content={Astro.generator} />
+
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <meta name="theme-color" content="#3A8C2F" />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="CI Quality Group" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:locale" content="es_CO" />
+    <meta property="og:image" content={new URL('/og-image.svg', siteUrl).toString()} />
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+
+    <script
+      is:inline
+      type="application/ld+json"
+      set:html={JSON.stringify(jsonLd)}
+    />
+  </head>
+  <body>
+    <slot />
+  </body>
+</html>

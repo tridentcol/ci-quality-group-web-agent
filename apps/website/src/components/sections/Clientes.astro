@@ -1,0 +1,70 @@
+---
+// Clientes/referencias en texto — reemplazar por logos reales cuando estén disponibles.
+const clients = [
+  'CSP / T360',
+  'Negratín',
+  'Termocandelaria',
+  'Técnicas Reunidas de Colombia',
+  'Servimant',
+];
+---
+
+<section class="ci-clients" aria-label="Clientes y referencias">
+  <div class="ci-container">
+    <p class="ci-clients__title">Clientes y referencias que confían en nosotros</p>
+    <div class="ci-clients__row">
+      {
+        clients.map((c) => (
+          <div class="ci-clients__plate">
+            <span class="ci-clients__name">{c}</span>
+          </div>
+        ))
+      }
+    </div>
+  </div>
+</section>
+
+<style>
+  .ci-clients {
+    background: var(--green-pale);
+    padding-block: 62px;
+    border-top: 1px solid var(--border-light);
+    border-bottom: 1px solid var(--border-light);
+  }
+
+  .ci-clients__title {
+    text-align: center;
+    font-size: 12.5px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin: 0 0 34px;
+  }
+
+  .ci-clients__row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: stretch;
+    justify-content: center;
+    gap: 16px;
+  }
+
+  .ci-clients__plate {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px 28px;
+    background: var(--white);
+    border: 1px solid var(--border-light);
+    border-radius: 9px;
+    min-height: 66px;
+  }
+
+  .ci-clients__name {
+    font-size: clamp(15px, 1.6vw, 19px);
+    font-weight: bold;
+    color: var(--green-deep);
+    letter-spacing: -0.01em;
+    text-align: center;
+  }
+</style>

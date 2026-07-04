@@ -1,0 +1,161 @@
+---
+// PLACEHOLDER — confirmar el correo real con el cliente.
+const email = import.meta.env.PUBLIC_CONTACT_EMAIL ?? 'contacto@ci-quality-group.com';
+const mailto = `mailto:${email}?subject=${encodeURIComponent(
+  'Consulta desde ci-quality-group.com',
+)}`;
+
+const rows = [
+  { label: 'Ubicación', value: 'Cartagena de Indias, Colombia' },
+  { label: 'Correo', value: email },
+  { label: 'Atención', value: 'Industria · Energía · EPC' },
+];
+---
+
+<section class="ci-contact" id="contacto">
+  <div class="ci-contact__circle" aria-hidden="true"></div>
+
+  <div class="ci-container ci-contact__grid">
+    <div class="ci-contact__left">
+      <h2 class="ci-contact__title">¿Listo para dar valor a su residuo industrial?</h2>
+      <p class="ci-contact__lead">
+        Cuéntenos su necesidad de manufactura, valorización o gestión ambiental. Le respondemos
+        con una propuesta técnica.
+      </p>
+      <a class="ci-contact__cta" href={mailto}>Contáctanos</a>
+    </div>
+
+    <div class="ci-contact__card">
+      {
+        rows.map((r, i) => (
+          <>
+            {i > 0 && <div class="ci-contact__sep" aria-hidden="true" />}
+            <div class="ci-contact__row">
+              <div class="ci-contact__label">{r.label}</div>
+              {r.label === 'Correo' ? (
+                <a class="ci-contact__value ci-contact__value--link" href={mailto}>
+                  {r.value}
+                </a>
+              ) : (
+                <div class="ci-contact__value">{r.value}</div>
+              )}
+            </div>
+          </>
+        ))
+      }
+    </div>
+  </div>
+</section>
+
+<style>
+  .ci-contact {
+    position: relative;
+    overflow: hidden;
+    background: var(--ci-green);
+    padding-block: 92px;
+  }
+
+  .ci-contact__circle {
+    position: absolute;
+    top: -100px;
+    left: -80px;
+    width: 400px;
+    height: 400px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.06);
+  }
+
+  .ci-contact__grid {
+    position: relative;
+    display: grid;
+    grid-template-columns: 1.3fr 1fr;
+    gap: 56px;
+    align-items: center;
+  }
+
+  .ci-contact__title {
+    margin: 0;
+    font-size: clamp(30px, 4vw, 48px);
+    line-height: 1.08;
+    font-weight: bold;
+    color: var(--white);
+    letter-spacing: -0.01em;
+    max-width: 16ch;
+  }
+
+  .ci-contact__lead {
+    margin: 22px 0 0;
+    font-size: 17px;
+    line-height: 1.6;
+    color: var(--pale-text);
+    max-width: 50ch;
+  }
+
+  .ci-contact__cta {
+    display: inline-flex;
+    align-items: center;
+    margin-top: 32px;
+    padding: 17px 34px;
+    font-size: 15px;
+    font-weight: bold;
+    text-decoration: none;
+    border-radius: var(--r-btn);
+    background: var(--white);
+    color: var(--green-deep);
+    transition: background 0.2s ease, color 0.2s ease;
+  }
+  .ci-contact__cta:hover {
+    background: var(--graphite);
+    color: var(--white);
+  }
+
+  /* Tarjeta de datos */
+  .ci-contact__card {
+    background: var(--white);
+    border-radius: var(--r-card);
+    padding: 34px;
+    box-shadow: var(--sh-contact-card);
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+  }
+
+  .ci-contact__sep {
+    height: 1px;
+    background: var(--border-light);
+  }
+
+  .ci-contact__label {
+    font-size: 11.5px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--on-dark-1);
+  }
+
+  .ci-contact__value {
+    font-size: 16px;
+    font-weight: bold;
+    color: var(--graphite);
+    margin-top: 5px;
+    text-decoration: none;
+    word-break: break-word;
+  }
+  .ci-contact__value--link:hover {
+    color: var(--green-deep);
+    text-decoration: underline;
+  }
+
+  /* ≤900px: 2 → 1 columna */
+  @media (max-width: 900px) {
+    .ci-contact__grid {
+      grid-template-columns: 1fr;
+      gap: 40px;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .ci-contact {
+      padding-block: 72px;
+    }
+  }
+</style>

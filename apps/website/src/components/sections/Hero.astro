@@ -1,0 +1,249 @@
+---
+const stats = [
+  { value: '3', label: 'Líneas integradas' },
+  { value: 'PPGL', label: 'Acero galvalume' },
+  { value: 'RESPEL · RCD', label: 'Gestión autorizada' },
+];
+---
+
+<section class="ci-hero" id="top">
+  <!-- Fondo de video (PENDIENTE de entrega por el cliente).
+       Cuando exista, coloca hero.mp4 / hero.webm y hero-poster.jpg en /public/videos.
+       El poster SVG sirve de respaldo mientras tanto y el fondo grafito da legibilidad. -->
+  <video
+    class="ci-hero__video"
+    autoplay
+    muted
+    loop
+    playsinline
+    preload="none"
+    poster="/videos/hero-poster.svg"
+  >
+    <source src="/videos/hero.webm" type="video/webm" />
+    <source src="/videos/hero.mp4" type="video/mp4" />
+  </video>
+
+  <div class="ci-hero__overlay"></div>
+  <div class="ci-hero__glow"></div>
+  <span class="ci-hero__bar" aria-hidden="true"></span>
+
+  <div class="ci-container ci-hero__content">
+    <span class="ci-hero__pill">
+      <span class="ci-hero__dot" aria-hidden="true"></span>
+      Economía circular industrial
+    </span>
+
+    <h1 class="ci-hero__title">
+      Convertimos el <span class="ci-hero__accent">residuo industrial</span> en valor
+    </h1>
+
+    <p class="ci-hero__lead">
+      CI Quality Group integra manufactura de lámina arquitectónica, valorización de
+      residuos y servicios ambientales bajo una sola lógica: devolver al ciclo productivo
+      lo que otros descartan.
+    </p>
+
+    <div class="ci-hero__actions">
+      <a class="ci-btn ci-btn--primary" href="#contacto">Contáctanos</a>
+      <a class="ci-btn ci-btn--ghost" href="#lineas">Ver líneas de negocio →</a>
+    </div>
+
+    <div class="ci-hero__stats">
+      {
+        stats.map((s) => (
+          <div class="ci-hero__stat">
+            <span class="ci-hero__stat-value">{s.value}</span>
+            <span class="ci-hero__stat-label">{s.label}</span>
+          </div>
+        ))
+      }
+    </div>
+  </div>
+</section>
+
+<style>
+  .ci-hero {
+    position: relative;
+    min-height: 92vh;
+    display: flex;
+    align-items: center;
+    overflow: hidden;
+    background: var(--graphite);
+  }
+
+  .ci-hero__video {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    z-index: 0;
+  }
+
+  .ci-hero__overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    background: linear-gradient(
+      90deg,
+      rgba(13, 13, 13, 0.92) 0%,
+      rgba(13, 13, 13, 0.74) 46%,
+      rgba(13, 13, 13, 0.5) 100%
+    );
+  }
+
+  .ci-hero__glow {
+    position: absolute;
+    top: -140px;
+    right: -120px;
+    width: 620px;
+    height: 620px;
+    max-width: 90vw;
+    z-index: 1;
+    pointer-events: none;
+    background: radial-gradient(
+      circle,
+      rgba(58, 140, 47, 0.3),
+      transparent 66%
+    );
+  }
+
+  .ci-hero__bar {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 6px;
+    z-index: 2;
+    background: var(--ci-green);
+  }
+
+  .ci-hero__content {
+    position: relative;
+    z-index: 3;
+    padding-block: 120px;
+  }
+
+  .ci-hero__pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    border: 1px solid rgba(58, 140, 47, 0.5);
+    border-radius: var(--r-pill);
+    padding: 8px 16px;
+    font-size: 12.5px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--pale-text);
+  }
+
+  .ci-hero__dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--ci-green);
+  }
+
+  .ci-hero__title {
+    margin: 26px 0 0;
+    font-size: clamp(42px, 6.6vw, 88px);
+    line-height: 1.03;
+    font-weight: bold;
+    letter-spacing: -0.015em;
+    color: var(--white);
+    max-width: 15ch;
+  }
+
+  .ci-hero__accent {
+    color: var(--ci-green);
+  }
+
+  .ci-hero__lead {
+    margin: 24px 0 0;
+    font-size: clamp(17px, 1.6vw, 21px);
+    line-height: 1.6;
+    color: var(--on-dark-3);
+    max-width: 60ch;
+  }
+
+  .ci-hero__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-top: 38px;
+  }
+
+  /* Botones */
+  .ci-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--r-btn);
+    font-weight: bold;
+    text-decoration: none;
+    cursor: pointer;
+  }
+
+  .ci-btn--primary {
+    padding: 17px 30px;
+    font-size: 15px;
+    color: var(--white);
+    background: var(--ci-green);
+    box-shadow: var(--sh-cta);
+    transition: background 0.2s ease;
+  }
+  .ci-btn--primary:hover {
+    background: var(--green-deep);
+  }
+
+  .ci-btn--ghost {
+    padding: 17px 24px;
+    font-size: 15px;
+    color: var(--pale-text);
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    transition: border-color 0.2s ease, background 0.2s ease;
+  }
+  .ci-btn--ghost:hover {
+    border-color: rgba(255, 255, 255, 0.4);
+    background: rgba(255, 255, 255, 0.06);
+  }
+
+  /* Stats */
+  .ci-hero__stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 48px;
+    margin-top: 72px;
+  }
+
+  .ci-hero__stat {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .ci-hero__stat-value {
+    font-size: 34px;
+    font-weight: bold;
+    color: var(--white);
+    line-height: 1;
+  }
+
+  .ci-hero__stat-label {
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--on-dark-1);
+  }
+
+  @media (max-width: 640px) {
+    .ci-hero__content {
+      padding-block: 84px;
+    }
+    .ci-hero__stats {
+      gap: 28px 40px;
+      margin-top: 52px;
+    }
+  }
+</style>

@@ -1,0 +1,148 @@
+---
+const stats = [
+  { value: 'B2B', label: 'Enfoque industrial' },
+  { value: '100%', label: 'Disposición trazable' },
+];
+---
+
+<section class="ci-about" id="nosotros">
+  <div class="ci-container ci-about__grid">
+    <div class="ci-about__text">
+      <span class="ci-badge">Quiénes somos</span>
+      <h2 class="ci-about__title">Una empresa industrial de Cartagena de Indias</h2>
+      <p class="ci-about__p">
+        CI Quality Group S.A.S. integra manufactura de lámina arquitectónica, valorización
+        de residuos y servicios ambientales bajo una lógica de economía circular. Convertimos
+        lo que otros descartan en materia prima, producto y valor medible.
+      </p>
+      <p class="ci-about__p">
+        Operamos con estándares técnicos exigentes y trazabilidad para grandes clientes de
+        industria, energía y contratistas EPC, con un compromiso ambiental verificable —sin
+        greenwashing.
+      </p>
+      <div class="ci-about__stats">
+        {
+          stats.map((s) => (
+            <div class="ci-about__stat">
+              <div class="ci-about__stat-value">{s.value}</div>
+              <div class="ci-about__stat-label">{s.label}</div>
+            </div>
+          ))
+        }
+      </div>
+    </div>
+
+    <!-- Placeholder de foto de planta/operación — reemplazar por foto real cuando esté provista. -->
+    <div class="ci-about__img" role="img" aria-label="Foto de planta / operación (pendiente)">
+      <span class="ci-about__img-label">foto de planta / operación</span>
+      <div class="ci-about__img-bar" aria-hidden="true"></div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .ci-about {
+    padding-block: 104px;
+  }
+
+  .ci-about__grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 60px;
+    align-items: center;
+  }
+
+  .ci-about__title {
+    margin: 22px 0 0;
+    font-size: clamp(28px, 3.6vw, 42px);
+    line-height: 1.14;
+    font-weight: bold;
+    color: var(--graphite);
+    letter-spacing: -0.01em;
+    max-width: 18ch;
+  }
+
+  .ci-about__p {
+    margin: 24px 0 0;
+    font-size: 16.5px;
+    line-height: 1.7;
+    color: var(--text-muted);
+  }
+  .ci-about__p + .ci-about__p {
+    margin-top: 18px;
+  }
+
+  .ci-about__stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 40px;
+    margin-top: 34px;
+  }
+
+  .ci-about__stat-value {
+    font-size: 30px;
+    font-weight: bold;
+    color: var(--ci-green);
+  }
+
+  .ci-about__stat-label {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-top: 4px;
+  }
+
+  /* Placeholder de imagen */
+  .ci-about__img {
+    position: relative;
+    height: 420px;
+    border-radius: var(--r-card);
+    overflow: hidden;
+    border: 1px solid var(--border-light);
+    background: repeating-linear-gradient(
+      45deg,
+      #eaf5e8 0px,
+      #eaf5e8 16px,
+      #f4faf2 16px,
+      #f4faf2 32px
+    );
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .ci-about__img-label {
+    font-family: monospace;
+    font-size: 13px;
+    color: var(--text-muted);
+    background: var(--white);
+    padding: 10px 16px;
+    border-radius: var(--r-badge);
+    border: 1px solid var(--border-light);
+  }
+
+  .ci-about__img-bar {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: 100%;
+    height: 6px;
+    background: var(--ci-green);
+  }
+
+  /* ≤900px: 2 → 1 columna */
+  @media (max-width: 900px) {
+    .ci-about__grid {
+      grid-template-columns: 1fr;
+      gap: 40px;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .ci-about {
+      padding-block: 72px;
+    }
+    .ci-about__img {
+      height: 300px;
+    }
+  }
+</style>

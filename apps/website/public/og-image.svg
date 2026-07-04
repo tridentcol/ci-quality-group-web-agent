@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" fill="none">
+  <defs>
+    <linearGradient id="og" x1="0" y1="0" x2="1200" y2="0" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#0D0D0D"/>
+      <stop offset="0.5" stop-color="#0D0D0D" stop-opacity="0.9"/>
+      <stop offset="1" stop-color="#101a0f"/>
+    </linearGradient>
+    <radialGradient id="ogglow" cx="0" cy="0" r="1" gradientTransform="translate(980 120) scale(420)" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#3A8C2F" stop-opacity="0.35"/>
+      <stop offset="1" stop-color="#3A8C2F" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#og)"/>
+  <rect width="1200" height="630" fill="url(#ogglow)"/>
+  <rect width="8" height="630" fill="#3A8C2F"/>
+  <g transform="translate(80 250)" font-family="Arial, Helvetica, sans-serif">
+    <text x="0" y="0" font-size="26" letter-spacing="6" fill="#EAF5E8">ECONOMÍA CIRCULAR INDUSTRIAL</text>
+    <text x="0" y="80" font-size="72" font-weight="bold" fill="#FFFFFF">Convertimos el <tspan fill="#7FD16F">residuo</tspan></text>
+    <text x="0" y="160" font-size="72" font-weight="bold" fill="#FFFFFF">industrial en valor</text>
+    <text x="0" y="230" font-size="26" fill="#C9D3C6">CI QUALITY GROUP S.A.S. · Cartagena de Indias, Colombia</text>
+  </g>
+</svg>

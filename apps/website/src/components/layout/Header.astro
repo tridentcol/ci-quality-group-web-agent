@@ -1,0 +1,159 @@
+---
+import CircularArrow from '../CircularArrow.astro';
+
+const nav = [
+  { label: 'Líneas', href: '#lineas' },
+  { label: 'Economía circular', href: '#circular' },
+  { label: 'Quiénes somos', href: '#nosotros' },
+  { label: 'Contacto', href: '#contacto' },
+];
+---
+
+<header class="ci-header">
+  <div class="ci-container ci-header__inner">
+    <nav class="ci-nav" aria-label="Navegación principal">
+      {
+        nav.map((item) => (
+          <a class="ci-nav__link" href={item.href}>
+            {item.label}
+          </a>
+        ))
+      }
+    </nav>
+
+    <a href="#top" class="ci-logo" aria-label="CI Quality Group — inicio">
+      <span class="ci-logo__text">
+        <span class="ci-logo__name">CI <span class="ci-logo__accent">QUALITY</span> GROUP</span>
+        <span class="ci-logo__sub">S.A.S. · CARTAGENA</span>
+      </span>
+      <span class="ci-logo__tile">
+        <CircularArrow size={26} color="#FFFFFF" strokeWidth={2.3} />
+      </span>
+    </a>
+  </div>
+</header>
+
+<style>
+  .ci-header {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: rgba(255, 255, 255, 0.94);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--border-light);
+  }
+
+  .ci-header__inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 76px;
+    gap: 24px;
+  }
+
+  /* Nav (izquierda) */
+  .ci-nav {
+    display: flex;
+    align-items: center;
+    gap: 34px;
+    flex-wrap: wrap;
+  }
+
+  .ci-nav__link {
+    position: relative;
+    font-size: 14px;
+    font-weight: bold;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--graphite);
+    text-decoration: none;
+    padding-block: 4px;
+  }
+
+  .ci-nav__link::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: 0;
+    height: 2px;
+    background: var(--ci-green);
+    transition: width 0.22s ease;
+  }
+
+  .ci-nav__link:hover::after,
+  .ci-nav__link:focus-visible::after {
+    width: 100%;
+  }
+
+  /* Logo (derecha) */
+  .ci-logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    text-decoration: none;
+    flex-shrink: 0;
+  }
+
+  .ci-logo__text {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    line-height: 1;
+  }
+
+  .ci-logo__name {
+    font-size: 22px;
+    font-weight: bold;
+    letter-spacing: 0.02em;
+    color: var(--graphite);
+  }
+
+  .ci-logo__accent {
+    color: var(--ci-green);
+  }
+
+  .ci-logo__sub {
+    font-size: 10.5px;
+    letter-spacing: 0.34em;
+    color: var(--text-muted);
+    margin-top: 4px;
+  }
+
+  .ci-logo__tile {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 46px;
+    height: 46px;
+    border-radius: 9px;
+    background: var(--ci-green);
+    box-shadow: 0 4px 14px rgba(58, 140, 47, 0.3);
+    flex-shrink: 0;
+  }
+
+  /* ≤640px: header se apila (logo arriba, nav centrada con wrap) */
+  @media (max-width: 640px) {
+    .ci-header__inner {
+      flex-direction: column-reverse;
+      height: auto;
+      padding-block: 14px;
+      gap: 14px;
+    }
+    .ci-nav {
+      justify-content: center;
+      gap: 20px 24px;
+    }
+    .ci-logo {
+      align-self: center;
+    }
+  }
+
+  /* ≤430px: enlaces de nav a 12px */
+  @media (max-width: 430px) {
+    .ci-nav__link {
+      font-size: 12px;
+    }
+  }
+</style>

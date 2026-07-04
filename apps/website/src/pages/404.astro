@@ -1,0 +1,82 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import CircularArrow from '../components/CircularArrow.astro';
+---
+
+<BaseLayout title="Página no encontrada — CI Quality Group">
+  <main class="ci-404">
+    <div class="ci-container ci-404__inner">
+      <span class="ci-404__tile">
+        <CircularArrow size={28} color="#FFFFFF" strokeWidth={2.3} />
+      </span>
+      <p class="ci-404__code">Error 404</p>
+      <h1 class="ci-404__title">No encontramos esta página</h1>
+      <p class="ci-404__lead">
+        Puede que el enlace haya cambiado. Volvamos al inicio para seguir explorando.
+      </p>
+      <a class="ci-404__cta" href="/">← Volver al inicio</a>
+    </div>
+  </main>
+</BaseLayout>
+
+<style>
+  .ci-404 {
+    display: flex;
+    align-items: center;
+    min-height: 100vh;
+    background: var(--graphite);
+  }
+  .ci-404__inner {
+    text-align: center;
+    padding-block: 80px;
+  }
+  .ci-404__tile {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 56px;
+    height: 56px;
+    border-radius: 12px;
+    background: var(--ci-green);
+    box-shadow: 0 4px 14px rgba(58, 140, 47, 0.3);
+    margin-bottom: 28px;
+  }
+  .ci-404__code {
+    margin: 0;
+    font-size: 13px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--green-light);
+  }
+  .ci-404__title {
+    margin: 14px 0 0;
+    font-size: clamp(30px, 5vw, 52px);
+    font-weight: bold;
+    color: var(--white);
+    letter-spacing: -0.015em;
+  }
+  .ci-404__lead {
+    margin: 18px auto 0;
+    font-size: 17px;
+    line-height: 1.6;
+    color: var(--on-dark-3);
+    max-width: 44ch;
+  }
+  .ci-404__cta {
+    display: inline-flex;
+    align-items: center;
+    margin-top: 34px;
+    padding: 16px 30px;
+    font-size: 15px;
+    font-weight: bold;
+    text-decoration: none;
+    border-radius: var(--r-btn);
+    background: var(--ci-green);
+    color: var(--white);
+    box-shadow: var(--sh-cta);
+    transition: background 0.2s ease;
+  }
+  .ci-404__cta:hover {
+    background: var(--green-deep);
+  }
+</style>
