@@ -2,7 +2,7 @@
 
 Landing corporativa **one-page** (Astro estático) de CI Quality Group S.A.S. — empresa
 industrial de Cartagena de Indias. Claim: *"Convertimos el residuo industrial en valor"*
-(economía circular). Sin login, sin backend. Deploy a **Cloudflare Pages**.
+(economía circular). Sin login, sin backend. Deploy a **Vercel** (DNS en Cloudflare).
 
 > Regla del monorepo: se trabaja **una app a la vez**. Aquí solo `apps/website`.
 > No tocar `apps/chatbot` (está en producción).
@@ -84,8 +84,15 @@ Header sticky · Hero (video de fondo) · Líneas de negocio (3) · Economía ci
 | `PUBLIC_SITE_URL` | URL pública (canonical / OG). Default `https://ci-quality-group.com` |
 | `PUBLIC_CONTACT_EMAIL` | Correo de contacto mostrado. Placeholder `contacto@ci-quality-group.com` |
 
-## Deploy (Cloudflare Pages)
+## Deploy (Vercel)
 
-- Build command: `pnpm install && pnpm --filter website build`
-- Output directory: `apps/website/dist`
-- Framework preset: **None** (Astro estático); root del repo (monorepo pnpm).
+Se despliega en **Vercel** (unificado con el chatbot), NO en Cloudflare. Cloudflare solo
+gestiona el DNS de `ci-quality-group.com` (nameservers kai/maya.ns.cloudflare.com).
+
+- Proyecto Vercel propio, **Root Directory = `apps/website`** (igual que el chatbot usa
+  `apps/chatbot`). Framework: **Astro** (estático, sin adapter). Config en `vercel.json`.
+- Build: `pnpm run build` (= `astro build`) → output `dist`. Vercel resuelve el workspace
+  pnpm desde la raíz automáticamente.
+- Dominios: apex `ci-quality-group.com` + `www.` en ESTE proyecto. El chatbot conserva
+  solo `bot.ci-quality-group.com`.
+- `PUBLIC_SITE_URL=https://ci-quality-group.com` como env var del proyecto.
