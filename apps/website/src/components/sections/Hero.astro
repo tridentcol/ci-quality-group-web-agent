@@ -7,17 +7,17 @@ const stats = [
 ---
 
 <section class="ci-hero" id="top">
-  <!-- Fondo de video (PENDIENTE de entrega por el cliente).
-       Cuando exista, coloca hero.mp4 / hero.webm y hero-poster.jpg en /public/videos.
-       El poster SVG sirve de respaldo mientras tanto y el fondo grafito da legibilidad. -->
+  <!-- Fondo de video de la operación (loop, sin audio). El poster (primer frame)
+       se ve al instante mientras carga y en navegadores que bloqueen el autoplay.
+       El overlay oscuro encima garantiza la legibilidad del texto. -->
   <video
     class="ci-hero__video"
     autoplay
     muted
     loop
     playsinline
-    preload="none"
-    poster="/videos/hero-poster.svg"
+    preload="auto"
+    poster="/videos/hero-poster.jpg"
   >
     <source src="/videos/hero.webm" type="video/webm" />
     <source src="/videos/hero.mp4" type="video/mp4" />
