@@ -1,0 +1,23 @@
+---
+import Page from '../layouts/Page.astro';
+import PageHero from '../components/PageHero.astro';
+import Lineas from '../components/sections/Lineas.astro';
+---
+
+<Page
+  title="Líneas de negocio — CI Quality Group"
+  description="Manufactura de lámina, valorización de residuos y servicios ambientales: tres unidades, un mismo ciclo de valor."
+>
+  <PageHero
+    eyebrow="Líneas de negocio"
+    title="Tres unidades, un mismo ciclo de valor"
+    tagline="Manufactura, valorización y servicios ambientales — integradas bajo un mismo estándar de economía circular."
+    breadcrumb={[
+      { label: 'Inicio', href: '/' },
+      { label: 'Líneas', href: '/lineas' },
+    ]}
+    media={{ label: 'foto / video de la operación' }}
+    cta={{ label: 'Contáctanos', href: '/contacto' }}
+  />
+  <Lineas hideHeading />
+</Page>

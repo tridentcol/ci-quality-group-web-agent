@@ -1,0 +1,23 @@
+---
+import Page from '../layouts/Page.astro';
+import PageHero from '../components/PageHero.astro';
+import Clientes from '../components/sections/Clientes.astro';
+---
+
+<Page
+  title="Clientes y referencias — CI Quality Group"
+  description="Grandes clientes de industria, energía y contratistas EPC que confían en CI Quality Group."
+>
+  <PageHero
+    eyebrow="Referencias"
+    title="Clientes que confían en nosotros"
+    tagline="Trabajamos con grandes clientes de industria, energía y contratistas EPC, con estándares técnicos y trazabilidad."
+    breadcrumb={[
+      { label: 'Inicio', href: '/' },
+      { label: 'Clientes', href: '/clientes' },
+    ]}
+    media={{ label: 'foto de la operación con clientes' }}
+    cta={{ label: 'Trabajemos juntos', href: '/contacto' }}
+  />
+  <Clientes />
+</Page>

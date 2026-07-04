@@ -1,0 +1,170 @@
+---
+/**
+ * Portal de la portada: referencias breves que redirigen a cada subpágina.
+ * La home solo presenta; el contenido vive en las subpáginas.
+ */
+const items = [
+  {
+    eyebrow: '01 · 02 · 03',
+    title: 'Líneas de negocio',
+    body: 'Manufactura de lámina, valorización de residuos y servicios ambientales.',
+    href: '/lineas',
+  },
+  {
+    eyebrow: 'El ciclo',
+    title: 'Economía circular',
+    body: 'Producir, valorizar y gestionar: el ciclo que cierra el residuo.',
+    href: '/economia-circular',
+  },
+  {
+    eyebrow: 'La empresa',
+    title: 'Quiénes somos',
+    body: 'Una empresa industrial de Cartagena de Indias, con enfoque B2B.',
+    href: '/nosotros',
+  },
+  {
+    eyebrow: 'Referencias',
+    title: 'Clientes',
+    body: 'Grandes clientes de industria, energía y contratistas EPC.',
+    href: '/clientes',
+  },
+  {
+    eyebrow: 'Hablemos',
+    title: 'Contacto',
+    body: 'Cuéntenos su necesidad y le respondemos con una propuesta técnica.',
+    href: '/contacto',
+  },
+];
+---
+
+<section class="ci-portal" id="explora">
+  <div class="ci-container">
+    <div class="ci-portal__head">
+      <span class="ci-badge">Explora</span>
+      <h2 class="ci-portal__title">Todo lo que hacemos, en un solo lugar</h2>
+      <p class="ci-portal__intro">
+        Convertimos el residuo industrial en valor. Elige por dónde empezar.
+      </p>
+    </div>
+
+    <div class="ci-portal__grid">
+      {
+        items.map((it) => (
+          <a class="ci-portal__card" href={it.href}>
+            <span class="ci-portal__card-eyebrow">{it.eyebrow}</span>
+            <span class="ci-portal__card-title">{it.title}</span>
+            <span class="ci-portal__card-body">{it.body}</span>
+            <span class="ci-portal__card-more">Ver más →</span>
+          </a>
+        ))
+      }
+    </div>
+  </div>
+</section>
+
+<style>
+  .ci-portal {
+    padding-block: 96px;
+  }
+
+  .ci-portal__head {
+    max-width: 640px;
+    margin-bottom: 44px;
+  }
+  .ci-badge {
+    display: inline-block;
+    background: var(--ci-green);
+    color: var(--white);
+    font-size: 12.5px;
+    font-weight: bold;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    padding: 7px 16px;
+    border-radius: var(--r-badge);
+  }
+  .ci-portal__title {
+    margin: 20px 0 0;
+    font-size: clamp(28px, 4vw, 44px);
+    line-height: 1.1;
+    font-weight: bold;
+    color: var(--graphite);
+    letter-spacing: -0.01em;
+  }
+  .ci-portal__intro {
+    margin: 16px 0 0;
+    font-size: 16.5px;
+    line-height: 1.6;
+    color: var(--text-muted);
+  }
+
+  .ci-portal__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 18px;
+  }
+
+  .ci-portal__card {
+    display: flex;
+    flex-direction: column;
+    background: var(--white);
+    border: 1px solid var(--border-light);
+    border-radius: var(--r-card);
+    padding: 28px;
+    text-decoration: none;
+    box-shadow: var(--sh-card);
+    transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+  }
+  .ci-portal__card:hover {
+    transform: translateY(-6px);
+    box-shadow: var(--sh-card-hover);
+    border-color: var(--ci-green);
+  }
+  .ci-portal__card-eyebrow {
+    font-size: 12px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--on-dark-1);
+  }
+  .ci-portal__card-title {
+    margin-top: 10px;
+    font-size: 22px;
+    font-weight: bold;
+    color: var(--graphite);
+    line-height: 1.2;
+  }
+  .ci-portal__card-body {
+    margin-top: 12px;
+    font-size: 15px;
+    line-height: 1.6;
+    color: var(--text-muted);
+    flex: 1;
+  }
+  .ci-portal__card-more {
+    margin-top: 20px;
+    font-size: 14px;
+    font-weight: bold;
+    color: var(--green-deep);
+    transition: transform 0.2s ease;
+  }
+  .ci-portal__card:hover .ci-portal__card-more {
+    transform: translateX(4px);
+  }
+
+  @media (max-width: 640px) {
+    .ci-portal {
+      padding-block: 52px;
+    }
+    .ci-portal__head {
+      margin-bottom: 28px;
+    }
+    .ci-portal__intro {
+      font-size: 15px;
+    }
+    .ci-portal__card {
+      padding: 22px;
+    }
+    .ci-portal__card-title {
+      font-size: 20px;
+    }
+  }
+</style>

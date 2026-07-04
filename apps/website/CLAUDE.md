@@ -33,14 +33,17 @@ Fuente del sistema: **Arial / Helvetica / sans-serif** (no requiere web fonts).
 
 ## Arquitectura (híbrida: portada + subpáginas)
 
-La portada `/` es la landing que "vende" (hero video + resúmenes). Cada línea de
-negocio y las secciones clave tienen **subpágina propia** con hero/media propio,
-mejor SEO y más contenido.
+La portada `/` es **solo un portal**: hero (video) + tarjetas de referencia que
+redirigen. **Todo el contenido vive en subpáginas** (una por sección). Enlaces
+siempre limpios (sin fragmentos `#`).
 
-**Rutas:**
-- `/` — portada (index.astro; ensambla las secciones)
+**Rutas (10 páginas estáticas):**
+- `/` — portada: `Hero` + `Portal` (tarjetas → subpáginas) + footer
+- `/lineas` — índice de líneas (PageHero + `Lineas` con `hideHeading`)
 - `/manufactura`, `/valorizacion`, `/servicios-ambientales` — detalle de línea
-  (ruta dinámica `src/pages/[linea].astro` + `getStaticPaths` desde los datos)
+  (ruta dinámica `src/pages/[linea].astro` + `getStaticPaths` desde `data/lineas.ts`)
+- `/economia-circular` — diagrama del ciclo (PageHero + `EconomiaCircular` `hideHeading`)
+- `/clientes` — referencias (PageHero + `Clientes`)
 - `/nosotros`, `/contacto` — páginas dedicadas
 - `/404`
 

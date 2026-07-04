@@ -1,0 +1,23 @@
+---
+import Page from '../layouts/Page.astro';
+import PageHero from '../components/PageHero.astro';
+import EconomiaCircular from '../components/sections/EconomiaCircular.astro';
+---
+
+<Page
+  title="Economía circular — CI Quality Group"
+  description="El ciclo que cierra el residuo: producir, valorizar y gestionar, de forma continua y sin desperdicio."
+>
+  <PageHero
+    eyebrow="Economía circular real"
+    title="El ciclo que cierra el residuo"
+    tagline="Un flujo continuo, no una línea recta: lo que se produce se aprovecha, y lo que no, se gestiona con responsabilidad."
+    breadcrumb={[
+      { label: 'Inicio', href: '/' },
+      { label: 'Economía circular', href: '/economia-circular' },
+    ]}
+    media={{ label: 'foto / video del ciclo productivo' }}
+    cta={{ label: 'Contáctanos', href: '/contacto' }}
+  />
+  <EconomiaCircular hideHeading />
+</Page>
