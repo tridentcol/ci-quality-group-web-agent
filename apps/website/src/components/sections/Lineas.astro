@@ -1,30 +1,5 @@
 ---
-const cards = [
-  {
-    num: '01',
-    tag: 'Manufactura',
-    title: 'Lámina arquitectónica trapezoidal',
-    body:
-      'Producción de lámina en acero PPGL galvalume, conformada en frío desde bobina para cubiertas y fachadas de alto desempeño.',
-    chips: ['Acero PPGL', 'Galvalume', 'Conformado en frío'],
-  },
-  {
-    num: '02',
-    tag: 'Valorización',
-    title: 'Valorización y chatarra',
-    body:
-      'Aprovechamiento de residuos industriales y comercialización moderna de chatarra, devolviendo el material al ciclo productivo.',
-    chips: ['Aprovechamiento', 'Chatarra', 'Trazabilidad'],
-  },
-  {
-    num: '03',
-    tag: 'Ambiental',
-    title: 'Servicios ambientales',
-    body:
-      'Recolección, transporte y disposición final de residuos ordinarios, RESPEL y RCD con gestión autorizada y responsable.',
-    chips: ['Ordinarios', 'RESPEL', 'RCD'],
-  },
-];
+import { lineas } from '../../data/lineas';
 ---
 
 <section class="ci-lineas" id="lineas">
@@ -42,20 +17,21 @@ const cards = [
 
     <div class="ci-lineas__grid">
       {
-        cards.map((c) => (
-          <article class="ci-card">
+        lineas.map((c) => (
+          <a class="ci-card" href={`/${c.slug}`}>
             <div class="ci-card__top">
               <span class="ci-card__num">{c.num}</span>
               <span class="ci-card__tag">{c.tag}</span>
             </div>
             <h3 class="ci-card__title">{c.title}</h3>
-            <p class="ci-card__body">{c.body}</p>
+            <p class="ci-card__body">{c.summary}</p>
             <div class="ci-card__foot">
               {c.chips.map((chip) => (
                 <span class="ci-chip">{chip}</span>
               ))}
             </div>
-          </article>
+            <span class="ci-card__more">Ver más →</span>
+          </a>
         ))
       }
     </div>
@@ -114,7 +90,7 @@ const cards = [
     gap: 26px;
   }
 
-  /* Tarjeta */
+  /* Tarjeta (enlace a la subpágina) */
   .ci-card {
     display: flex;
     flex-direction: column;
@@ -123,12 +99,24 @@ const cards = [
     border-radius: var(--r-card);
     padding: 32px;
     box-shadow: var(--sh-card);
+    text-decoration: none;
+    color: inherit;
     transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
   }
   .ci-card:hover {
     transform: translateY(-6px);
     box-shadow: var(--sh-card-hover);
     border-color: var(--ci-green);
+  }
+  .ci-card__more {
+    margin-top: 18px;
+    font-size: 14px;
+    font-weight: bold;
+    color: var(--green-deep);
+    transition: transform 0.2s ease;
+  }
+  .ci-card:hover .ci-card__more {
+    transform: translateX(3px);
   }
 
   .ci-card__top {

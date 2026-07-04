@@ -1,0 +1,250 @@
+---
+import Page from '../layouts/Page.astro';
+import PageHero from '../components/PageHero.astro';
+
+const stats = [
+  { value: 'B2B', label: 'Enfoque industrial' },
+  { value: '100%', label: 'Disposición trazable' },
+  { value: '3', label: 'Líneas integradas' },
+];
+
+const valores = [
+  {
+    title: 'Economía circular real',
+    body: 'Convertimos lo que otros descartan en materia prima, producto y valor medible. Sin discursos vacíos.',
+  },
+  {
+    title: 'Trazabilidad total',
+    body: 'Seguimiento del material y de los residuos de principio a fin, con documentación verificable.',
+  },
+  {
+    title: 'Estándares técnicos',
+    body: 'Operamos con exigencia para grandes clientes de industria, energía y contratistas EPC.',
+  },
+  {
+    title: 'Compromiso ambiental',
+    body: 'Responsabilidad ambiental demostrable —sin greenwashing— en cada línea de negocio.',
+  },
+];
+---
+
+<Page
+  title="Quiénes somos — CI Quality Group"
+  description="CI Quality Group S.A.S. — empresa industrial de Cartagena de Indias: manufactura de lámina, valorización de residuos y servicios ambientales bajo economía circular."
+>
+  <PageHero
+    eyebrow="Quiénes somos"
+    title="Una empresa industrial de Cartagena de Indias"
+    tagline="Integramos manufactura, valorización y gestión ambiental bajo una sola lógica de economía circular."
+    breadcrumb={[
+      { label: 'Inicio', href: '/' },
+      { label: 'Quiénes somos', href: '/nosotros' },
+    ]}
+    media={{ label: 'foto de planta / equipo' }}
+    cta={{ label: 'Contáctanos', href: '/contacto' }}
+  />
+
+  <!-- Historia / propósito -->
+  <section class="ci-sec">
+    <div class="ci-container ci-about2">
+      <div class="ci-about2__text">
+        <p class="ci-about2__p">
+          CI Quality Group S.A.S. integra manufactura de lámina arquitectónica, valorización de
+          residuos y servicios ambientales bajo una lógica de economía circular. Convertimos lo que
+          otros descartan en materia prima, producto y valor medible.
+        </p>
+        <p class="ci-about2__p">
+          Operamos con estándares técnicos exigentes y trazabilidad para grandes clientes de
+          industria, energía y contratistas EPC, con un compromiso ambiental verificable —sin
+          greenwashing.
+        </p>
+      </div>
+      <div class="ci-about2__stats">
+        {
+          stats.map((s) => (
+            <div class="ci-about2__stat">
+              <div class="ci-about2__stat-value">{s.value}</div>
+              <div class="ci-about2__stat-label">{s.label}</div>
+            </div>
+          ))
+        }
+      </div>
+    </div>
+  </section>
+
+  <!-- Valores -->
+  <section class="ci-sec ci-sec--pale">
+    <div class="ci-container">
+      <span class="ci-badge">Cómo trabajamos</span>
+      <h2 class="ci-about2__h2">Nuestro compromiso</h2>
+      <div class="ci-about2__grid">
+        {
+          valores.map((v) => (
+            <article class="ci-val">
+              <h3 class="ci-val__title">{v.title}</h3>
+              <p class="ci-val__body">{v.body}</p>
+            </article>
+          ))
+        }
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="ci-cta-band">
+    <div class="ci-container ci-cta-inner">
+      <h2 class="ci-cta-title">¿Trabajamos juntos?</h2>
+      <a class="ci-cta-btn" href="/contacto">Contáctanos</a>
+    </div>
+  </section>
+</Page>
+
+<style>
+  .ci-sec {
+    padding-block: 84px;
+  }
+  .ci-sec--pale {
+    background: var(--green-pale);
+    border-top: 1px solid var(--border-light);
+    border-bottom: 1px solid var(--border-light);
+  }
+
+  .ci-about2 {
+    display: grid;
+    grid-template-columns: 1.7fr 1fr;
+    gap: 48px;
+    align-items: start;
+  }
+  .ci-about2__p {
+    margin: 0;
+    font-size: 16.5px;
+    line-height: 1.75;
+    color: var(--text-muted);
+  }
+  .ci-about2__p + .ci-about2__p {
+    margin-top: 18px;
+  }
+  .ci-about2__stats {
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+    border-left: 3px solid var(--ci-green);
+    padding-left: 24px;
+  }
+  .ci-about2__stat-value {
+    font-size: 34px;
+    font-weight: bold;
+    color: var(--ci-green);
+    line-height: 1;
+  }
+  .ci-about2__stat-label {
+    font-size: 13.5px;
+    color: var(--text-muted);
+    margin-top: 5px;
+  }
+
+  .ci-badge {
+    display: inline-block;
+    background: var(--ci-green);
+    color: var(--white);
+    font-size: 12.5px;
+    font-weight: bold;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    padding: 7px 16px;
+    border-radius: var(--r-badge);
+  }
+  .ci-about2__h2 {
+    margin: 20px 0 0;
+    font-size: clamp(24px, 3vw, 36px);
+    font-weight: bold;
+    color: var(--graphite);
+    letter-spacing: -0.01em;
+  }
+  .ci-about2__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 18px;
+    margin-top: 32px;
+  }
+  .ci-val {
+    background: var(--white);
+    border: 1px solid var(--border-light);
+    border-radius: var(--r-card);
+    padding: 24px;
+    box-shadow: var(--sh-card);
+  }
+  .ci-val__title {
+    margin: 0;
+    font-size: 17.5px;
+    font-weight: bold;
+    color: var(--graphite);
+  }
+  .ci-val__body {
+    margin: 10px 0 0;
+    font-size: 15px;
+    line-height: 1.6;
+    color: var(--text-muted);
+  }
+
+  .ci-cta-band {
+    background: var(--ci-green);
+    padding-block: 64px;
+  }
+  .ci-cta-inner {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+  }
+  .ci-cta-title {
+    margin: 0;
+    font-size: clamp(24px, 3.4vw, 38px);
+    font-weight: bold;
+    color: var(--white);
+    letter-spacing: -0.01em;
+  }
+  .ci-cta-btn {
+    display: inline-flex;
+    padding: 16px 34px;
+    font-size: 15px;
+    font-weight: bold;
+    text-decoration: none;
+    border-radius: var(--r-btn);
+    background: var(--white);
+    color: var(--green-deep);
+    transition: background 0.2s ease, color 0.2s ease;
+  }
+  .ci-cta-btn:hover {
+    background: var(--graphite);
+    color: var(--white);
+  }
+
+  @media (max-width: 900px) {
+    .ci-about2 {
+      grid-template-columns: 1fr;
+      gap: 28px;
+    }
+    .ci-about2__stats {
+      flex-direction: row;
+      flex-wrap: wrap;
+      gap: 24px 40px;
+      border-left: none;
+      padding-left: 0;
+      border-top: 3px solid var(--ci-green);
+      padding-top: 22px;
+    }
+  }
+  @media (max-width: 640px) {
+    .ci-sec {
+      padding-block: 52px;
+    }
+    .ci-about2__p {
+      font-size: 15.5px;
+    }
+    .ci-cta-band {
+      padding-block: 48px;
+    }
+  }
+</style>

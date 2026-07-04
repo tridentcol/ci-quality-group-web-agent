@@ -1,0 +1,229 @@
+---
+/**
+ * Hero de subpágina: media de fondo (imagen/video real o placeholder) + overlay
+ * + migas + título + tagline + CTA. Media pendiente del cliente → placeholder.
+ */
+interface Props {
+  eyebrow?: string;
+  title: string;
+  tagline?: string;
+  breadcrumb?: { label: string; href: string }[];
+  media?: { label?: string; image?: string; video?: string; poster?: string };
+  cta?: { label: string; href: string };
+}
+const { eyebrow, title, tagline, breadcrumb = [], media, cta } = Astro.props;
+const hasRealMedia = Boolean(media?.image || media?.video);
+---
+
+<section class="ci-phero">
+  {
+    media?.video ? (
+      <video
+        class="ci-phero__media"
+        autoplay
+        muted
+        loop
+        playsinline
+        preload="auto"
+        poster={media.poster}
+      >
+        <source src={media.video} type="video/mp4" />
+      </video>
+    ) : media?.image ? (
+      <img class="ci-phero__media" src={media.image} alt="" />
+    ) : (
+      <div class="ci-phero__placeholder" aria-hidden="true">
+        <span class="ci-phero__placeholder-label">{media?.label ?? 'imagen de la sección'}</span>
+      </div>
+    )
+  }
+
+  <div class={`ci-phero__overlay${hasRealMedia ? '' : ' ci-phero__overlay--ph'}`}></div>
+  <span class="ci-phero__bar" aria-hidden="true"></span>
+
+  <div class="ci-container ci-phero__content">
+    {
+      breadcrumb.length > 0 && (
+        <nav class="ci-phero__crumbs" aria-label="Migas de pan">
+          {breadcrumb.map((c, i) => (
+            <>
+              {i > 0 && <span class="ci-phero__crumb-sep" aria-hidden="true">/</span>}
+              <a href={c.href}>{c.label}</a>
+            </>
+          ))}
+        </nav>
+      )
+    }
+    {eyebrow && <span class="ci-phero__eyebrow">{eyebrow}</span>}
+    <h1 class="ci-phero__title">{title}</h1>
+    {tagline && <p class="ci-phero__tagline">{tagline}</p>}
+    {
+      cta && (
+        <a class="ci-phero__cta" href={cta.href}>
+          {cta.label}
+        </a>
+      )
+    }
+  </div>
+</section>
+
+<style>
+  .ci-phero {
+    position: relative;
+    overflow: hidden;
+    background: var(--graphite);
+    min-height: 56vh;
+    display: flex;
+    align-items: flex-end;
+  }
+
+  .ci-phero__media {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    z-index: 0;
+  }
+
+  /* Placeholder de media (mientras no haya foto/video real) */
+  .ci-phero__placeholder {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    background:
+      radial-gradient(circle at 78% 24%, rgba(58, 140, 47, 0.28), transparent 60%),
+      repeating-linear-gradient(115deg, #141414 0px, #141414 26px, #101010 26px, #101010 52px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .ci-phero__placeholder-label {
+    font-family: monospace;
+    font-size: 13px;
+    color: #9aa894;
+    background: rgba(0, 0, 0, 0.45);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    padding: 8px 14px;
+    border-radius: 6px;
+  }
+
+  .ci-phero__overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    background: linear-gradient(
+      90deg,
+      rgba(13, 13, 13, 0.9) 0%,
+      rgba(13, 13, 13, 0.72) 46%,
+      rgba(13, 13, 13, 0.45) 100%
+    );
+  }
+  /* Con placeholder, más translúcido para que se vea la textura. */
+  .ci-phero__overlay--ph {
+    background: linear-gradient(
+      90deg,
+      rgba(13, 13, 13, 0.82) 0%,
+      rgba(13, 13, 13, 0.55) 60%,
+      rgba(13, 13, 13, 0.35) 100%
+    );
+  }
+
+  .ci-phero__bar {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 6px;
+    z-index: 2;
+    background: var(--ci-green);
+  }
+
+  .ci-phero__content {
+    position: relative;
+    z-index: 3;
+    padding-block: 56px 60px;
+    padding-top: 120px;
+  }
+
+  .ci-phero__crumbs {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    font-size: 12.5px;
+    letter-spacing: 0.04em;
+    margin-bottom: 18px;
+  }
+  .ci-phero__crumbs a {
+    color: var(--on-dark-3);
+    text-decoration: none;
+  }
+  .ci-phero__crumbs a:last-child {
+    color: var(--green-light);
+  }
+  .ci-phero__crumbs a:hover {
+    color: var(--white);
+  }
+  .ci-phero__crumb-sep {
+    color: var(--on-dark-1);
+  }
+
+  .ci-phero__eyebrow {
+    display: inline-block;
+    font-size: 12.5px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--green-light);
+    margin-bottom: 14px;
+  }
+
+  .ci-phero__title {
+    margin: 0;
+    font-size: clamp(30px, 5vw, 56px);
+    line-height: 1.06;
+    font-weight: bold;
+    color: var(--white);
+    letter-spacing: -0.015em;
+    max-width: 20ch;
+  }
+
+  .ci-phero__tagline {
+    margin: 18px 0 0;
+    font-size: clamp(16px, 1.6vw, 20px);
+    line-height: 1.55;
+    color: var(--on-dark-3);
+    max-width: 58ch;
+  }
+
+  .ci-phero__cta {
+    display: inline-flex;
+    align-items: center;
+    margin-top: 30px;
+    padding: 15px 28px;
+    font-size: 15px;
+    font-weight: bold;
+    text-decoration: none;
+    border-radius: var(--r-btn);
+    color: var(--white);
+    background: var(--ci-green);
+    box-shadow: var(--sh-cta);
+    transition: background 0.2s ease;
+  }
+  .ci-phero__cta:hover {
+    background: var(--green-deep);
+  }
+
+  @media (max-width: 640px) {
+    .ci-phero {
+      min-height: 46vh;
+    }
+    .ci-phero__content {
+      padding-top: 96px;
+      padding-bottom: 40px;
+    }
+    .ci-phero__tagline {
+      font-size: 15px;
+    }
+  }
+</style>
