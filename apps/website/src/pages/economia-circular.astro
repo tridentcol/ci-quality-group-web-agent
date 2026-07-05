@@ -1,23 +1,325 @@
 ---
 import Page from '../layouts/Page.astro';
-import PageHero from '../components/PageHero.astro';
-import EconomiaCircular from '../components/sections/EconomiaCircular.astro';
+
+const steps = [
+  { n: '01', title: 'Producir', desc: 'Lámina desde bobina de acero.', pos: 'left:192px;top:7px;' },
+  { n: '02', title: 'Valorizar', desc: 'Residuos y chatarra como recurso.', pos: 'left:352px;top:285px;' },
+  { n: '03', title: 'Gestionar', desc: 'Disposición final trazable.', pos: 'left:32px;top:285px;' },
+];
 ---
 
 <Page
   title="Economía circular — CI Quality Group"
   description="El ciclo que cierra el residuo: producir, valorizar y gestionar, de forma continua y sin desperdicio."
 >
-  <PageHero
-    eyebrow="Economía circular real"
-    title="El ciclo que cierra el residuo"
-    tagline="Un flujo continuo, no una línea recta: lo que se produce se aprovecha, y lo que no, se gestiona con responsabilidad."
-    breadcrumb={[
-      { label: 'Inicio', href: '/' },
-      { label: 'Economía circular', href: '/economia-circular' },
-    ]}
-    media={{ label: 'foto / video del ciclo productivo', image: '/images/circular-hero.jpg' }}
-    cta={{ label: 'Contáctanos', href: '/contacto' }}
-  />
-  <EconomiaCircular hideHeading />
+  <section class="ci-eco">
+    <!-- Video de fondo de la operación (aérea), a toda la sección -->
+    <video
+      class="ci-eco__video"
+      autoplay
+      muted
+      loop
+      playsinline
+      preload="auto"
+      poster="/videos/circular-poster.jpg"
+    >
+      <source src="/videos/circular.webm" type="video/webm" />
+      <source src="/videos/circular.mp4" type="video/mp4" />
+    </video>
+    <div class="ci-eco__overlay"></div>
+    <span class="ci-eco__bar" aria-hidden="true"></span>
+
+    <div class="ci-container ci-eco__grid">
+      <div class="ci-eco__text">
+        <nav class="ci-eco__crumbs" aria-label="Migas de pan">
+          <a href="/">Inicio</a>
+          <span aria-hidden="true">/</span>
+          <a href="/economia-circular">Economía circular</a>
+        </nav>
+        <h1 class="ci-eco__title">El ciclo que cierra el residuo</h1>
+        <p class="ci-eco__lead">
+          Un flujo continuo, no una línea recta. Lo que se produce se aprovecha, y lo que no,
+          se gestiona con responsabilidad.
+        </p>
+        <a class="ci-eco__cta" href="/contacto">Contáctanos</a>
+      </div>
+
+      <div class="ci-eco__diagram">
+        <!-- Escritorio: anillo -->
+        <div class="ci-ring" role="img" aria-label="Ciclo: producir, valorizar y gestionar, de forma continua.">
+          <svg viewBox="0 0 500 500" width="100%" height="100%" class="ci-ring__svg" aria-hidden="true">
+            <defs>
+              <marker id="ciArrow" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M0 0 L10 5 L0 10 z" fill="#3A8C2F"></path>
+              </marker>
+              <filter id="ciGlow" x="-30%" y="-30%" width="160%" height="160%">
+                <feGaussianBlur stdDeviation="2.6" result="b"></feGaussianBlur>
+                <feMerge><feMergeNode in="b"></feMergeNode><feMergeNode in="SourceGraphic"></feMergeNode></feMerge>
+              </filter>
+            </defs>
+            <circle cx="250" cy="250" r="185" fill="none" stroke="#2c4a24" stroke-width="1.5" stroke-dasharray="1 9" stroke-linecap="round"></circle>
+            <g filter="url(#ciGlow)">
+              <path d="M331 84 A185 185 0 0 1 435 263" fill="none" stroke="#3A8C2F" stroke-width="2.6" marker-end="url(#ciArrow)"></path>
+              <path d="M353 403 A185 185 0 0 1 147 403" fill="none" stroke="#3A8C2F" stroke-width="2.6" marker-end="url(#ciArrow)"></path>
+              <path d="M66 263 A185 185 0 0 1 169 84" fill="none" stroke="#3A8C2F" stroke-width="2.6" marker-end="url(#ciArrow)"></path>
+            </g>
+          </svg>
+          {
+            steps.map((s) => (
+              <div class="ci-ring__node" style={s.pos}>
+                <div class="ci-ring__node-circle">
+                  <span class="ci-ring__node-num">{s.n}</span>
+                </div>
+                <h4 class="ci-ring__node-title">{s.title}</h4>
+                <p class="ci-ring__node-desc">{s.desc}</p>
+              </div>
+            ))
+          }
+        </div>
+
+        <!-- Móvil: lista apilada -->
+        <div class="ci-stack">
+          {
+            steps.map((s, i) => (
+              <>
+                {i > 0 && <div class="ci-stack__connector" aria-hidden="true" />}
+                <div class="ci-stack__item">
+                  <div class="ci-stack__circle"><span class="ci-stack__num">{s.n}</span></div>
+                  <div>
+                    <h4 class="ci-stack__title">{s.title}</h4>
+                    <p class="ci-stack__desc">{s.desc}</p>
+                  </div>
+                </div>
+              </>
+            ))
+          }
+        </div>
+      </div>
+    </div>
+  </section>
 </Page>
+
+<style>
+  .ci-eco {
+    position: relative;
+    overflow: hidden;
+    background: var(--graphite);
+    min-height: 100vh;
+    min-height: 100svh;
+    display: flex;
+    align-items: center;
+  }
+  .ci-eco__video {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    z-index: 0;
+  }
+  .ci-eco__overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    background:
+      linear-gradient(90deg, rgba(13, 13, 13, 0.9) 0%, rgba(13, 13, 13, 0.72) 42%, rgba(13, 13, 13, 0.45) 72%, rgba(13, 13, 13, 0.55) 100%);
+  }
+  .ci-eco__bar {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 6px;
+    z-index: 2;
+    background: var(--ci-green);
+  }
+
+  .ci-eco__grid {
+    position: relative;
+    z-index: 3;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
+    align-items: center;
+    padding-block: 110px 60px;
+  }
+
+  /* Texto (izquierda) */
+  .ci-eco__crumbs {
+    display: flex;
+    gap: 8px;
+    font-size: 12.5px;
+    margin-bottom: 18px;
+  }
+  .ci-eco__crumbs a {
+    color: var(--on-dark-3);
+    text-decoration: none;
+  }
+  .ci-eco__crumbs a:last-child {
+    color: var(--green-light);
+  }
+  .ci-eco__crumbs span {
+    color: var(--on-dark-1);
+  }
+  .ci-eco__title {
+    margin: 0;
+    font-size: clamp(32px, 4.6vw, 56px);
+    line-height: 1.05;
+    font-weight: bold;
+    color: var(--white);
+    letter-spacing: -0.015em;
+    max-width: 15ch;
+  }
+  .ci-eco__lead {
+    margin: 20px 0 0;
+    font-size: clamp(16px, 1.5vw, 20px);
+    line-height: 1.6;
+    color: var(--on-dark-3);
+    max-width: 46ch;
+  }
+  .ci-eco__cta {
+    display: inline-flex;
+    margin-top: 30px;
+    padding: 15px 30px;
+    font-size: 15px;
+    font-weight: bold;
+    text-decoration: none;
+    border-radius: var(--r-btn);
+    color: var(--white);
+    background: var(--ci-green);
+    box-shadow: var(--sh-cta);
+    transition: background 0.2s ease;
+  }
+  .ci-eco__cta:hover {
+    background: var(--green-deep);
+  }
+
+  /* Diagrama (derecha) */
+  .ci-eco__diagram {
+    display: flex;
+    justify-content: center;
+  }
+  .ci-ring {
+    position: relative;
+    width: 500px;
+    height: 500px;
+    max-width: 100%;
+  }
+  .ci-ring__svg {
+    position: absolute;
+    inset: 0;
+  }
+  .ci-ring__node {
+    position: absolute;
+    width: 116px;
+    text-align: center;
+  }
+  .ci-ring__node-circle {
+    width: 116px;
+    height: 116px;
+    margin: 0 auto;
+    border-radius: 50%;
+    border: 2px solid var(--ci-green);
+    background: radial-gradient(circle, rgba(58, 140, 47, 0.32) 0%, rgba(13, 13, 13, 0.92) 78%);
+    box-shadow: 0 0 0 7px rgba(58, 140, 47, 0.06), 0 0 34px rgba(13, 13, 13, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .ci-ring__node-num {
+    font-size: 31px;
+    font-weight: bold;
+    color: var(--green-light);
+  }
+  .ci-ring__node-title {
+    margin: 14px 0 0;
+    font-size: 19px;
+    font-weight: bold;
+    color: var(--white);
+    text-shadow: 0 1px 6px rgba(0, 0, 0, 0.6);
+  }
+  .ci-ring__node-desc {
+    margin: 5px 0 0;
+    font-size: 13.5px;
+    line-height: 1.5;
+    color: var(--on-dark-3);
+    text-shadow: 0 1px 6px rgba(0, 0, 0, 0.7);
+  }
+
+  /* Lista apilada (móvil) */
+  .ci-stack {
+    display: none;
+    flex-direction: column;
+    max-width: 380px;
+    margin: 0 auto;
+    width: 100%;
+  }
+  .ci-stack__connector {
+    width: 2px;
+    height: 26px;
+    background: var(--ci-green);
+    margin: 0 auto;
+  }
+  .ci-stack__item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    width: 100%;
+    background: rgba(13, 13, 13, 0.55);
+    border: 1px solid rgba(58, 140, 47, 0.4);
+    border-radius: var(--r-card);
+    padding: 13px 15px;
+    backdrop-filter: blur(2px);
+  }
+  .ci-stack__circle {
+    flex: 0 0 auto;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    border: 2px solid var(--ci-green);
+    background: radial-gradient(circle, rgba(58, 140, 47, 0.25) 0%, #0d0d0d 80%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .ci-stack__num {
+    font-size: 18px;
+    font-weight: bold;
+    color: var(--green-light);
+  }
+  .ci-stack__title {
+    margin: 0;
+    font-size: 17px;
+    font-weight: bold;
+    color: var(--white);
+  }
+  .ci-stack__desc {
+    margin: 3px 0 0;
+    font-size: 13.5px;
+    line-height: 1.5;
+    color: var(--on-dark-3);
+  }
+
+  /* ≤900px: una columna, diagrama apilado */
+  @media (max-width: 900px) {
+    .ci-eco__grid {
+      grid-template-columns: 1fr;
+      gap: 34px;
+      padding-block: 96px 56px;
+    }
+    .ci-eco__overlay {
+      background: linear-gradient(
+        180deg,
+        rgba(13, 13, 13, 0.86) 0%,
+        rgba(13, 13, 13, 0.66) 45%,
+        rgba(13, 13, 13, 0.82) 100%
+      );
+    }
+    .ci-ring {
+      display: none;
+    }
+    .ci-stack {
+      display: flex;
+    }
+  }
+</style>
