@@ -1,6 +1,4 @@
 ---
-import CircularArrow from '../CircularArrow.astro';
-
 // Cada sección es su propia subpágina (enlaces limpios, sin fragmentos #).
 const nav = [
   { label: 'Líneas', href: '/lineas' },
@@ -41,9 +39,7 @@ const nav = [
         <span class="ci-logo__name">CI <span class="ci-logo__accent">QUALITY</span> GROUP</span>
         <span class="ci-logo__sub">S.A.S. · CARTAGENA</span>
       </span>
-      <span class="ci-logo__tile">
-        <CircularArrow size={26} color="#FFFFFF" strokeWidth={2.3} />
-      </span>
+      <img class="ci-logo__mark" src="/logo-icon.png" alt="CI Quality Group" width="57" height="46" />
     </a>
   </div>
 </header>
@@ -192,15 +188,10 @@ const nav = [
     white-space: nowrap;
   }
 
-  .ci-logo__tile {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 46px;
+  .ci-logo__mark {
     height: 46px;
-    border-radius: 9px;
-    background: var(--ci-green);
-    box-shadow: 0 4px 14px rgba(58, 140, 47, 0.3);
+    width: auto;
+    display: block;
     flex-shrink: 0;
   }
 
@@ -255,17 +246,19 @@ const nav = [
       background: var(--green-pale);
       color: var(--green-deep);
     }
-    /* Logo más compacto en móvil */
+    /* Logo más compacto en móvil (para que quepan hamburguesa + texto + ícono) */
+    .ci-logo {
+      gap: 9px;
+    }
     .ci-logo__name {
-      font-size: 18px;
+      font-size: 16px;
     }
     .ci-logo__sub {
-      font-size: 9px;
-      letter-spacing: 0.28em;
+      font-size: 8.5px;
+      letter-spacing: 0.22em;
     }
-    .ci-logo__tile {
-      width: 40px;
-      height: 40px;
+    .ci-logo__mark {
+      height: 33px;
     }
   }
 </style>
