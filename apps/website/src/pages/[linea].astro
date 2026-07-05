@@ -69,14 +69,20 @@ const otras = lineas.filter((l) => l.slug !== linea.slug);
   <section class="ci-sec">
     <div class="ci-container">
       <h2 class="ci-detail__h2">Galería</h2>
-      <p class="ci-detail__sub">Imágenes reales de la operación. <em>Pendientes de entrega por el cliente.</em></p>
+      <p class="ci-detail__sub">Imágenes de la operación.</p>
       <div class="ci-gallery">
         {
-          [0, 1, 2].map(() => (
-            <div class="ci-gallery__item" aria-hidden="true">
-              <span>foto / video</span>
-            </div>
-          ))
+          linea.gallery && linea.gallery.length > 0
+            ? linea.gallery.map((src) => (
+                <div class="ci-gallery__item ci-gallery__item--img">
+                  <img src={src} alt={`${linea.tag} — CI Quality Group`} loading="lazy" />
+                </div>
+              ))
+            : [0, 1, 2].map(() => (
+                <div class="ci-gallery__item" aria-hidden="true">
+                  <span>foto / video</span>
+                </div>
+              ))
         }
       </div>
     </div>
@@ -269,6 +275,16 @@ const otras = lineas.filter((l) => l.slug !== linea.slug);
     padding: 8px 14px;
     border-radius: var(--r-badge);
     border: 1px solid var(--border-light);
+  }
+  .ci-gallery__item--img {
+    background: none;
+    overflow: hidden;
+  }
+  .ci-gallery__item--img img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
   }
 
   /* Otras líneas */
