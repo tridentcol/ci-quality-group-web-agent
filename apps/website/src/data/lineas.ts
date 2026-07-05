@@ -18,14 +18,16 @@ export interface Linea {
   /** Puntos destacados / capacidades. */
   highlights: { title: string; body: string }[];
   chips: string[];
-  /** Media del hero de la subpágina (PENDIENTE: rutas reales del cliente). */
+  /** Media del hero de la subpágina. */
   media: {
-    /** Etiqueta del placeholder mientras no haya media real. */
+    /** Etiqueta del placeholder si no hay media real. */
     label: string;
     image?: string; // p.ej. '/images/manufactura-hero.jpg'
     video?: string; // p.ej. '/videos/manufactura.mp4'
     poster?: string;
   };
+  /** Fotos de la galería de la subpágina de detalle. */
+  gallery?: string[];
 }
 
 export const lineas: Linea[] = [
@@ -48,7 +50,8 @@ export const lineas: Linea[] = [
       { title: 'Estándar y trazabilidad', body: 'Producción controlada con trazabilidad del material de principio a fin.' },
     ],
     chips: ['Acero PPGL', 'Galvalume', 'Conformado en frío'],
-    media: { label: 'foto / video de producción de lámina' },
+    media: { label: 'foto / video de producción de lámina', image: '/images/manufactura-hero.jpg' },
+    gallery: ['/images/manufactura-1.jpg', '/images/manufactura-2.jpg', '/images/manufactura-3.jpg'],
   },
   {
     slug: 'valorizacion',
@@ -69,7 +72,8 @@ export const lineas: Linea[] = [
       { title: 'Enfoque industrial', body: 'Soluciones a la medida de grandes generadores de industria y energía.' },
     ],
     chips: ['Aprovechamiento', 'Chatarra', 'Trazabilidad'],
-    media: { label: 'foto / video de patio y valorización' },
+    media: { label: 'foto / video de patio y valorización', image: '/images/valorizacion-hero.jpg' },
+    gallery: ['/images/valorizacion-1.jpg', '/images/valorizacion-2.jpg', '/images/valorizacion-3.jpg'],
   },
   {
     slug: 'servicios-ambientales',
@@ -90,7 +94,8 @@ export const lineas: Linea[] = [
       { title: 'Cumplimiento verificable', body: 'Documentación y trazabilidad para demostrar el cumplimiento ambiental.' },
     ],
     chips: ['Ordinarios', 'RESPEL', 'RCD'],
-    media: { label: 'foto / video de gestión ambiental' },
+    media: { label: 'foto / video de gestión ambiental', image: '/images/ambiental-hero.jpg' },
+    gallery: ['/images/ambiental-1.jpg', '/images/ambiental-2.jpg', '/images/ambiental-3.jpg'],
   },
 ];
 
