@@ -630,6 +630,8 @@ const apiUrl = CHAT.apiUrl;
 
     let greeted = false;
     let sending = false;
+    const FALLBACK_GREETING =
+      '¡Hola! Soy el asistente de CI Quality Group. ¿En qué te puedo colaborar?';
 
     const scrollDown = () => {
       log.scrollTop = log.scrollHeight;
@@ -704,14 +706,14 @@ const apiUrl = CHAT.apiUrl;
       fab.setAttribute('aria-expanded', 'true');
       if (!greeted) {
         greeted = true;
-        addMessage(
-          '¡Hola! 👋 Soy el asistente de **CI Quality Group**. Puedo ayudarte con:\n' +
-            '- Lámina arquitectónica (acero PPGL galvalume)\n' +
-            '- Valorización de residuos y chatarra\n' +
-            '- Servicios ambientales (RESPEL, RCD)\n\n' +
-            '¿En qué estás interesado?',
-          'bot',
-        );
+        // Saludo real desde bot_config (Ajustes → mensaje de bienvenida), no un
+        // texto fijo: así siempre refleja lo último configurado en el panel.
+        fetch(apiUrl, { method: 'GET' })
+          .then((res) => res.json())
+          .then((json: { success?: boolean; data?: { welcomeMessage?: string } }) => {
+            addMessage(json?.data?.welcomeMessage?.trim() || FALLBACK_GREETING, 'bot');
+          })
+          .catch(() => addMessage(FALLBACK_GREETING, 'bot'));
       }
       setTimeout(() => input.focus(), 60);
     };
