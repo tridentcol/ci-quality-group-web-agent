@@ -1,22 +1,49 @@
 ---
-// Clientes/referencias en texto — reemplazar por logos reales cuando estén disponibles.
+// Clientes/proveedores y aliados en texto — reemplazar por logos reales cuando estén disponibles.
 const clients = [
-  'CSP / T360',
   'Negratín',
-  'Termocandelaria',
+  'CSP',
   'Técnicas Reunidas de Colombia',
-  'Servimant',
+  'Ternium',
+  'Termocandelaria',
+  'Hotel El Prado',
+  'San Francisco Investments',
+  'Prodesa Castelo',
+  'Cargill',
+  'Servimant del Caribe',
+  'Powerchina',
+  'Puerto Bahía',
+];
+
+const aliados = [
+  'Green Metal',
+  'SGI · Soluciones Generales Inmobiliaria',
+  'Coral Azul',
+  'SAC · Servicios Ambientales de Calidad',
+  'Fundación Alianzas Ambientales del Caribe',
+  'Bioger',
 ];
 ---
 
 <section class="ci-clients" aria-label="Clientes y referencias">
   <div class="ci-container">
-    <p class="ci-clients__title">Clientes y referencias que confían en nosotros</p>
+    <p class="ci-clients__title">Clientes y proveedores que confían en nosotros</p>
     <div class="ci-clients__row">
       {
         clients.map((c) => (
           <div class="ci-clients__plate">
             <span class="ci-clients__name">{c}</span>
+          </div>
+        ))
+      }
+    </div>
+
+    <p class="ci-clients__title ci-clients__title--aliados">Nuestros aliados</p>
+    <div class="ci-clients__row">
+      {
+        aliados.map((a) => (
+          <div class="ci-clients__plate ci-clients__plate--aliado">
+            <span class="ci-clients__name">{a}</span>
           </div>
         ))
       }
@@ -39,6 +66,16 @@ const clients = [
     text-transform: uppercase;
     color: var(--text-muted);
     margin: 0 0 34px;
+  }
+  .ci-clients__title--aliados {
+    margin-top: 44px;
+  }
+  .ci-clients__plate--aliado {
+    background: transparent;
+  }
+  .ci-clients__plate--aliado .ci-clients__name {
+    color: var(--text-muted);
+    font-size: clamp(13px, 1.3vw, 15px);
   }
 
   .ci-clients__row {
@@ -75,6 +112,9 @@ const clients = [
     .ci-clients__title {
       margin-bottom: 20px;
       font-size: 11px;
+    }
+    .ci-clients__title--aliados {
+      margin-top: 28px;
     }
     .ci-clients__row {
       gap: 10px;
