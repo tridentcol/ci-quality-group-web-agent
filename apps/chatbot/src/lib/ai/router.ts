@@ -43,6 +43,14 @@ const TECHNICAL_TERMS = [
   'siniestr',
   'peritaje',
   'desintegrac',
+  // Specs técnicas (calibre/dimensiones): el bot solo puede darlas si están en el
+  // contexto RAG, nunca inventarlas — escalar a un modelo más confiable con las
+  // reglas de la tool y el guardarraíl anti-alucinación.
+  'calibre',
+  'espesor',
+  'grosor',
+  'dimensi',
+  'medidas',
 ]
 
 const LONG_CHARS = 280
