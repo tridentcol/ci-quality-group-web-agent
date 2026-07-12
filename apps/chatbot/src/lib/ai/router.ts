@@ -51,6 +51,16 @@ const TECHNICAL_TERMS = [
   'grosor',
   'dimensi',
   'medidas',
+  // Agendamiento (recogidas/entregas/citas): requiere cruzar la fecha de hoy
+  // contra el horario configurado sin inventar días ni horas — se vio fallar
+  // en gpt-4o-mini (proponía días cerrados y hasta cambiaba el horario real).
+  'agend',
+  'recog',
+  'horario',
+  'cita',
+  'cuando puedo',
+  'que dia',
+  'qué día',
 ]
 
 const LONG_CHARS = 280
