@@ -97,7 +97,7 @@ export function PricingManager({ initial }: { initial: Material[] }) {
                   <th className="px-2 py-2 font-medium">Mínimo</th>
                   <th className="px-2 py-2 font-medium">Medio</th>
                   <th className="px-2 py-2 font-medium">Activo</th>
-                  <th className="px-4 py-2" />
+                  <th className="sticky right-0 z-10 bg-card px-4 py-2 shadow-[-4px_0_6px_-4px_rgba(0,0,0,0.15)]" />
                 </tr>
               </thead>
               <tbody>
@@ -360,7 +360,7 @@ function PriceRow({
       <td className="px-2 py-2 align-top">
         <ActiveToggle active={draft.active} busy={busy} onToggle={() => patch({ active: !draft.active })} />
       </td>
-      <td className="px-4 py-2 align-top text-right">
+      <td className="sticky right-0 z-10 bg-card px-4 py-2 align-top text-right shadow-[-4px_0_6px_-4px_rgba(0,0,0,0.15)]">
         <div className="flex items-center justify-end gap-2">
           {dirty && <SaveBtn busy={busy} onClick={save} />}
           <button
