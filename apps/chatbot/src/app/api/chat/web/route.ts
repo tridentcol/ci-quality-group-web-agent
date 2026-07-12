@@ -6,7 +6,6 @@ import { db } from '@/lib/db'
 import { botConfig, messages } from '@/lib/db/schema'
 import { generateReply } from '@/lib/ai/generate'
 import { appendMessage, countMessages, loadMemory } from '@/lib/ai/memory'
-import { isAfterHours } from '@/lib/ai/hours'
 import { inngest } from '@/inngest/client'
 import { logEvent } from '@/lib/log'
 
@@ -78,11 +77,7 @@ export async function GET(req: Request) {
   }
 
   const [cfg] = await db
-    .select({
-      botName: botConfig.botName,
-      welcomeMessage: botConfig.welcomeMessage,
-      businessHours: botConfig.businessHours,
-    })
+    .select({ botName: botConfig.botName, welcomeMessage: botConfig.welcomeMessage })
     .from(botConfig)
     .where(eq(botConfig.id, 1))
 
@@ -92,7 +87,6 @@ export async function GET(req: Request) {
       data: {
         botName: cfg?.botName?.trim() || 'Asistente de CI Quality Group',
         welcomeMessage: cfg?.welcomeMessage?.trim() || '',
-        afterHours: isAfterHours(cfg?.businessHours ?? null),
       },
     },
     { headers: cors },
