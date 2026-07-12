@@ -608,6 +608,7 @@ const apiUrl = CHAT.apiUrl;
     const form = root.querySelector<HTMLFormElement>('.cqg-chat__form')!;
     const input = root.querySelector<HTMLTextAreaElement>('.cqg-chat__input')!;
     const sendBtn = root.querySelector<HTMLButtonElement>('.cqg-chat__send')!;
+    const brandName = root.querySelector<HTMLElement>('.cqg-chat__brand-name')!;
 
     const AVATAR_SVG =
       '<svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M12 4a8 8 0 1 1-6.4 3.2" stroke="#3a8c2f" stroke-width="2.2" stroke-linecap="round"/><path d="M11.4 2 L13.6 4.6 L10.2 5.8 Z" fill="#3a8c2f"/></svg>';
@@ -706,12 +707,16 @@ const apiUrl = CHAT.apiUrl;
       fab.setAttribute('aria-expanded', 'true');
       if (!greeted) {
         greeted = true;
-        // Saludo real desde bot_config (Ajustes → mensaje de bienvenida), no un
-        // texto fijo: así siempre refleja lo último configurado en el panel.
+        // Saludo y nombre reales desde bot_config (Ajustes), no fijos: así
+        // siempre reflejan lo último configurado en el panel. El estado
+        // "En línea" SÍ queda fijo a propósito: es un asistente automatizado,
+        // siempre está disponible sin importar el horario del negocio.
         fetch(apiUrl, { method: 'GET' })
           .then((res) => res.json())
-          .then((json: { success?: boolean; data?: { welcomeMessage?: string } }) => {
-            addMessage(json?.data?.welcomeMessage?.trim() || FALLBACK_GREETING, 'bot');
+          .then((json: { success?: boolean; data?: { botName?: string; welcomeMessage?: string } }) => {
+            const data = json?.data;
+            if (data?.botName?.trim()) brandName.textContent = data.botName.trim();
+            addMessage(data?.welcomeMessage?.trim() || FALLBACK_GREETING, 'bot');
           })
           .catch(() => addMessage(FALLBACK_GREETING, 'bot'));
       }
