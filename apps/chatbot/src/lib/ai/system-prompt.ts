@@ -42,8 +42,8 @@ export function buildSystemPrompt(i: SystemPromptInput): string {
   const tone = i.tonePrompt.trim() || DEFAULT_TONE
   const discount =
     i.maxAutoDiscountPct > 0
-      ? `Puedes ofrecer descuentos de hasta ${i.maxAutoDiscountPct}%. Si piden más, NO lo apruebes: usa capture_lead (con requested_discount) y deriva a un asesor.`
-      : 'No estás autorizado a ofrecer descuentos. Si los piden, usa capture_lead (con requested_discount) y deriva a un asesor.'
+      ? `Puedes ofrecer descuentos de hasta ${i.maxAutoDiscountPct}%. Si piden más, NO lo apruebes: llama a capture_lead (con requested_discount:true) DE INMEDIATO, en ese mismo turno —no esperes a que el cliente confirme que quieres registrar su solicitud, hazlo ya y luego avísale que un asesor lo revisará—.`
+      : 'No estás autorizado a ofrecer descuentos. Si los piden, llama a capture_lead (con requested_discount:true) DE INMEDIATO, en ese mismo turno —no esperes a que el cliente confirme que quieres registrar su solicitud, hazlo ya y luego avísale que un asesor lo revisará—.'
 
   const profile = i.customerSummary?.trim()
     ? `\n## Cliente\n${i.customerSummary.trim()}\n`

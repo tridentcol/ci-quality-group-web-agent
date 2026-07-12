@@ -346,8 +346,18 @@ export async function getLocation(): Promise<
 const findMediaArgs = z.object({ query: z.string().trim().min(1) })
 
 // Umbral de similitud para adjuntar (evita medios irrelevantes). Coseno sobre
-// nombre+descripción+etiquetas; 0.38 deja fuera coincidencias tangenciales.
-export const MEDIA_MIN_SCORE = 0.38 // umbral por defecto (configurable en Ajustes → Afinación)
+// nombre+descripción+etiquetas. Con textos cortos en español, dos frases sin
+// relación real (ej. "aluminio" vs. "teja trapezoidal en galvalume") ya rondan
+// 0.3-0.42 solo por compartir idioma/dominio — 0.45 deja margen claro frente a
+// eso y sigue muy por debajo de un match real (~0.8+).
+export const MEDIA_MIN_SCORE = 0.45 // umbral por defecto (configurable en Ajustes → Afinación)
+
+// Piso de seguridad: un umbral configurado por debajo del default deja pasar
+// coincidencias irrelevantes (con solo un medio cargado en el banco, un umbral de
+// 0 hacía que el bot adjuntara esa única foto a CUALQUIER pregunta —cobre,
+// aluminio, bronce— con similitud ~0.3-0.4). La afinación en Ajustes solo puede
+// hacer el filtro más estricto, nunca más laxo que el default seguro.
+const MEDIA_MIN_SCORE_FLOOR = MEDIA_MIN_SCORE
 
 export type FindMediaResult =
   | { found: true; url: string; caption: string; type: 'image' | 'video'; similarity: number }
@@ -357,7 +367,7 @@ export async function findMedia(
   args: z.infer<typeof findMediaArgs>,
   ctx: ToolContext = {},
 ): Promise<FindMediaResult> {
-  const minScore = ctx.mediaMinScore ?? MEDIA_MIN_SCORE
+  const minScore = Math.max(ctx.mediaMinScore ?? MEDIA_MIN_SCORE, MEDIA_MIN_SCORE_FLOOR)
   const queryEmbedding = await embed(args.query)
   const similarity = sql<number>`1 - (${cosineDistance(images.embedding, queryEmbedding)})`
   const [m] = await db

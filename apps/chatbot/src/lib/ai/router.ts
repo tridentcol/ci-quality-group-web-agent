@@ -61,6 +61,11 @@ const TECHNICAL_TERMS = [
   'cuando puedo',
   'que dia',
   'qué día',
+  // Descuentos: capture_lead(requested_discount) debe llamarse SIEMPRE que piden
+  // más del máximo permitido — se vio a gpt-4o-mini saltárselo inconsistentemente
+  // (a veces ni registraba el lead, solo preguntaba "¿quieres que lo registre?").
+  'descuent',
+  'rebaj',
 ]
 
 const LONG_CHARS = 280
