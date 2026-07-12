@@ -122,15 +122,18 @@ export function resolveLookup(
   const minOrder = num(m.minOrder)
 
   // Escalón aplicable según la cantidad. Se evalúa del volumen mayor al menor para
-  // dar el mejor precio. Cada escalón requiere SU precio Y SU umbral.
+  // dar el mejor precio. Cada escalón requiere SU precio Y SU umbral. Un umbral de
+  // 0 (o negativo) no es un umbral real: suele venir de un campo dejado en blanco
+  // que se guardó como 0 en vez de null (dato mal cargado) — se ignora ese escalón
+  // para no regalar el material o inventar un precio mayorista falso de $0.
   const qty = args.quantity ?? null
   let unitPriceCop = retail
   let tier: 'retail' | 'wholesale' | 'wholesale2' = 'retail'
   if (qty != null) {
-    if (wholesale2 != null && threshold2 != null && qty >= threshold2) {
+    if (wholesale2 != null && threshold2 != null && threshold2 > 0 && qty >= threshold2) {
       unitPriceCop = wholesale2
       tier = 'wholesale2'
-    } else if (wholesale != null && threshold != null && qty >= threshold) {
+    } else if (wholesale != null && threshold != null && threshold > 0 && qty >= threshold) {
       unitPriceCop = wholesale
       tier = 'wholesale'
     }
