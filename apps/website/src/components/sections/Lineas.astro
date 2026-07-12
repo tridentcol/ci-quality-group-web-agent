@@ -17,11 +17,6 @@ const { hideHeading = false } = Astro.props;
             <span class="ci-badge">Líneas de negocio</span>
             <h2 class="ci-lineas__title">Cuatro unidades, un mismo estándar</h2>
           </div>
-          <p class="ci-lineas__intro">
-            Cada línea aporta una etapa del ciclo o un servicio complementario: producimos,
-            recuperamos y gestionamos — integrando manufactura, valorización, servicios
-            ambientales y servicios industriales bajo un mismo estándar.
-          </p>
         </div>
       )
     }
@@ -30,25 +25,12 @@ const { hideHeading = false } = Astro.props;
       {
         lineas.map((c) => (
           <a class="ci-card" href={`/${c.slug}`}>
-            {c.media.image && (
-              <div class="ci-card__media">
-                <img src={c.media.image} alt="" loading="lazy" />
-              </div>
-            )}
-            <div class="ci-card__body-wrap">
-              <div class="ci-card__top">
-                <span class="ci-card__num">{c.num}</span>
-                <span class="ci-card__tag">{c.tag}</span>
-              </div>
-              <h3 class="ci-card__title">{c.title}</h3>
-              <p class="ci-card__body">{c.summary}</p>
-              <div class="ci-card__foot">
-                {c.chips.map((chip) => (
-                  <span class="ci-chip">{chip}</span>
-                ))}
-              </div>
-              <span class="ci-card__more">Ver más →</span>
+            <div class="ci-card__media">
+              {c.media.image && <img src={c.media.image} alt="" loading="lazy" />}
+              <span class="ci-card__num">{c.num}</span>
             </div>
+            <span class="ci-card__title">{c.title}</span>
+            <span class="ci-card__arrow" aria-hidden="true">→</span>
           </a>
         ))
       }
@@ -62,12 +44,7 @@ const { hideHeading = false } = Astro.props;
   }
 
   .ci-lineas__head {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: space-between;
-    align-items: flex-end;
-    gap: 28px;
-    margin-bottom: 52px;
+    margin-bottom: 40px;
   }
 
   .ci-lineas__head-left {
@@ -94,41 +71,38 @@ const { hideHeading = false } = Astro.props;
     color: var(--graphite);
   }
 
-  .ci-lineas__intro {
-    margin: 0;
-    font-size: 16px;
-    line-height: 1.65;
-    color: var(--text-muted);
-    max-width: 42ch;
-  }
-
   .ci-lineas__grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-    gap: 26px;
-  }
-
-  /* Tarjeta (enlace a la subpágina) */
-  .ci-card {
     display: flex;
     flex-direction: column;
-    overflow: hidden;
+    gap: 14px;
+  }
+
+  /* Tarjeta horizontal (enlace a la subpágina) */
+  .ci-card {
+    display: flex;
+    align-items: center;
+    gap: 24px;
     background: var(--white);
     border: 1px solid var(--border-light);
     border-radius: var(--r-card);
+    padding: 14px 30px 14px 14px;
     box-shadow: var(--sh-card);
     text-decoration: none;
     color: inherit;
     transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
   }
   .ci-card:hover {
-    transform: translateY(-6px);
+    transform: translateX(4px);
     box-shadow: var(--sh-card-hover);
     border-color: var(--ci-green);
   }
 
   .ci-card__media {
-    aspect-ratio: 16 / 10;
+    position: relative;
+    flex: 0 0 auto;
+    width: 148px;
+    height: 100px;
+    border-radius: 10px;
     overflow: hidden;
   }
   .ci-card__media img {
@@ -139,85 +113,43 @@ const { hideHeading = false } = Astro.props;
     transition: transform 0.4s ease;
   }
   .ci-card:hover .ci-card__media img {
-    transform: scale(1.05);
-  }
-
-  .ci-card__body-wrap {
-    display: flex;
-    flex-direction: column;
-    flex: 1;
-    padding: 28px 32px 32px;
-  }
-  .ci-card__more {
-    margin-top: 18px;
-    font-size: 14px;
-    font-weight: bold;
-    color: var(--green-deep);
-    transition: transform 0.2s ease;
-  }
-  .ci-card:hover .ci-card__more {
-    transform: translateX(3px);
-  }
-
-  .ci-card__top {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 16px;
+    transform: scale(1.06);
   }
 
   .ci-card__num {
+    position: absolute;
+    left: 8px;
+    top: 8px;
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 54px;
-    height: 54px;
-    background: var(--green-pale);
-    border: 1px solid var(--border-light);
-    border-radius: var(--r-tile);
-    font-size: 22px;
+    width: 32px;
+    height: 32px;
+    background: rgba(13, 13, 13, 0.55);
+    backdrop-filter: blur(2px);
+    border-radius: 8px;
+    font-size: 13px;
     font-weight: bold;
-    color: var(--ci-green);
-  }
-
-  .ci-card__tag {
-    font-size: 12px;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: var(--on-dark-1);
+    color: var(--white);
   }
 
   .ci-card__title {
-    margin: 22px 0 0;
-    font-size: 24px;
+    flex: 1;
+    font-size: 22px;
     font-weight: bold;
     color: var(--graphite);
     line-height: 1.2;
   }
 
-  .ci-card__body {
-    margin: 14px 0 0;
-    font-size: 15.5px;
-    line-height: 1.65;
-    color: var(--text-muted);
-  }
-
-  .ci-card__foot {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-top: 24px;
-    padding-top: 22px;
-    border-top: 1px solid var(--border-light);
-  }
-
-  .ci-chip {
-    background: var(--green-pale);
+  .ci-card__arrow {
+    flex: 0 0 auto;
+    font-size: 18px;
+    font-weight: bold;
     color: var(--green-deep);
-    border: 1px solid var(--border-light);
-    border-radius: var(--r-pill);
-    padding: 6px 12px;
-    font-size: 12.5px;
+    transition: transform 0.2s ease;
+  }
+  .ci-card:hover .ci-card__arrow {
+    transform: translateX(4px);
   }
 
   @media (max-width: 640px) {
@@ -225,45 +157,32 @@ const { hideHeading = false } = Astro.props;
       padding-block: 54px;
     }
     .ci-lineas__head {
-      margin-bottom: 28px;
-      gap: 14px;
+      margin-bottom: 24px;
     }
     .ci-lineas__title {
       font-size: 25px;
       margin-top: 12px;
     }
-    .ci-lineas__intro {
-      font-size: 14.5px;
-      line-height: 1.55;
-    }
     .ci-lineas__grid {
-      gap: 14px;
+      gap: 10px;
     }
     .ci-card {
-      border-radius: 12px;
+      gap: 14px;
+      padding: 10px 18px 10px 10px;
     }
     .ci-card__media {
-      aspect-ratio: 16 / 9;
-    }
-    .ci-card__body-wrap {
-      padding: 18px 20px 20px;
+      width: 84px;
+      height: 64px;
     }
     .ci-card__num {
-      width: 44px;
-      height: 44px;
-      font-size: 18px;
+      width: 24px;
+      height: 24px;
+      font-size: 11px;
+      left: 6px;
+      top: 6px;
     }
     .ci-card__title {
-      font-size: 19px;
-      margin-top: 14px;
-    }
-    .ci-card__body {
-      font-size: 14px;
-      margin-top: 10px;
-    }
-    .ci-card__foot {
-      margin-top: 16px;
-      padding-top: 14px;
+      font-size: 16.5px;
     }
   }
 </style>

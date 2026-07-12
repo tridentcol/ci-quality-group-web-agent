@@ -1,27 +1,27 @@
 ---
-// Clientes/proveedores y aliados en texto — reemplazar por logos reales cuando estén disponibles.
+// Logos reales extraídos del brochure de la empresa.
 const clients = [
-  'Negratín',
-  'CSP',
-  'Técnicas Reunidas de Colombia',
-  'Ternium',
-  'Termocandelaria',
-  'Hotel El Prado',
-  'San Francisco Investments',
-  'Prodesa Castelo',
-  'Cargill',
-  'Servimant del Caribe',
-  'Powerchina',
-  'Puerto Bahía',
+  { name: 'Negratín', src: '/images/logos/clientes/negratin.png' },
+  { name: 'CSP', src: '/images/logos/clientes/csp.png' },
+  { name: 'Técnicas Reunidas de Colombia', src: '/images/logos/clientes/tecnicas-reunidas.png' },
+  { name: 'Ternium', src: '/images/logos/clientes/ternium.png' },
+  { name: 'Termocandelaria', src: '/images/logos/clientes/termo-candelaria.png' },
+  { name: 'Hotel El Prado', src: '/images/logos/clientes/hotel-el-prado.png' },
+  { name: 'San Francisco Investments', src: '/images/logos/clientes/san-francisco-investments.png' },
+  { name: 'Prodesa Castelo', src: '/images/logos/clientes/prodesa-castelo.png' },
+  { name: 'Cargill', src: '/images/logos/clientes/cargill.png' },
+  { name: 'Servimant del Caribe', src: '/images/logos/clientes/servimant-del-caribe.png' },
+  { name: 'Powerchina', src: '/images/logos/clientes/powerchina.png' },
+  { name: 'Puerto Bahía', src: '/images/logos/clientes/puerto-bahia.png' },
 ];
 
 const aliados = [
-  'Green Metal',
-  'SGI · Soluciones Generales Inmobiliaria',
-  'Coral Azul',
-  'SAC · Servicios Ambientales de Calidad',
-  'Fundación Alianzas Ambientales del Caribe',
-  'Bioger',
+  { name: 'Green Metal', src: '/images/logos/aliados/green-metal.png' },
+  { name: 'SGI · Soluciones Generales Inmobiliaria', src: '/images/logos/aliados/sgi.png' },
+  { name: 'Coral Azul', src: '/images/logos/aliados/coral-azul.png' },
+  { name: 'SAC · Servicios Ambientales de Calidad', src: '/images/logos/aliados/sac.png' },
+  { name: 'Fundación Alianzas Ambientales del Caribe', src: '/images/logos/aliados/fundacion-alianzas-del-caribe.png' },
+  { name: 'Bioger', src: '/images/logos/aliados/bioger.png' },
 ];
 ---
 
@@ -32,7 +32,7 @@ const aliados = [
       {
         clients.map((c) => (
           <div class="ci-clients__plate">
-            <span class="ci-clients__name">{c}</span>
+            <img src={c.src} alt={c.name} loading="lazy" />
           </div>
         ))
       }
@@ -43,7 +43,7 @@ const aliados = [
       {
         aliados.map((a) => (
           <div class="ci-clients__plate ci-clients__plate--aliado">
-            <span class="ci-clients__name">{a}</span>
+            <img src={a.src} alt={a.name} loading="lazy" />
           </div>
         ))
       }
@@ -71,11 +71,7 @@ const aliados = [
     margin-top: 44px;
   }
   .ci-clients__plate--aliado {
-    background: transparent;
-  }
-  .ci-clients__plate--aliado .ci-clients__name {
-    color: var(--text-muted);
-    font-size: clamp(13px, 1.3vw, 15px);
+    opacity: 0.85;
   }
 
   .ci-clients__row {
@@ -90,19 +86,20 @@ const aliados = [
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 16px 28px;
+    padding: 18px 26px;
     background: var(--white);
     border: 1px solid var(--border-light);
     border-radius: 9px;
-    min-height: 66px;
+    min-height: 76px;
+    width: 168px;
   }
 
-  .ci-clients__name {
-    font-size: clamp(15px, 1.6vw, 19px);
-    font-weight: bold;
-    color: var(--green-deep);
-    letter-spacing: -0.01em;
-    text-align: center;
+  .ci-clients__plate img {
+    max-width: 100%;
+    max-height: 42px;
+    width: auto;
+    height: auto;
+    object-fit: contain;
   }
 
   @media (max-width: 640px) {
@@ -120,12 +117,13 @@ const aliados = [
       gap: 10px;
     }
     .ci-clients__plate {
-      padding: 11px 16px;
-      min-height: 52px;
+      padding: 12px 16px;
+      min-height: 58px;
+      width: 132px;
       border-radius: 8px;
     }
-    .ci-clients__name {
-      font-size: 14px;
+    .ci-clients__plate img {
+      max-height: 32px;
     }
   }
 </style>
