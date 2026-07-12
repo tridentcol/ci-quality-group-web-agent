@@ -51,7 +51,7 @@ const apiUrl = CHAT.apiUrl;
             <p class="cqg-chat__brand-name">Asistente CI Quality Group</p>
             <p class="cqg-chat__brand-status">
               <span class="cqg-chat__brand-dot" aria-hidden="true" />
-              <span class="cqg-chat__brand-status-text">En línea</span>
+              En línea
             </p>
           </div>
           <button type="button" class="cqg-chat__close" aria-label="Cerrar chat">
@@ -215,10 +215,6 @@ const apiUrl = CHAT.apiUrl;
     border-radius: 50%;
     background: #b6f0a6;
     box-shadow: 0 0 0 3px rgba(182, 240, 166, 0.3);
-  }
-  .cqg-chat__brand-dot--away {
-    background: #d8d8d8;
-    box-shadow: 0 0 0 3px rgba(216, 216, 216, 0.3);
   }
   .cqg-chat__close {
     background: transparent;
@@ -613,8 +609,6 @@ const apiUrl = CHAT.apiUrl;
     const input = root.querySelector<HTMLTextAreaElement>('.cqg-chat__input')!;
     const sendBtn = root.querySelector<HTMLButtonElement>('.cqg-chat__send')!;
     const brandName = root.querySelector<HTMLElement>('.cqg-chat__brand-name')!;
-    const brandDot = root.querySelector<HTMLElement>('.cqg-chat__brand-dot')!;
-    const brandStatusText = root.querySelector<HTMLElement>('.cqg-chat__brand-status-text')!;
 
     const AVATAR_SVG =
       '<svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M12 4a8 8 0 1 1-6.4 3.2" stroke="#3a8c2f" stroke-width="2.2" stroke-linecap="round"/><path d="M11.4 2 L13.6 4.6 L10.2 5.8 Z" fill="#3a8c2f"/></svg>';
@@ -713,24 +707,17 @@ const apiUrl = CHAT.apiUrl;
       fab.setAttribute('aria-expanded', 'true');
       if (!greeted) {
         greeted = true;
-        // Saludo, nombre y estado reales desde bot_config (Ajustes), no fijos:
-        // así siempre reflejan lo último configurado en el panel.
+        // Saludo y nombre reales desde bot_config (Ajustes), no fijos: así
+        // siempre reflejan lo último configurado en el panel. El estado
+        // "En línea" SÍ queda fijo a propósito: es un asistente automatizado,
+        // siempre está disponible sin importar el horario del negocio.
         fetch(apiUrl, { method: 'GET' })
           .then((res) => res.json())
-          .then(
-            (json: {
-              success?: boolean;
-              data?: { botName?: string; welcomeMessage?: string; afterHours?: boolean };
-            }) => {
-              const data = json?.data;
-              if (data?.botName?.trim()) brandName.textContent = data.botName.trim();
-              if (data?.afterHours) {
-                brandDot.classList.add('cqg-chat__brand-dot--away');
-                brandStatusText.textContent = 'Fuera de horario';
-              }
-              addMessage(data?.welcomeMessage?.trim() || FALLBACK_GREETING, 'bot');
-            },
-          )
+          .then((json: { success?: boolean; data?: { botName?: string; welcomeMessage?: string } }) => {
+            const data = json?.data;
+            if (data?.botName?.trim()) brandName.textContent = data.botName.trim();
+            addMessage(data?.welcomeMessage?.trim() || FALLBACK_GREETING, 'bot');
+          })
           .catch(() => addMessage(FALLBACK_GREETING, 'bot'));
       }
       setTimeout(() => input.focus(), 60);
