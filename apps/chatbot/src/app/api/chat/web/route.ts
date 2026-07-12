@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { and, eq, gt, sql } from 'drizzle-orm'
 import { db } from '@/lib/db'
-import { messages } from '@/lib/db/schema'
+import { botConfig, messages } from '@/lib/db/schema'
 import { generateReply } from '@/lib/ai/generate'
 import { appendMessage, countMessages, loadMemory } from '@/lib/ai/memory'
 import { inngest } from '@/inngest/client'
@@ -61,6 +61,36 @@ const bodySchema = z.object({
 // Preflight CORS.
 export async function OPTIONS(req: Request) {
   return new Response(null, { status: 204, headers: corsHeaders(req.headers.get('origin')) })
+}
+
+// Saludo inicial de la burbuja (antes de que el cliente escriba nada). Devuelve
+// el mensaje de bienvenida configurado en Ajustes tal cual, en vivo desde la
+// BD — así el widget nunca queda con un saludo desactualizado/hardcodeado.
+export async function GET(req: Request) {
+  const origin = req.headers.get('origin')
+  const cors = corsHeaders(origin)
+  if (!cors['Access-Control-Allow-Origin']) {
+    return NextResponse.json(
+      { success: false, error: { code: 'ORIGIN', message: 'Origin no permitido.' } },
+      { status: 403 },
+    )
+  }
+
+  const [cfg] = await db
+    .select({ botName: botConfig.botName, welcomeMessage: botConfig.welcomeMessage })
+    .from(botConfig)
+    .where(eq(botConfig.id, 1))
+
+  return NextResponse.json(
+    {
+      success: true,
+      data: {
+        botName: cfg?.botName?.trim() || 'Asistente de CI Quality Group',
+        welcomeMessage: cfg?.welcomeMessage?.trim() || '',
+      },
+    },
+    { headers: cors },
+  )
 }
 
 export async function POST(req: Request) {
