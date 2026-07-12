@@ -1,14 +1,14 @@
 ---
-// PLACEHOLDER — confirmar el correo real con el cliente.
-const email = import.meta.env.PUBLIC_CONTACT_EMAIL ?? 'contacto@ci-quality-group.com';
+const email = import.meta.env.PUBLIC_CONTACT_EMAIL ?? 'gerencia@ciqualitygroup.com';
 const mailto = `mailto:${email}?subject=${encodeURIComponent(
   'Consulta desde ci-quality-group.com',
 )}`;
+const whatsapp = 'https://wa.me/573023120099';
 
 const rows = [
-  { label: 'Ubicación', value: 'Cartagena de Indias, Colombia' },
+  { label: 'Dirección', value: 'Carrera 9 # 7-123, Barrio Arroz Barato, Cartagena de Indias' },
+  { label: 'WhatsApp', value: '302 312 0099 · 300 734 7277' },
   { label: 'Correo', value: email },
-  { label: 'Atención', value: 'Industria · Energía · EPC' },
 ];
 ---
 
@@ -19,8 +19,8 @@ const rows = [
     <div class="ci-contact__left">
       <h2 class="ci-contact__title">¿Listo para dar valor a su residuo industrial?</h2>
       <p class="ci-contact__lead">
-        Cuéntenos su necesidad de manufactura, valorización o gestión ambiental. Le respondemos
-        con una propuesta técnica.
+        Cuéntenos su necesidad de manufactura, valorización, gestión ambiental o servicios
+        industriales. Le respondemos con una propuesta técnica.
       </p>
       <a class="ci-contact__cta" href={mailto}>Contáctanos</a>
     </div>
@@ -34,6 +34,10 @@ const rows = [
               <div class="ci-contact__label">{r.label}</div>
               {r.label === 'Correo' ? (
                 <a class="ci-contact__value ci-contact__value--link" href={mailto}>
+                  {r.value}
+                </a>
+              ) : r.label === 'WhatsApp' ? (
+                <a class="ci-contact__value ci-contact__value--link" href={whatsapp} target="_blank" rel="noopener noreferrer">
                   {r.value}
                 </a>
               ) : (

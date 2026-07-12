@@ -31,3 +31,6 @@ coverage/
 # Claude Code (estado de sesión local)
 .claude/scheduled_tasks.lock
 .claude/settings.local.json
+
+# Material fuente (brochure/fotos) usado como referencia — no versionar
+/brochure/

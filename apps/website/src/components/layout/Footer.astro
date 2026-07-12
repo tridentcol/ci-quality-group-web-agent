@@ -10,7 +10,10 @@ const lineas = [
   { label: 'Manufactura', href: '/manufactura' },
   { label: 'Valorización y chatarra', href: '/valorizacion' },
   { label: 'Servicios ambientales', href: '/servicios-ambientales' },
+  { label: 'Servicios industriales', href: '/servicios-industriales' },
 ];
+
+const email = import.meta.env.PUBLIC_CONTACT_EMAIL ?? 'gerencia@ciqualitygroup.com';
 ---
 
 <footer class="ci-footer">
@@ -21,9 +24,14 @@ const lineas = [
         <img class="ci-footer__mark" src="/logo-icon-white.png" alt="" width="50" height="41" />
         <div class="ci-footer__brand">CI <span>QUALITY</span> GROUP</div>
         <p class="ci-footer__tagline">
-          Convertimos el residuo industrial en valor. Manufactura, valorización y servicios
-          ambientales bajo economía circular.
+          Convertimos el residuo industrial en valor. Manufactura, valorización, servicios
+          ambientales y servicios industriales bajo economía circular.
         </p>
+        <div class="ci-footer__contact">
+          <a href="https://wa.me/573023120099" target="_blank" rel="noopener noreferrer">WhatsApp: 302 312 0099</a>
+          <a href={`mailto:${email}`}>{email}</a>
+          <span>Carrera 9 # 7-123, Barrio Arroz Barato, Cartagena de Indias</span>
+        </div>
       </div>
 
       <div>
@@ -92,6 +100,22 @@ const lineas = [
     line-height: 1.6;
     color: var(--on-dark-1);
     max-width: 38ch;
+  }
+
+  .ci-footer__contact {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 18px;
+  }
+  .ci-footer__contact a,
+  .ci-footer__contact span {
+    font-size: 14px;
+    color: var(--on-dark-3);
+    text-decoration: none;
+  }
+  .ci-footer__contact a:hover {
+    color: var(--white);
   }
 
   .ci-footer__heading {
