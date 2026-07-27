@@ -9,6 +9,7 @@ import { selectModel } from './router'
 import { executeTool, toolDefinitions, MEDIA_MIN_SCORE, type ToolContext, type ToolMode, type LocationCard } from './tools'
 import { RAG_K, RAG_MIN_SCORE } from './rag-config'
 import { isAfterHours, describeHours } from './hours'
+import { stripStrayMarkdown } from './sanitize'
 
 /**
  * Motor de generación (blueprint §9 Step 9): arma el system prompt (tono +
@@ -247,7 +248,7 @@ export async function generateReply(input: GenerateInput): Promise<GenerateResul
     const toolCalls = msg.tool_calls ?? []
     if (toolCalls.length === 0) {
       return {
-        reply: msg.content ?? '',
+        reply: stripStrayMarkdown(msg.content ?? ''),
         model,
         routerReason: reason,
         contextUsed,
@@ -275,7 +276,7 @@ export async function generateReply(input: GenerateInput): Promise<GenerateResul
   // 5) Se agotaron las rondas: última llamada sin tools para forzar texto.
   const final = await openai.chat.completions.create({ model, temperature, messages })
   return {
-    reply: final.choices[0]?.message?.content ?? '',
+    reply: stripStrayMarkdown(final.choices[0]?.message?.content ?? ''),
     model,
     routerReason: reason,
     contextUsed,
