@@ -65,8 +65,16 @@ export function ConversationView({
   async function erase(scope: "conversation" | "customer") {
     const opts =
       scope === "customer"
-        ? { title: "¿Borrar el cliente y TODO su historial?", description: "Habeas Data (Ley 1581). Irreversible." }
-        : { title: "¿Borrar esta conversación?", description: "Se eliminan sus mensajes. Irreversible." };
+        ? {
+            title: "¿Borrar el cliente y TODO su historial?",
+            description:
+              "Habeas Data (Ley 1581). Se eliminan todas sus conversaciones, mensajes y cualquier lead o pedido asociado a ellas. Irreversible.",
+          }
+        : {
+            title: "¿Borrar esta conversación?",
+            description:
+              "Se eliminan sus mensajes y, si tiene, el lead o pedido asociado a esta conversación. Irreversible.",
+          };
     if (!(await confirm({ ...opts, confirmLabel: "Borrar", destructive: true }))) return;
     setBusy(true);
     try {

@@ -120,6 +120,20 @@
       "when": 1782663358036,
       "tag": "0016_youthful_scream",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1786934348622,
+      "tag": "0017_silent_jazinda",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1786934456449,
+      "tag": "0018_yellow_cerebro",
+      "breakpoints": true
     }
   ]
 }

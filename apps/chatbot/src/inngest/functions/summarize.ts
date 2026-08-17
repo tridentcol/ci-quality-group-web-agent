@@ -15,9 +15,15 @@ Conserva datos duraderos y útiles para continuar: necesidades, materiales y can
 Español, en tercera persona, máximo ~120 palabras. Devuelve solo el resumen.`
 
 /**
- * memory/summarize (blueprint §9 Step 9B): cuando una conversación crece,
- * resume los mensajes antiguos (todos menos los últimos HISTORY_LIMIT) junto
- * con el resumen previo en conversations.summary, para acotar tokens.
+ * memory/summarize (blueprint §9 Step 9B): cuando una conversación crece, resume
+ * los mensajes antiguos (todos menos los últimos HISTORY_LIMIT) junto con el
+ * resumen previo en conversations.summary, para acotar tokens.
+ *
+ * INCREMENTAL: solo se resumen los mensajes MÁS ALLÁ de `summarizedCount` (el
+ * marcador de hasta dónde ya quedó reflejado en `summary`), no toda la
+ * conversación de nuevo en cada disparo — antes, en una conversación de 70
+ * mensajes esto se disparaba ~58 veces reenviando cada vez un transcript "viejo"
+ * cada vez más largo (costo de OpenAI creciendo sin límite con la conversación).
  */
 export const summarizeConversation = inngest.createFunction(
   {
@@ -30,7 +36,7 @@ export const summarizeConversation = inngest.createFunction(
 
     const data = await step.run('load', async () => {
       const [conv] = await db
-        .select({ summary: conversations.summary })
+        .select({ summary: conversations.summary, summarizedCount: conversations.summarizedCount })
         .from(conversations)
         .where(eq(conversations.id, conversationId))
       if (!conv) return null
@@ -41,14 +47,18 @@ export const summarizeConversation = inngest.createFunction(
         .where(eq(messages.conversationId, conversationId))
         .orderBy(asc(messages.createdAt))
 
-      return { prevSummary: conv.summary, msgs }
+      return { prevSummary: conv.summary, summarizedCount: conv.summarizedCount, msgs }
     })
 
     if (!data) return { skipped: 'conversación inexistente' }
     if (data.msgs.length <= SUMMARY_THRESHOLD) return { skipped: 'aún corta' }
 
-    // Resumir lo antiguo; los últimos HISTORY_LIMIT se mantienen como contexto vivo.
-    const older = data.msgs.slice(0, Math.max(0, data.msgs.length - HISTORY_LIMIT))
+    // Ventana "vieja" total (todo menos los últimos HISTORY_LIMIT, que se mantienen
+    // como contexto vivo) y, dentro de esa, solo lo NUEVO desde el último resumen.
+    const oldEnd = Math.max(0, data.msgs.length - HISTORY_LIMIT)
+    const startAt = Math.max(data.summarizedCount, 0)
+    if (oldEnd <= startAt) return { skipped: 'nada nuevo que resumir' }
+    const older = data.msgs.slice(startAt, oldEnd)
     if (older.length === 0) return { skipped: 'nada antiguo que resumir' }
 
     const summary = await step.run('summarize', async () => {
@@ -72,9 +82,12 @@ export const summarizeConversation = inngest.createFunction(
     if (!summary) return { skipped: 'resumen vacío' }
 
     await step.run('save', async () => {
-      await db.update(conversations).set({ summary }).where(eq(conversations.id, conversationId))
+      await db
+        .update(conversations)
+        .set({ summary, summarizedCount: oldEnd })
+        .where(eq(conversations.id, conversationId))
     })
 
-    return { conversationId, summaryLength: summary.length }
+    return { conversationId, summaryLength: summary.length, summarizedThrough: oldEnd }
   },
 )

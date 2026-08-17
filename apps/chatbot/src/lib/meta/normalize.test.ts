@@ -7,7 +7,9 @@ describe('normalize', () => {
       object: 'page',
       entry: [{ messaging: [{ sender: { id: 'U1' }, recipient: { id: 'PAGE' }, message: { mid: 'm1', text: 'hola' } }] }],
     })
-    expect(out).toEqual([{ channel: 'messenger', externalId: 'U1', text: 'hola', messageId: 'm1', isEcho: false }])
+    expect(out).toEqual([
+      { channel: 'messenger', externalId: 'U1', text: 'hola', messageId: 'm1', isEcho: false, kind: 'text' },
+    ])
   })
 
   it('Messenger echo → isEcho y externalId = destinatario', () => {
@@ -42,12 +44,42 @@ describe('normalize', () => {
     expect(out[0]).toMatchObject({ channel: 'whatsapp', externalId: '573001', customerName: 'Ana', text: 'precio cobre' })
   })
 
-  it('ignora mensajes no-texto (adjuntos)', () => {
+  it('mensaje sin texto con adjunto → kind:unsupported (ya no se ignora en silencio)', () => {
     const out = normalize({
       object: 'page',
       entry: [{ messaging: [{ sender: { id: 'U1' }, recipient: { id: 'P' }, message: { mid: 'm', attachments: [{ type: 'image' }] } }] }],
     })
+    expect(out).toEqual([
+      { channel: 'messenger', externalId: 'U1', text: '', messageId: 'm', isEcho: false, kind: 'unsupported', unsupportedType: 'image' },
+    ])
+  })
+
+  it('sin texto ni adjuntos (recibo de entrega/lectura) → sí se ignora', () => {
+    const out = normalize({
+      object: 'page',
+      entry: [{ messaging: [{ sender: { id: 'U1' }, recipient: { id: 'P' }, message: { mid: 'm', is_deleted: false } }] }],
+    })
     expect(out).toEqual([])
+  })
+
+  it('echo humano sin texto (solo mandó una foto desde la bandeja) → igual toma el control', () => {
+    const out = normalize({
+      object: 'page',
+      entry: [{ messaging: [{ sender: { id: 'PAGE' }, recipient: { id: 'U1' }, message: { mid: 'm', is_echo: true, attachments: [{ type: 'image' }] } }] }],
+    })
+    expect(out).toEqual([
+      { channel: 'messenger', externalId: 'U1', text: '[adjunto sin texto]', messageId: 'm', isEcho: true, kind: 'text' },
+    ])
+  })
+
+  it('WhatsApp con imagen (no-texto) → kind:unsupported', () => {
+    const out = normalize({
+      object: 'whatsapp_business_account',
+      entry: [{ changes: [{ value: { messages: [{ from: '573001', id: 'wamid2', type: 'image' }] } }] }],
+    })
+    expect(out).toEqual([
+      { channel: 'whatsapp', externalId: '573001', text: '', messageId: 'wamid2', isEcho: false, kind: 'unsupported', unsupportedType: 'image', customerName: undefined },
+    ])
   })
 
   it('objeto desconocido o cuerpo inválido → []', () => {

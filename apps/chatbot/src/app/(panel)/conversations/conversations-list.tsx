@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ChannelBadge, ConversationStatusBadge } from "@/components/panel/channel-badge";
+import { ChannelBadge, ConversationStatusBadge, NeedsAttentionBadge } from "@/components/panel/channel-badge";
 
 interface ConversationRow {
   id: string;
@@ -10,6 +10,7 @@ interface ConversationRow {
   status: string;
   lastMessageAt: string | null;
   messageCount: number;
+  needsAttention: boolean;
 }
 
 export function ConversationsList({ initial }: { initial: ConversationRow[] }) {
@@ -37,7 +38,10 @@ export function ConversationsList({ initial }: { initial: ConversationRow[] }) {
           >
             <div className="flex items-center justify-between gap-2">
               <ChannelBadge channel={c.channel} />
-              <ConversationStatusBadge status={c.status} />
+              <div className="flex items-center gap-1.5">
+                {c.needsAttention && <NeedsAttentionBadge />}
+                <ConversationStatusBadge status={c.status} />
+              </div>
             </div>
             <p className="mt-2 font-medium text-foreground">{c.customerName ?? "Cliente"}</p>
             <p className="mt-1 text-xs text-muted-foreground">
@@ -68,7 +72,10 @@ export function ConversationsList({ initial }: { initial: ConversationRow[] }) {
                 </td>
                 <td className="px-2 py-3 text-foreground">{c.customerName ?? "Cliente"}</td>
                 <td className="px-2 py-3">
-                  <ConversationStatusBadge status={c.status} />
+                  <div className="flex items-center gap-1.5">
+                    {c.needsAttention && <NeedsAttentionBadge />}
+                    <ConversationStatusBadge status={c.status} />
+                  </div>
                 </td>
                 <td className="px-2 py-3 text-muted-foreground">{c.messageCount}</td>
                 <td className="px-2 py-3 text-muted-foreground">{fmt(c.lastMessageAt)}</td>

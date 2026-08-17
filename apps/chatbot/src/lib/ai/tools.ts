@@ -396,6 +396,15 @@ export async function findMedia(
 
 const logGapArgs = z.object({ question: z.string().trim().min(1) })
 
+// Umbral de similitud para considerar dos preguntas "el mismo hueco" (no solo
+// texto exacto): calibrado con casos reales — parafraseos de la MISMA pregunta
+// rondan 0.75-0.80 ("¿qué calibre tienen las láminas?" vs. "...las láminas
+// trapezoidales?" → 0.80; "¿cómo separo los residuos...?" vs. "¿cómo debo
+// separar la basura...?" → 0.75), mientras que preguntas de temas distintos
+// rondan 0.25-0.45. 0.72 deja margen claro sin fundir huecos que son en
+// realidad preguntas distintas.
+const GAP_DUP_THRESHOLD = 0.72
+
 export async function logKnowledgeGap(
   args: z.infer<typeof logGapArgs>,
   ctx: ToolContext,
@@ -406,22 +415,31 @@ export async function logKnowledgeGap(
   if (mode === 'eval') return { logged: true, gapId: 'dry-run' }
 
   const question = args.question.trim()
-  // Dedupe: si ya hay un hueco ABIERTO con la misma pregunta, no duplicar.
-  const [existing] = await db
+  const questionEmbedding = await embed(question)
+
+  // Dedupe SEMÁNTICO: el hueco abierto más parecido, si supera el umbral.
+  const similarity = sql<number>`1 - (${cosineDistance(knowledgeGaps.embedding, questionEmbedding)})`
+  const [near] = await db
+    .select({ id: knowledgeGaps.id, similarity })
+    .from(knowledgeGaps)
+    .where(and(eq(knowledgeGaps.status, 'open'), sql`${knowledgeGaps.embedding} is not null`))
+    .orderBy(desc(similarity))
+    .limit(1)
+  if (near && near.similarity >= GAP_DUP_THRESHOLD) return { logged: true, gapId: near.id }
+
+  // Respaldo por texto exacto, para huecos de antes de este cambio (sin embedding).
+  const [exact] = await db
     .select({ id: knowledgeGaps.id })
     .from(knowledgeGaps)
     .where(
-      and(
-        eq(knowledgeGaps.status, 'open'),
-        sql`lower(${knowledgeGaps.question}) = ${question.toLowerCase()}`,
-      ),
+      and(eq(knowledgeGaps.status, 'open'), sql`lower(${knowledgeGaps.question}) = ${question.toLowerCase()}`),
     )
     .limit(1)
-  if (existing) return { logged: true, gapId: existing.id }
+  if (exact) return { logged: true, gapId: exact.id }
 
   const [gap] = await db
     .insert(knowledgeGaps)
-    .values({ conversationId: ctx.conversationId ?? null, question })
+    .values({ conversationId: ctx.conversationId ?? null, question, embedding: questionEmbedding })
     .returning({ id: knowledgeGaps.id })
   return { logged: true, gapId: gap.id }
 }

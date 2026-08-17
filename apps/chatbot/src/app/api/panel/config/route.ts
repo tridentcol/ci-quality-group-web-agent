@@ -13,11 +13,31 @@ function fail(message: string, status = 400, code = 'VALIDATION') {
 
 const HHMM = /^([01]\d|2[0-3]):[0-5]\d$/
 
+interface NotifSecrets {
+  email?: { resendKey?: string; [k: string]: unknown }
+  telegram?: { token?: string; [k: string]: unknown }
+  [k: string]: unknown
+}
+
+// La API key de Resend y el token del bot de Telegram son secretos: no tiene
+// sentido devolverlos en texto plano a cualquier request autenticado de este
+// endpoint. Se enmascaran en la respuesta (con un flag de "sí está configurado"
+// para que la UI pueda mostrar un indicio sin exponer el valor).
+function maskNotificationSecrets(raw: unknown): unknown {
+  if (!raw || typeof raw !== 'object') return raw
+  const n = raw as NotifSecrets
+  return {
+    ...n,
+    email: n.email ? { ...n.email, resendKey: '', resendKeySet: !!n.email.resendKey } : n.email,
+    telegram: n.telegram ? { ...n.telegram, token: '', tokenSet: !!n.telegram.token } : n.telegram,
+  }
+}
+
 // GET — configuración del bot (fila única id=1)
 export async function GET() {
   const [cfg] = await db.select().from(botConfig).where(eq(botConfig.id, 1))
   if (!cfg) return fail('bot_config no inicializado (corre el seed).', 404, 'NOT_FOUND')
-  return ok(cfg)
+  return ok({ ...cfg, notifications: maskNotificationSecrets(cfg.notifications) })
 }
 
 const patchSchema = z
@@ -120,7 +140,22 @@ export async function PATCH(req: Request) {
   if (d.temperature !== undefined) set.temperature = d.temperature === null ? null : String(d.temperature)
   if (d.maxAttachments !== undefined) set.maxAttachments = d.maxAttachments
   if (d.extraInstructions !== undefined) set.extraInstructions = d.extraInstructions || null
-  if (d.notifications !== undefined) set.notifications = d.notifications
+  if (d.notifications !== undefined) {
+    // Un resendKey/token vacío significa "no lo toques" (así el GET puede enmascarar
+    // el secreto sin que guardar otro campo del formulario lo borre sin querer).
+    const [existing] = await db.select({ notifications: botConfig.notifications }).from(botConfig).where(eq(botConfig.id, 1))
+    const prev = (existing?.notifications ?? {}) as NotifSecrets
+    const next = d.notifications as NotifSecrets
+    set.notifications = {
+      ...next,
+      email: next.email
+        ? { ...next.email, resendKey: next.email.resendKey?.trim() || prev.email?.resendKey || '' }
+        : next.email,
+      telegram: next.telegram
+        ? { ...next.telegram, token: next.telegram.token?.trim() || prev.telegram?.token || '' }
+        : next.telegram,
+    }
+  }
 
   const [row] = await db.update(botConfig).set(set).where(eq(botConfig.id, 1)).returning()
   if (!row) return fail('bot_config no inicializado (corre el seed).', 404, 'NOT_FOUND')
