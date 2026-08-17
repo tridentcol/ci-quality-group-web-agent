@@ -1,4 +1,4 @@
-import { and, eq, isNull } from 'drizzle-orm'
+import { and, eq, isNull, sql } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import { botConfig, conversations, customerProfiles, webhookEvents } from '@/lib/db/schema'
 import { generateReply } from '@/lib/ai/generate'
@@ -36,6 +36,20 @@ export async function handleEvent(e: NormalizedEvent): Promise<void> {
     .returning({ eventId: webhookEvents.eventId })
   if (!fresh) return
 
+  // Lock por conversación (mismo patrón que capture_lead en tools.ts): si el
+  // cliente manda dos mensajes casi seguidos, Meta puede entregarlos como dos
+  // webhooks casi simultáneos → dos `handleEvent` en paralelo, cada uno leyendo
+  // la memoria en un punto distinto y generando/enviando una respuesta propia
+  // (visto en prod: el bot respondía dos veces distinto a la misma pregunta).
+  // El lock serializa todo el pipeline por (canal, externalId): el segundo
+  // evento espera a que el primero termine de responder antes de arrancar.
+  await db.transaction(async (tx) => {
+    await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${`${e.channel}:${e.externalId}`}))`)
+    await processEvent(e)
+  })
+}
+
+async function processEvent(e: NormalizedEvent): Promise<void> {
   const mem = await loadMemory(e.channel, e.externalId)
 
   // Persistir el nombre del cliente (lo trae WhatsApp) si aún no lo tenemos.
