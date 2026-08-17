@@ -37,7 +37,7 @@
     "inngest": "^4.5.0",
     "lucide-react": "^1.17.0",
     "mammoth": "^1.12.0",
-    "next": "16.2.7",
+    "next": "16.2.12",
     "officeparser": "^7.1.0",
     "openai": "^6.41.0",
     "pdf-parse": "^2.4.5",

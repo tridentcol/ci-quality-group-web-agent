@@ -90,7 +90,7 @@ export default async function DashboardPage() {
     db.$count(conversations, eq(conversations.status, "human_controlled")),
     db.$count(leads, eq(leads.test, false)),
     db.$count(leads, and(eq(leads.test, false), gte(leads.createdAt, since7))),
-    db.$count(knowledgeGaps, eq(knowledgeGaps.status, "open")),
+    db.$count(knowledgeGaps, and(eq(knowledgeGaps.status, "open"), eq(knowledgeGaps.test, false))),
     db.$count(knowledgeSources, eq(knowledgeSources.status, "ready")),
     db.$count(materials, eq(materials.active, true)),
     db.$count(images),
@@ -126,7 +126,7 @@ export default async function DashboardPage() {
     db
       .select({ id: knowledgeGaps.id, question: knowledgeGaps.question, createdAt: knowledgeGaps.createdAt })
       .from(knowledgeGaps)
-      .where(eq(knowledgeGaps.status, "open"))
+      .where(and(eq(knowledgeGaps.status, "open"), eq(knowledgeGaps.test, false)))
       .orderBy(desc(knowledgeGaps.createdAt))
       .limit(6),
     db

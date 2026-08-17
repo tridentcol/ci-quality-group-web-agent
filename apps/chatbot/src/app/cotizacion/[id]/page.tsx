@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
@@ -8,7 +9,13 @@ import { PrintButton } from "./print-button";
  * Cotización pública e imprimible (se comparte por enlace). Fuera de (panel) → sin
  * Clerk; el id (UUID) es el token. Server component que lee la cotización + datos de
  * la empresa de bot_config.
+ *
+ * El UUID no es adivinable (defensa principal), pero si el link se filtra a un
+ * contexto rastreable (bot de previsualización, foro, etc.) no debería quedar
+ * indexado con nombre/teléfono/precios del cliente.
  */
+export const metadata: Metadata = { robots: { index: false, follow: false } };
+
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 interface Item {

@@ -33,6 +33,16 @@ function check(kase: EvalCase, res: Awaited<ReturnType<typeof generateReply>>): 
     const hit = kase.replyMustNotInclude.filter((s) => res.reply.toLowerCase().includes(s.toLowerCase()))
     if (hit.length) fails.push(`la respuesta no debía incluir [${hit.join(', ')}]`)
   }
+  // No basta con que la tool se haya LLAMADO: si sus args no cumplen lo esperado,
+  // es tan fallo como si no se hubiera llamado (ver EvalCase.expectToolArgs).
+  if (kase.expectToolArgs) {
+    for (const expectation of kase.expectToolArgs) {
+      const call = res.toolCalls.find((t) => t.name === expectation.tool)
+      if (call && !expectation.check((call.args as Record<string, unknown>) ?? {})) {
+        fails.push(`${expectation.tool} se llamó pero no cumple: ${expectation.description}`)
+      }
+    }
+  }
   return fails
 }
 

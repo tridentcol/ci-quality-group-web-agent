@@ -411,18 +411,29 @@ export async function logKnowledgeGap(
 ): Promise<{ logged: true; gapId: string }> {
   const mode = ctx.mode ?? 'live'
   // En eval (regresión) no escribimos. En live y test (playground) SÍ: así, al
-  // probar el bot, lo que no pudo responder queda visible en /gaps para resolverlo.
+  // probar el bot, lo que no pudo responder queda visible en /gaps para resolverlo
+  // — pero marcado test:true (mismo patrón que leads), para no mezclarse con
+  // huecos reales de clientes (antes SÍ se mezclaban pese a que la UI del
+  // playground decía "no crea huecos reales").
   if (mode === 'eval') return { logged: true, gapId: 'dry-run' }
+  const isTest = mode === 'test'
 
   const question = args.question.trim()
   const questionEmbedding = await embed(question)
 
-  // Dedupe SEMÁNTICO: el hueco abierto más parecido, si supera el umbral.
+  // Dedupe SEMÁNTICO: el hueco abierto más parecido (del mismo tipo test/real),
+  // si supera el umbral.
   const similarity = sql<number>`1 - (${cosineDistance(knowledgeGaps.embedding, questionEmbedding)})`
   const [near] = await db
     .select({ id: knowledgeGaps.id, similarity })
     .from(knowledgeGaps)
-    .where(and(eq(knowledgeGaps.status, 'open'), sql`${knowledgeGaps.embedding} is not null`))
+    .where(
+      and(
+        eq(knowledgeGaps.status, 'open'),
+        eq(knowledgeGaps.test, isTest),
+        sql`${knowledgeGaps.embedding} is not null`,
+      ),
+    )
     .orderBy(desc(similarity))
     .limit(1)
   if (near && near.similarity >= GAP_DUP_THRESHOLD) return { logged: true, gapId: near.id }
@@ -432,14 +443,18 @@ export async function logKnowledgeGap(
     .select({ id: knowledgeGaps.id })
     .from(knowledgeGaps)
     .where(
-      and(eq(knowledgeGaps.status, 'open'), sql`lower(${knowledgeGaps.question}) = ${question.toLowerCase()}`),
+      and(
+        eq(knowledgeGaps.status, 'open'),
+        eq(knowledgeGaps.test, isTest),
+        sql`lower(${knowledgeGaps.question}) = ${question.toLowerCase()}`,
+      ),
     )
     .limit(1)
   if (exact) return { logged: true, gapId: exact.id }
 
   const [gap] = await db
     .insert(knowledgeGaps)
-    .values({ conversationId: ctx.conversationId ?? null, question, embedding: questionEmbedding })
+    .values({ conversationId: ctx.conversationId ?? null, question, embedding: questionEmbedding, test: isTest })
     .returning({ id: knowledgeGaps.id })
   return { logged: true, gapId: gap.id }
 }
