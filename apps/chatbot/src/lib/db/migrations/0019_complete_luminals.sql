@@ -1,0 +1,1 @@
+ALTER TABLE "knowledge_gaps" ADD COLUMN "test" boolean DEFAULT false NOT NULL;

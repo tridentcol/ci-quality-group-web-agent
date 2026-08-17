@@ -81,7 +81,7 @@ export function Playground() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <p className="text-xs text-muted-foreground">
-          Conversación de prueba con memoria entre turnos. No crea leads ni huecos.
+          Conversación de prueba con memoria entre turnos. No crea leads ni huecos reales (quedan marcados de prueba).
         </p>
         {turns.length > 0 && (
           <button

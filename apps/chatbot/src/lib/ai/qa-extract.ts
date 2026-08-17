@@ -18,6 +18,14 @@ export interface QaPair {
   answer: string
 }
 
+export interface GenerateQaResult {
+  pairs: QaPair[]
+  /** true si el documento superaba MAX_CHARS y se generaron preguntas solo del
+   *  inicio — el RAG normal (chunks) sí cubre el documento completo, pero las
+   *  FAQ generadas no, sin que antes hubiera ningún aviso de eso. */
+  truncated: boolean
+}
+
 const PROMPT = `Eres un analista de conocimiento. A partir ÚNICAMENTE del siguiente documento, genera las preguntas frecuentes que un cliente podría hacerle a la empresa y que ESTE documento permite responder, con su respuesta.
 
 Reglas:
@@ -39,9 +47,10 @@ const safeJson = (s: string): Record<string, unknown> => {
   }
 }
 
-export async function generateQa(content: string): Promise<QaPair[]> {
+export async function generateQa(content: string): Promise<GenerateQaResult> {
   const text = content.trim()
-  if (text.length < MIN_CHARS) return []
+  if (text.length < MIN_CHARS) return { pairs: [], truncated: false }
+  const truncated = text.length > MAX_CHARS
 
   const completion = await openai.chat.completions.create({
     model: MODEL,
@@ -66,5 +75,5 @@ export async function generateQa(content: string): Promise<QaPair[]> {
     }
     if (out.length >= MAX_QA) break
   }
-  return out
+  return { pairs: out, truncated }
 }

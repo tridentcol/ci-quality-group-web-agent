@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { eq } from 'drizzle-orm'
 import { db } from '@/lib/db'
-import { conversations, images, messages } from '@/lib/db/schema'
+import { conversations, customerProfiles, images, messages } from '@/lib/db/schema'
 import { sendText, sendMedia } from '@/lib/meta/send'
 import type { Channel } from '@/lib/meta/normalize'
 import { inngest } from '@/inngest/client'
@@ -49,7 +49,7 @@ export async function POST(req: Request) {
   if (!text && !imageId) return fail('Escribe un mensaje o adjunta un medio.')
 
   const [conv] = await db
-    .select({ channel: conversations.channel, externalId: conversations.externalId })
+    .select({ channel: conversations.channel, externalId: conversations.externalId, customerId: conversations.customerId })
     .from(conversations)
     .where(eq(conversations.id, id))
   if (!conv) return fail('La conversación no existe.', 404, 'NOT_FOUND')
@@ -103,6 +103,16 @@ export async function POST(req: Request) {
     .update(conversations)
     .set({ status: 'human_controlled', lastMessageAt: new Date() })
     .where(eq(conversations.id, id))
+  // Mantiene el perfil "vivo" mientras un agente lo sigue atendiendo — sin esto,
+  // `customer_profiles.lastSeenAt` se queda congelado en el último mensaje del
+  // CLIENTE, y el job de retención podía borrar el perfil de alguien a quien un
+  // agente le seguía respondiendo, dejando la conversación viva pero desvinculada.
+  if (conv.customerId) {
+    await db
+      .update(customerProfiles)
+      .set({ lastSeenAt: new Date() })
+      .where(eq(customerProfiles.id, conv.customerId))
+  }
   await inngest.send({ name: 'memory/conversation.ended', data: { conversationId: id } })
 
   return ok({ messages: created, status: 'human_controlled' })

@@ -39,7 +39,7 @@ export async function POST(req: Request) {
   }
 
   try {
-    const pairs = await generateQa(src.content)
+    const { pairs, truncated } = await generateQa(src.content)
     await db.delete(knowledgeQa).where(eq(knowledgeQa.sourceId, sourceId))
     if (pairs.length > 0) {
       const embeddings = await embedBatch(pairs.map((p) => p.question))
@@ -52,7 +52,9 @@ export async function POST(req: Request) {
       .set({ qaCount: pairs.length, updatedAt: new Date() })
       .where(eq(knowledgeSources.id, sourceId))
 
-    return NextResponse.json({ success: true, data: { count: pairs.length } })
+    // `truncated`: el documento pasa el tope de generación de preguntas — las FAQ
+    // solo cubren el inicio (el RAG normal sí cubre el documento completo).
+    return NextResponse.json({ success: true, data: { count: pairs.length, truncated } })
   } catch (e) {
     console.error('qa/regenerate error:', e instanceof Error ? e.message : e)
     return NextResponse.json(

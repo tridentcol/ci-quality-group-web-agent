@@ -21,6 +21,10 @@ const isProtectedRoute = createRouteMatcher([
   '/conversations(.*)',
   '/health(.*)',
   '/settings(.*)',
+  // Faltaban: quedaban sin proteger a nivel de proxy (solo defendidas por el
+  // guard de `(panel)/layout.tsx` — hallazgo de auditoría de seguridad).
+  '/images(.*)',
+  '/playground(.*)',
   '/api/panel(.*)',
 ])
 

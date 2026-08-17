@@ -8,6 +8,7 @@ import { scrapeUrl } from '@/lib/ingest/scrape'
 import { chunkText } from '@/lib/ingest/chunk'
 import { embedBatch } from '@/lib/ai/embed'
 import { generateQa } from '@/lib/ai/qa-extract'
+import { logEvent } from '@/lib/log'
 
 const EMBED_BATCH = 96 // tamaño de lote para embeddings
 
@@ -108,7 +109,18 @@ export const ingestSource = inngest.createFunction(
         await db.delete(knowledgeQa).where(eq(knowledgeQa.sourceId, sourceId))
         if (!qaEnabled) return 0
         try {
-          const pairs = await generateQa(text)
+          const { pairs, truncated } = await generateQa(text)
+          if (truncated) {
+            // El RAG normal (chunks) sí cubre el documento completo; las FAQ
+            // generadas no, si el documento pasa el tope de caracteres — antes
+            // esto no quedaba registrado en ningún lado.
+            await logEvent(
+              'warning',
+              'ingest',
+              `"${source.name}" es más largo que el tope de generación de preguntas: las FAQ generadas cubren solo el inicio del documento (el RAG normal sí lo cubre completo).`,
+              { sourceId },
+            )
+          }
           if (pairs.length === 0) return 0
           const embeddings = await embedBatch(pairs.map((p) => p.question))
           await db.insert(knowledgeQa).values(
@@ -147,6 +159,11 @@ export const ingestSource = inngest.createFunction(
           .set({ status: 'failed', error: message })
           .where(eq(knowledgeSources.id, sourceId))
       })
+      // Antes esto solo quedaba en knowledge_sources.error — el admin solo se
+      // enteraba si entraba manualmente a la pestaña Conocimiento. Ahora también
+      // aparece en el Panel de salud (hallazgo de auditoría: una fuente atascada
+      // en pending/failed podía pasar inadvertida indefinidamente).
+      await logEvent('error', 'ingest', `Falló la ingesta de "${source.name}": ${message}`, { sourceId })
       throw err
     }
   },
