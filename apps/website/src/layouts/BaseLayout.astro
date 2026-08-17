@@ -19,15 +19,17 @@ const canonical = new URL(Astro.url.pathname, siteUrl).toString();
 // JSON-LD LocalBusiness (SEO local — NAP de Colombia)
 const jsonLd = {
   '@context': 'https://schema.org',
-  '@type': 'Organization',
+  '@type': 'LocalBusiness',
   name: 'CI Quality Group S.A.S.',
   legalName: 'CI Quality Group S.A.S.',
   taxID: '901.361.037',
   url: siteUrl,
   email: import.meta.env.PUBLIC_CONTACT_EMAIL ?? 'contacto@ci-quality-group.com',
+  telephone: '+57 302 312 0099',
   description,
   address: {
     '@type': 'PostalAddress',
+    streetAddress: 'Kra 67 #9-315, vía principal Arroz Barato',
     addressLocality: 'Cartagena de Indias',
     addressRegion: 'Bolívar',
     addressCountry: 'CO',
@@ -54,7 +56,7 @@ const jsonLd = {
     <title>{title}</title>
     <meta name="description" content={description} />
     <link rel="canonical" href={canonical} />
-    <meta name="theme-color" content="#3A8C2F" />
+    <meta name="theme-color" content="#358024" />
 
     <!-- Open Graph -->
     <meta property="og:type" content="website" />
@@ -63,12 +65,15 @@ const jsonLd = {
     <meta property="og:description" content={description} />
     <meta property="og:url" content={canonical} />
     <meta property="og:locale" content="es_CO" />
-    <meta property="og:image" content={new URL('/og-image.svg', siteUrl).toString()} />
+    <meta property="og:image" content={new URL('/og-image.jpg', siteUrl).toString()} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
 
     <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content={title} />
     <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={new URL('/og-image.jpg', siteUrl).toString()} />
 
     <script
       is:inline

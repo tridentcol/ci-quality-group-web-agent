@@ -501,12 +501,8 @@ const apiUrl = CHAT.apiUrl;
 </style>
 
 <script>
-  type Attachment = { url: string; caption?: string; type: 'image' | 'video' };
-  type ApiResponse = {
-    success: boolean;
-    data?: { reply: string; handoff?: boolean; attachments?: Attachment[] };
-    error?: { code: string; message: string };
-  };
+  // Contrato real de /api/chat/web (fuente única de verdad: @cqg/shared).
+  import type { ChatApiResponse, ChatWelcomeApiResponse, MediaAttachment } from '@cqg/shared/chat-contract';
 
   // --- Renderizado seguro del texto del bot (markdown/WhatsApp → HTML) ---
   const escapeHtml = (s: string): string =>
@@ -641,7 +637,7 @@ const apiUrl = CHAT.apiUrl;
     const addMessage = (
       text: string,
       who: 'bot' | 'user' | 'error',
-      attachments?: Attachment[],
+      attachments?: MediaAttachment[],
     ): HTMLElement => {
       const row = document.createElement('div');
       row.className = `cqg-row cqg-row--${who === 'user' ? 'user' : 'bot'}`;
@@ -713,7 +709,7 @@ const apiUrl = CHAT.apiUrl;
         // siempre está disponible sin importar el horario del negocio.
         fetch(apiUrl, { method: 'GET' })
           .then((res) => res.json())
-          .then((json: { success?: boolean; data?: { botName?: string; welcomeMessage?: string } }) => {
+          .then((json: ChatWelcomeApiResponse) => {
             const data = json?.data;
             if (data?.botName?.trim()) brandName.textContent = data.botName.trim();
             addMessage(data?.welcomeMessage?.trim() || FALLBACK_GREETING, 'bot');
@@ -727,6 +723,9 @@ const apiUrl = CHAT.apiUrl;
       panel.hidden = true;
       root.classList.remove('is-open');
       fab.setAttribute('aria-expanded', 'false');
+      // Devolver el foco a la burbuja que abrió el panel (Escape o el botón ×
+      // no deben dejar el foco "perdido" en un elemento ya oculto).
+      fab.focus();
     };
 
     fab.addEventListener('click', () => (panel.hidden ? openPanel() : closePanel()));
@@ -770,7 +769,7 @@ const apiUrl = CHAT.apiUrl;
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ sessionId, message }),
         });
-        const json = (await res.json().catch(() => null)) as ApiResponse | null;
+        const json = (await res.json().catch(() => null)) as ChatApiResponse | null;
         typing.remove();
 
         if (res.ok && json?.success && json.data) {
