@@ -9,6 +9,11 @@ import { appendMessage, countMessages, loadMemory } from '@/lib/ai/memory'
 import { inngest } from '@/inngest/client'
 import { logEvent } from '@/lib/log'
 
+interface ChatResult {
+  status: number
+  body: unknown
+}
+
 /**
  * Chat web público (burbuja del sitio corporativo). Blueprint §8: mismo cerebro
  * que los canales Meta, canal `web`. Reutiliza el pipeline de `handleEvent`
@@ -25,6 +30,7 @@ export const runtime = 'nodejs'
 export const maxDuration = 30
 
 const SUMMARIZE_AT = 12
+const SUMMARIZE_EVERY = 5
 
 // Orígenes permitidos para CORS. Configurable con WEB_CHAT_ALLOWED_ORIGINS
 // (coma-separado); por defecto, el dominio del sitio + dev local de Astro.
@@ -115,98 +121,109 @@ export async function POST(req: Request) {
   const { sessionId, message } = parsed.data
 
   try {
-    // 1) Memoria: upsert de conversación con channel='web' + perfil + historial.
-    const mem = await loadMemory('web', sessionId)
-
-    // 2) Anti-abuso por sesión: ¿demasiados mensajes en la ventana?
-    const since = new Date(Date.now() - RATE_WINDOW_MS)
-    const [{ n }] = await db
-      .select({ n: sql<number>`count(*)::int` })
-      .from(messages)
-      .where(
-        and(
-          eq(messages.conversationId, mem.conversationId),
-          eq(messages.role, 'user'),
-          gt(messages.createdAt, since),
-        ),
-      )
-    if (n >= RATE_MAX_IN_WINDOW) {
-      return NextResponse.json(
-        { success: false, error: { code: 'RATE_LIMIT', message: 'Vas muy rápido, espera un momento.' } },
-        { status: 429, headers: cors },
-      )
-    }
-
-    // 3) Guardar el mensaje entrante.
-    await appendMessage(mem.conversationId, 'user', message)
-
-    // 4) Si un humano tomó el hilo desde el panel, el bot no responde.
-    if (mem.status === 'human_controlled') {
-      return NextResponse.json(
-        {
-          success: true,
-          data: {
-            reply: 'Un asesor está atendiendo tu conversación y te responderá en breve por este chat.',
-            handoff: true,
-            attachments: [],
-          },
-        },
-        { headers: cors },
-      )
-    }
-
-    // 5) Generar (RAG + router + tools). mode:'live' → leads reales + notifica al admin.
-    const res = await generateReply({
-      message,
-      history: mem.history,
-      conversationId: mem.conversationId,
-      customerSummary: mem.customerSummary,
-      conversationSummary: mem.summary,
-      mode: 'live',
+    // Lock por sesión (mismo patrón que el webhook de Meta, handle.ts): si el
+    // navegador manda dos mensajes casi seguidos (doble clic, reintento del
+    // cliente), esto serializa el pipeline por sessionId en vez de dejar correr
+    // dos generaciones en paralelo que lean la memoria en puntos distintos.
+    const result = await db.transaction(async (tx) => {
+      await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${`web:${sessionId}`}))`)
+      return runChat(sessionId, message)
     })
-
-    // 6) Persistir la respuesta del bot con metadata (igual que el canal Meta).
-    if (res.reply.trim()) {
-      await appendMessage(mem.conversationId, 'assistant', res.reply, undefined, {
-        model: res.model,
-        routerReason: res.routerReason,
-        contextUsed: res.contextUsed,
-        topScores: res.retrieved.slice(0, 3).map((r) => Number(r.similarity.toFixed(3))),
-        tools: res.toolCalls.map((t) => t.name),
-      })
-    }
-
-    // 7) Resumen periódico en segundo plano (no retrasa la respuesta).
-    after(async () => {
-      try {
-        if ((await countMessages(mem.conversationId)) > SUMMARIZE_AT) {
-          await inngest.send({
-            name: 'memory/conversation.summarize',
-            data: { conversationId: mem.conversationId },
-          })
-        }
-      } catch {
-        // best-effort: el resumen es secundario
-      }
-    })
-
-    return NextResponse.json(
-      {
-        success: true,
-        data: {
-          reply: res.reply,
-          handoff: res.toolCalls.some((t) => t.name === 'request_human_handoff'),
-          attachments: res.attachments,
-          location: res.location ?? null,
-        },
-      },
-      { headers: cors },
-    )
+    return NextResponse.json(result.body, { status: result.status, headers: cors })
   } catch (e) {
     await logEvent('error', 'chat/web', e instanceof Error ? e.message : String(e))
     return NextResponse.json(
       { success: false, error: { code: 'GENERATE', message: 'No se pudo responder. Reintenta.' } },
       { status: 500, headers: cors },
     )
+  }
+}
+
+async function runChat(sessionId: string, message: string): Promise<ChatResult> {
+  // 1) Memoria: upsert de conversación con channel='web' + perfil + historial.
+  const mem = await loadMemory('web', sessionId)
+
+  // 2) Anti-abuso por sesión: ¿demasiados mensajes en la ventana?
+  const since = new Date(Date.now() - RATE_WINDOW_MS)
+  const [{ n }] = await db
+    .select({ n: sql<number>`count(*)::int` })
+    .from(messages)
+    .where(
+      and(eq(messages.conversationId, mem.conversationId), eq(messages.role, 'user'), gt(messages.createdAt, since)),
+    )
+  if (n >= RATE_MAX_IN_WINDOW) {
+    return {
+      status: 429,
+      body: { success: false, error: { code: 'RATE_LIMIT', message: 'Vas muy rápido, espera un momento.' } },
+    }
+  }
+
+  // 3) Guardar el mensaje entrante.
+  await appendMessage(mem.conversationId, 'user', message)
+
+  // 4) Si un humano tomó el hilo desde el panel, el bot no responde.
+  if (mem.status === 'human_controlled') {
+    return {
+      status: 200,
+      body: {
+        success: true,
+        data: {
+          reply: 'Un asesor está atendiendo tu conversación y te responderá en breve por este chat.',
+          handoff: true,
+          attachments: [],
+        },
+      },
+    }
+  }
+
+  // 5) Generar (RAG + router + tools). mode:'live' → leads reales + notifica al admin.
+  const res = await generateReply({
+    message,
+    history: mem.history,
+    conversationId: mem.conversationId,
+    customerSummary: mem.customerSummary,
+    conversationSummary: mem.summary,
+    mode: 'live',
+  })
+
+  // 6) Persistir la respuesta del bot con metadata (igual que el canal Meta).
+  if (res.reply.trim()) {
+    await appendMessage(mem.conversationId, 'assistant', res.reply, undefined, {
+      model: res.model,
+      routerReason: res.routerReason,
+      contextUsed: res.contextUsed,
+      topScores: res.retrieved.slice(0, 3).map((r) => Number(r.similarity.toFixed(3))),
+      tools: res.toolCalls.map((t) => t.name),
+    })
+  }
+
+  // 7) Resumen periódico en segundo plano (no retrasa la respuesta). Una vez al
+  //    cruzar el umbral y luego cada SUMMARIZE_EVERY mensajes (el job ya es
+  //    incremental, pero no hace falta invocarlo en cada mensaje).
+  after(async () => {
+    try {
+      const count = await countMessages(mem.conversationId)
+      if (count > SUMMARIZE_AT && (count - SUMMARIZE_AT - 1) % SUMMARIZE_EVERY === 0) {
+        await inngest.send({
+          name: 'memory/conversation.summarize',
+          data: { conversationId: mem.conversationId },
+        })
+      }
+    } catch {
+      // best-effort: el resumen es secundario
+    }
+  })
+
+  return {
+    status: 200,
+    body: {
+      success: true,
+      data: {
+        reply: res.reply,
+        handoff: res.toolCalls.some((t) => t.name === 'request_human_handoff'),
+        attachments: res.attachments,
+        location: res.location ?? null,
+      },
+    },
   }
 }

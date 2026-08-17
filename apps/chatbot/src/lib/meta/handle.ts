@@ -6,11 +6,29 @@ import { appendMessage, countMessages, loadMemory } from '@/lib/ai/memory'
 import { inngest } from '@/inngest/client'
 import { notifyAdmin } from './notify'
 import { env } from '@/lib/env'
+import { logEvent } from '@/lib/log'
 import { sendText, sendMedia, sendLocation } from './send'
 import type { Channel, NormalizedEvent } from './normalize'
 
 /** A partir de cuántos mensajes pedir un resumen de la conversación. */
 const SUMMARIZE_AT = 12
+/** Cada cuántos mensajes (tras cruzar el umbral) se vuelve a pedir resumen. */
+const SUMMARIZE_EVERY = 5
+
+// Respuesta fija para mensajes sin texto (foto/audio/video/ubicación/sticker) que el
+// bot todavía no sabe procesar. Antes se ignoraban en silencio — el cliente se
+// quedaba sin ninguna respuesta, indistinguible de "el bot no funciona". No pasa por
+// el LLM: es más barato y 100% predecible que intentar "adivinar" sobre un adjunto.
+const UNSUPPORTED_LABEL: Record<string, string> = {
+  image: 'una imagen',
+  video: 'un video',
+  audio: 'un audio',
+  location: 'una ubicación',
+  file: 'un archivo',
+}
+const UNSUPPORTED_REPLY =
+  'Por ahora no puedo ver fotos, audios ni ubicaciones directamente. Cuéntame en texto qué material es ' +
+  'y qué cantidad tienes, y seguimos con la cotización.'
 
 /** ¿El canal está habilitado en bot_config? Ausente o sin config → habilitado. */
 async function channelEnabled(channel: Channel): Promise<boolean> {
@@ -79,6 +97,18 @@ async function processEvent(e: NormalizedEvent): Promise<void> {
     return
   }
 
+  // 2b) Mensaje sin texto que aún no sabemos procesar: se guarda (queda visible en
+  //     el panel) y se responde el aviso fijo, sin pasar por el LLM.
+  if (e.kind === 'unsupported') {
+    const label = UNSUPPORTED_LABEL[e.unsupportedType ?? 'file'] ?? 'un archivo'
+    await appendMessage(mem.conversationId, 'user', `[el cliente envió ${label}]`, e.messageId)
+    if (mem.status !== 'human_controlled' && (await channelEnabled(e.channel))) {
+      await sendText(e.channel, e.externalId, UNSUPPORTED_REPLY)
+      await appendMessage(mem.conversationId, 'assistant', UNSUPPORTED_REPLY, undefined, { tools: [] })
+    }
+    return
+  }
+
   // 3) Guardar el mensaje entrante del cliente.
   await appendMessage(mem.conversationId, 'user', e.text, e.messageId)
 
@@ -113,12 +143,18 @@ async function processEvent(e: NormalizedEvent): Promise<void> {
       })
     }
 
-    // Medios ilustrativos (imagen/video) que acompañan la respuesta.
+    // Medios ilustrativos (imagen/video) que acompañan la respuesta. Si falla, no
+    // rompemos la conversación (el texto ya se entregó) pero SÍ queda en el Panel
+    // de salud — antes se tragaba en silencio y nadie se enteraba de que la foto
+    // nunca le llegó al cliente.
     for (const att of res.attachments) {
       try {
         await sendMedia(e.channel, e.externalId, att)
-      } catch {
-        // si falla el envío de un medio, no rompemos la conversación
+      } catch (err) {
+        await logEvent('warning', 'send-media', err instanceof Error ? err.message : String(err), {
+          conversationId: mem.conversationId,
+          channel: e.channel,
+        })
       }
     }
 
@@ -126,23 +162,38 @@ async function processEvent(e: NormalizedEvent): Promise<void> {
     if (res.location) {
       try {
         await sendLocation(e.channel, e.externalId, res.location)
-      } catch {
-        // si falla la tarjeta, el texto ya llevó la dirección: no rompemos nada
+      } catch (err) {
+        // si falla la tarjeta, el texto ya llevó la dirección: no rompemos nada,
+        // pero igual queda registrado para poder darle seguimiento.
+        await logEvent('warning', 'send-location', err instanceof Error ? err.message : String(err), {
+          conversationId: mem.conversationId,
+          channel: e.channel,
+        })
       }
     }
   } catch (err) {
-    // Degradación elegante: avisar al admin (no quedarse callado) y relanzar para log.
+    // Degradación elegante: avisar al admin (no quedarse callado) y dejarlo en el
+    // Panel de salud CON el conversationId (antes el log de route.ts no lo traía,
+    // así que no había forma de saber a qué cliente afectó un error sin ir a
+    // revisar uno por uno). No relanzamos: ya quedó tanto notificado como logueado
+    // aquí mismo; el catch de route.ts sigue como red de seguridad para errores
+    // que no pasen por este pipeline (ej. fallos antes de tener `mem`).
+    const message = err instanceof Error ? err.message : String(err)
     const base = (env.APP_URL ?? '').replace(/\/$/, '')
     const link = /^https?:\/\//.test(base) ? `\n${base}/conversations/${mem.conversationId}` : ''
     await notifyAdmin(
       `⚠️ El bot no pudo responder a un cliente (${e.channel}). El mensaje quedó guardado; ` +
         `respóndele desde el panel.${link}`,
     )
-    throw err
+    await logEvent('error', 'bot-reply-failed', message, { conversationId: mem.conversationId, channel: e.channel })
+    return
   }
 
-  // 7) Resumen periódico para acotar tokens en conversaciones largas.
-  if ((await countMessages(mem.conversationId)) > SUMMARIZE_AT) {
+  // 7) Resumen periódico para acotar tokens en conversaciones largas. Se dispara
+  //    una vez al cruzar el umbral y luego cada SUMMARIZE_EVERY mensajes (no en
+  //    cada mensaje: el job ya es incremental, pero no hace falta invocarlo tanto).
+  const count = await countMessages(mem.conversationId)
+  if (count > SUMMARIZE_AT && (count - SUMMARIZE_AT - 1) % SUMMARIZE_EVERY === 0) {
     await inngest.send({
       name: 'memory/conversation.summarize',
       data: { conversationId: mem.conversationId },

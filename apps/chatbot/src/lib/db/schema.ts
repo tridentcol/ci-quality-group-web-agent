@@ -195,6 +195,15 @@ export const conversations = pgTable(
     customerName: text('customer_name'),
     status: text('status').notNull().default('bot_active'), // bot_active|human_controlled|closed
     summary: text('summary'), // resumen acumulado para conversaciones largas
+    // Cuántos mensajes (por orden de creación) ya están reflejados en `summary`.
+    // memory/summarize solo resume los mensajes MÁS ALLÁ de este punto (no toda la
+    // conversación otra vez cada vez) y avanza el marcador al guardar.
+    summarizedCount: integer('summarized_count').notNull().default(0),
+    // Última vez que memory/conversation.ended se disparó para esta conversación
+    // por INACTIVIDAD (no por intervención humana). Sin esto, una conversación que
+    // el bot atiende de principio a fin (el caso normal) nunca dispara update-profile
+    // y customer_profiles.facts queda vacío para siempre.
+    memorySyncedAt: timestamp('memory_synced_at', { withTimezone: true }),
     lastMessageAt: timestamp('last_message_at', { withTimezone: true }).defaultNow(),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
   },
@@ -256,18 +265,27 @@ export const leads = pgTable('leads', {
   index('leads_created_idx').on(t.createdAt), // listado por fecha
 ])
 
-// knowledge_gaps — preguntas sin respuesta (bucle de aprendizaje)
+// knowledge_gaps — preguntas sin respuesta (bucle de aprendizaje). El dedupe de
+// abiertos usa similitud semántica (embedding), no solo texto exacto: "¿qué calibre
+// tienen las láminas?" y "¿qué calibre tienen las láminas trapezoidales?" son la
+// MISMA pregunta sin resolver y no deberían acumularse como huecos distintos.
+// `embedding` es nullable: las filas de antes de este cambio quedan sin vector
+// (el dedupe cae a comparación exacta para esas, no se re-embeben en retroactivo).
 export const knowledgeGaps = pgTable('knowledge_gaps', {
   id: uuid('id').defaultRandom().primaryKey(),
   conversationId: uuid('conversation_id').references(() => conversations.id, {
     onDelete: 'set null',
   }),
   question: text('question').notNull(),
+  embedding: vector('embedding', { dimensions: 1536 }),
   status: text('status').notNull().default('open'), // open|resolved
   resolvedAnswer: text('resolved_answer'),
   resolvedAt: timestamp('resolved_at', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
-}, (t) => [index('gaps_conversation_idx').on(t.conversationId)])
+}, (t) => [
+  index('gaps_conversation_idx').on(t.conversationId),
+  index('gaps_embedding_idx').using('hnsw', t.embedding.op('vector_cosine_ops')),
+])
 
 // test_scenarios — escenarios de prueba del bot, editables desde el panel.
 // Cada uno define una conversación (turnos del cliente) y qué se espera del bot

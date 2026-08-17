@@ -5,6 +5,7 @@ import { db } from '@/lib/db'
 import { leads } from '@/lib/db/schema'
 import { isUuid } from '@/lib/api'
 import { listLeads, getLead } from '@/lib/data/panel'
+import { logEvent } from '@/lib/log'
 
 function ok(data: unknown) {
   return NextResponse.json({ success: true, data })
@@ -24,8 +25,19 @@ export async function GET() {
 export async function DELETE(req: Request) {
   const id = new URL(req.url).searchParams.get('id')
   if (!isUuid(id)) return fail('Falta el id del lead o es inválido.')
-  const [row] = await db.delete(leads).where(eq(leads.id, id)).returning({ id: leads.id })
+  const [row] = await db
+    .delete(leads)
+    .where(eq(leads.id, id))
+    .returning({ id: leads.id, ref: leads.ref, status: leads.status, test: leads.test })
   if (!row) return fail('El lead no existe.', 404, 'NOT_FOUND')
+  // Rastro de auditoría SIN datos personales (solo ref/status) — no reportar leads
+  // de prueba del playground, solo los reales, para no ensuciar el Panel de salud.
+  if (!row.test) {
+    await logEvent('warning', 'compliance-delete', `Lead #${row.ref} borrado (status: ${row.status}).`, {
+      ref: row.ref,
+      status: row.status,
+    })
+  }
   return ok({ deleted: id })
 }
 

@@ -10,6 +10,7 @@ import { executeTool, toolDefinitions, MEDIA_MIN_SCORE, type ToolContext, type T
 import { RAG_K, RAG_MIN_SCORE } from './rag-config'
 import { isAfterHours, describeHours } from './hours'
 import { stripStrayMarkdown } from './sanitize'
+import { logEvent } from '@/lib/log'
 
 /**
  * Motor de generación (blueprint §9 Step 9): arma el system prompt (tono +
@@ -103,7 +104,11 @@ export async function assembleGeneration(input: GenerateInput): Promise<Assemble
   //    NULL en una columna = usar el valor por defecto del código.
   const [cfg] = await db.select().from(botConfig).where(eq(botConfig.id, 1))
   const ragK = cfg?.ragK ?? RAG_K
-  const ragMinScore = cfg?.ragMinScore != null ? Number(cfg.ragMinScore) : RAG_MIN_SCORE
+  // Piso de seguridad (mismo patrón que mediaMinScore en tools.ts): la afinación
+  // en Ajustes solo puede hacer el filtro MÁS estricto, nunca más laxo que el
+  // default — un umbral en 0 dejaba pasar cualquier fragmento como "contexto
+  // relevante", sin importar qué tan lejos estuviera del tema.
+  const ragMinScore = Math.max(cfg?.ragMinScore != null ? Number(cfg.ragMinScore) : RAG_MIN_SCORE, RAG_MIN_SCORE)
   const temperature = cfg?.temperature != null ? Number(cfg.temperature) : TEMPERATURE
   const maxAttachments = cfg?.maxAttachments ?? MAX_ATTACHMENTS
   const mediaMinScore = cfg?.mediaMinScore != null ? Number(cfg.mediaMinScore) : MEDIA_MIN_SCORE
@@ -265,7 +270,16 @@ export async function generateReply(input: GenerateInput): Promise<GenerateResul
       try {
         result = await executeTool(call.function.name, call.function.arguments, ctx)
       } catch (e) {
-        result = { error: e instanceof Error ? e.message : String(e) }
+        const message = e instanceof Error ? e.message : String(e)
+        result = { error: message }
+        // Antes este error solo quedaba en la respuesta interna a OpenAI: si el
+        // modelo igual le decía al cliente "ya quedó registrado", nadie se
+        // enteraba de que la tool había fallado. Ahora queda en el Panel de salud.
+        if (ctx.mode === 'live') {
+          await logEvent('error', 'tools', `${call.function.name} falló: ${message}`, {
+            conversationId: ctx.conversationId,
+          })
+        }
       }
       collectAttachment(call.function.name, result)
       executed.push({ name: call.function.name, args: safeParse(call.function.arguments), result })

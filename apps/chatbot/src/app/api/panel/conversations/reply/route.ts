@@ -22,6 +22,19 @@ function fail(message: string, status = 400, code = 'VALIDATION') {
 
 const META_CHANNELS = ['messenger', 'whatsapp', 'instagram'] as const
 
+// El error crudo de Meta (ej. "Meta Send API 400: {...}") no le dice nada a un
+// admin sin contexto técnico — el caso más común es simplemente que la ventana de
+// 24h para responder directo ya se cerró, o que la cuenta del cliente no está
+// disponible. Se antepone una explicación humana sin perder el detalle técnico.
+function friendlyMetaError(raw: string): string {
+  if (!/Meta (Send API|Graph)/.test(raw)) return raw
+  return (
+    'Meta no permitió enviar este mensaje. Motivos comunes: pasaron más de 24h desde el último ' +
+    'mensaje del cliente (hay que esperar a que él escriba de nuevo, o usar una plantilla aprobada), ' +
+    `o la cuenta del cliente no está disponible en este momento.\n\nDetalle técnico: ${raw}`
+  )
+}
+
 const bodySchema = z.object({
   id: z.string().uuid('Conversación inválida.'),
   text: z.string().trim().max(4000).optional(),
@@ -81,7 +94,7 @@ export async function POST(req: Request) {
       created.push(row)
     }
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'No se pudo enviar el mensaje.'
+    const message = friendlyMetaError(err instanceof Error ? err.message : 'No se pudo enviar el mensaje.')
     return fail(message, 502, 'SEND_FAILED')
   }
 

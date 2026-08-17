@@ -30,3 +30,16 @@ export function ConversationStatusBadge({ status }: { status: string }) {
     </span>
   );
 }
+
+// El bot no logró responder al último mensaje del cliente (falló el envío o hubo
+// un error) y ya pasó un rato — nadie lo notó a simple vista antes de esto.
+export function NeedsAttentionBadge() {
+  return (
+    <span
+      className="inline-flex items-center gap-1 rounded-full bg-destructive/15 px-2 py-0.5 text-xs font-medium text-destructive"
+      title="El bot no logró responder al último mensaje del cliente. Revisa y responde desde el panel."
+    >
+      Sin responder
+    </span>
+  );
+}

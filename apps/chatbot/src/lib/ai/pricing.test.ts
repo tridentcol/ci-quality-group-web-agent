@@ -92,12 +92,20 @@ describe('resolveLookup', () => {
 
   it('encuentra por nombre dentro de una frase ("laminas tipo kingspan" → Kingspan)', () => {
     const r = resolveLookup([cobre, kingspan], { material: 'laminas tipo kingspan' })
-    expect(r).toMatchObject({ available: true, material: 'Kingspan', unitPriceCop: 90000 })
+    expect(r).toMatchObject({ available: true, material: 'Kingspan', unitPriceCop: 90000, matchedBy: 'name' })
   })
 
-  it('encuentra por categoría con plural y acento ("laminas" → categoría "lámina")', () => {
+  it('encuentra por categoría con plural y acento ("laminas" → categoría "lámina") y lo marca matchedBy:category', () => {
     const r = resolveLookup([cobre, kingspan], { material: 'láminas' })
-    expect(r).toMatchObject({ available: true, material: 'Kingspan' })
+    expect(r).toMatchObject({ available: true, material: 'Kingspan', matchedBy: 'category' })
+  })
+
+  it('un producto inexistente que solo comparte categoría también queda matchedBy:category (no name)', () => {
+    // Caso real: el cliente pregunta por "lámina arquitectónica" (no existe como
+    // producto), y el único parecido es por la palabra "lámina" en la categoría del
+    // Kingspan — el bot no debe confirmar esto como si fuera exactamente lo pedido.
+    const r = resolveLookup([cobre, kingspan], { material: 'lámina arquitectónica' })
+    expect(r).toMatchObject({ available: true, material: 'Kingspan', matchedBy: 'category' })
   })
 
   it('no coincide con nada → not_found', () => {

@@ -2,7 +2,10 @@
  * Normalización de eventos de los 3 canales Meta a una forma común
  * (blueprint §9 Step 10). Messenger e Instagram comparten el formato "page"
  * (entry[].messaging[]); WhatsApp Cloud usa entry[].changes[].value.messages[].
- * Solo se procesan mensajes de texto; se ignoran adjuntos, reacciones y estados.
+ * Los mensajes SIN texto (foto/audio/video/ubicación/sticker/documento) no se
+ * ignoran en silencio: se normalizan como `kind:'unsupported'` para que el
+ * pipeline le avise al cliente en vez de dejarlo sin respuesta (ver handle.ts).
+ * Sí se ignoran las notificaciones sin contenido real (recibos de entrega/lectura).
  */
 
 export type Channel = 'messenger' | 'whatsapp' | 'instagram'
@@ -17,6 +20,10 @@ export interface NormalizedEvent {
   customerName?: string
   /** Mensaje enviado por un humano desde la bandeja de Meta (relevo). */
   isEcho: boolean
+  /** 'text' = mensaje normal; 'unsupported' = sin texto (foto/audio/video/ubicación/...). */
+  kind: 'text' | 'unsupported'
+  /** Tipo del adjunto no soportado (image/audio/video/location/document/...), si kind==='unsupported'. */
+  unsupportedType?: string
 }
 
 type Json = Record<string, unknown>
@@ -33,6 +40,14 @@ export function normalize(body: unknown): NormalizedEvent[] {
   return []
 }
 
+// Tipo del primer adjunto de un mensaje de Messenger/Instagram (image/audio/video/
+// file/location/fallback...) → normalizado a un puñado de valores conocidos.
+function pageAttachmentType(attachments: unknown): string {
+  const first = Array.isArray(attachments) ? (attachments[0] as Json | undefined) : undefined
+  const t = typeof first?.type === 'string' ? first.type : 'file'
+  return ['image', 'video', 'audio', 'location'].includes(t) ? t : 'file'
+}
+
 function normalizePage(body: Json, channel: Channel): NormalizedEvent[] {
   const out: NormalizedEvent[] = []
   for (const entry of asArray(body.entry)) {
@@ -42,10 +57,8 @@ function normalizePage(body: Json, channel: Channel): NormalizedEvent[] {
       const msg = m.message as Json | undefined
       const postback = m.postback as Json | undefined
 
-      // 1) Mensaje de texto (ignoramos adjuntos/no-texto por ahora).
+      // 1) Mensaje (texto o adjunto).
       if (msg && !msg.is_deleted) {
-        const text = str(msg.text)
-        if (!text) continue
         const isEcho = !!msg.is_echo
         // Echo enviado por una APP (incluido nuestro propio bot) trae `app_id`.
         // Lo ignoramos: si no, el bot tomaría su propia respuesta como "un humano
@@ -56,7 +69,36 @@ function normalizePage(body: Json, channel: Channel): NormalizedEvent[] {
         const externalId = str(isEcho ? recipient : sender)
         const messageId = str(msg.mid)
         if (!externalId || !messageId) continue
-        out.push({ channel, externalId, text, messageId, isEcho })
+
+        const text = str(msg.text)
+        if (text) {
+          out.push({ channel, externalId, text, messageId, isEcho, kind: 'text' })
+          continue
+        }
+
+        // Echo sin texto (un humano mandó solo una foto/adjunto desde la bandeja de
+        // Meta): igual debe tomar el control del bot, aunque no traiga texto.
+        if (isEcho) {
+          out.push({ channel, externalId, text: '[adjunto sin texto]', messageId, isEcho: true, kind: 'text' })
+          continue
+        }
+
+        // Mensaje entrante sin texto (foto/audio/video/ubicación/sticker/documento):
+        // antes se ignoraba en silencio (el cliente quedaba sin ninguna respuesta,
+        // indistinguible de "el bot no funciona"). Ahora se marca 'unsupported' para
+        // que el pipeline avise en vez de callar. Si no hay adjunto tampoco (recibos
+        // de entrega/lectura u otras notificaciones vacías), se ignora de verdad.
+        if (msg.attachments) {
+          out.push({
+            channel,
+            externalId,
+            text: '',
+            messageId,
+            isEcho: false,
+            kind: 'unsupported',
+            unsupportedType: pageAttachmentType(msg.attachments),
+          })
+        }
         continue
       }
 
@@ -70,7 +112,7 @@ function normalizePage(body: Json, channel: Channel): NormalizedEvent[] {
         const messageId =
           str(postback.mid) ?? (externalId ? `pb:${externalId}:${ts ?? text}` : undefined)
         if (!text || !externalId || !messageId) continue
-        out.push({ channel, externalId, text, messageId, isEcho: false })
+        out.push({ channel, externalId, text, messageId, isEcho: false, kind: 'text' })
       }
     }
   }
@@ -92,19 +134,30 @@ function normalizeWhatsApp(body: Json): NormalizedEvent[] {
       }
 
       for (const msg of asArray(value.messages)) {
-        if (msg.type !== 'text') continue
-        const text = str((msg.text as Json | undefined)?.body)
         const externalId = str(msg.from)
         const messageId = str(msg.id)
-        if (!text || !externalId || !messageId) continue
+        if (!externalId || !messageId) continue
+        const customerName = nameByWaId.get(externalId)
 
+        if (msg.type === 'text') {
+          const text = str((msg.text as Json | undefined)?.body)
+          if (!text) continue
+          out.push({ channel: 'whatsapp', externalId, text, messageId, isEcho: false, kind: 'text', customerName })
+          continue
+        }
+
+        // No-texto (image/audio/video/document/location/sticker/contacts/...): antes
+        // se ignoraba en silencio. Ahora se marca 'unsupported' para avisar en vez de
+        // dejar al cliente sin respuesta.
         out.push({
           channel: 'whatsapp',
           externalId,
-          text,
+          text: '',
           messageId,
           isEcho: false,
-          customerName: nameByWaId.get(externalId),
+          kind: 'unsupported',
+          unsupportedType: typeof msg.type === 'string' ? msg.type : 'file',
+          customerName,
         })
       }
     }

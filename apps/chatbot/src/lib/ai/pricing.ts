@@ -44,6 +44,12 @@ export type LookupPriceResult =
       // Medio fijo del material (para adjuntarlo de forma determinista).
       mediaUrl?: string | null
       mediaType?: 'image' | 'video' | null
+      // 'name' = el nombre del material coincide con lo que pidió el cliente (exacto,
+      // contenido, o comparte alguna palabra). 'category' = SOLO coincide la categoría
+      // (ej. preguntó "lámina arquitectónica", que no existe, y esto devuelve la teja
+      // trapezoidal por compartir categoría "lámina") — el bot debe aclarar que es una
+      // aproximación, no el producto exacto (ver regla 14 del system prompt).
+      matchedBy: 'name' | 'category'
     }
 
 const num = (v: string | null | undefined) => (v == null ? null : Number(v))
@@ -74,22 +80,33 @@ function tokenMatch(a: string, b: string): boolean {
 /**
  * Puntúa qué tan bien encaja un material con la consulta. Prioriza nombre exacto,
  * luego nombre contenido en la consulta (o viceversa), luego solape de tokens en
- * nombre y, con menos peso, en la categoría. 0 = no encaja.
+ * nombre y, con menos peso, en la categoría. 0 = no encaja. `nameMatched` indica si
+ * hubo ALGÚN acierto a nivel de nombre (no solo categoría) — se lo llevamos al
+ * resultado (`matchedBy`) para que el bot no confirme como exacto un match que en
+ * realidad solo comparte categoría (ej. "lámina arquitectónica" ≠ "teja trapezoidal").
  */
-function scoreMaterial(m: MaterialRow, nQuery: string, qTokens: string[]): number {
+function scoreMaterial(m: MaterialRow, nQuery: string, qTokens: string[]): { score: number; nameMatched: boolean } {
   const nName = normalize(m.name)
-  if (nName === nQuery) return 1000
+  if (nName === nQuery) return { score: 1000, nameMatched: true }
 
   let score = 0
-  if (nName && (nQuery.includes(nName) || nName.includes(nQuery))) score += 100
+  let nameMatched = false
+  if (nName && (nQuery.includes(nName) || nName.includes(nQuery))) {
+    score += 100
+    nameMatched = true
+  }
 
   const nameTokens = tokens(nName)
   const catTokens = tokens(normalize(m.category ?? ''))
   for (const qt of qTokens) {
-    if (nameTokens.some((t) => tokenMatch(t, qt))) score += 10
-    else if (catTokens.some((t) => tokenMatch(t, qt))) score += 5
+    if (nameTokens.some((t) => tokenMatch(t, qt))) {
+      score += 10
+      nameMatched = true
+    } else if (catTokens.some((t) => tokenMatch(t, qt))) {
+      score += 5
+    }
   }
-  return score
+  return { score, nameMatched }
 }
 
 /**
@@ -105,13 +122,14 @@ export function resolveLookup(
   const qTokens = tokens(nQuery)
 
   const ranked = rows
-    .map((r) => ({ r, s: scoreMaterial(r, nQuery, qTokens) }))
-    .filter((x) => x.s > 0)
-    .sort((a, b) => b.s - a.s)
+    .map((r) => ({ r, ...scoreMaterial(r, nQuery, qTokens) }))
+    .filter((x) => x.score > 0)
+    .sort((a, b) => b.score - a.score)
 
   if (ranked.length === 0) return { available: false, reason: 'not_found', material: q }
 
-  const m = ranked[0].r
+  const top = ranked[0]
+  const m = top.r
   if (!m.active) return { available: false, reason: 'inactive', material: m.name }
 
   const retail = Number(m.retailPriceCop)
@@ -153,6 +171,7 @@ export function resolveLookup(
     minOrder,
     mediaUrl: m.mediaUrl ?? null,
     mediaType: m.mediaType ?? null,
+    matchedBy: top.nameMatched ? 'name' : 'category',
     ...(qty != null ? { quantity: qty, totalCop: unitPriceCop * qty } : {}),
   }
 }

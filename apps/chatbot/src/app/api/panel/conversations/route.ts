@@ -2,10 +2,11 @@ import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { asc, eq } from 'drizzle-orm'
 import { db } from '@/lib/db'
-import { conversations, customerProfiles, messages } from '@/lib/db/schema'
+import { conversations, customerProfiles, messages, leads } from '@/lib/db/schema'
 import { isUuid } from '@/lib/api'
 import { listConversations } from '@/lib/data/panel'
 import { inngest } from '@/inngest/client'
+import { logEvent } from '@/lib/log'
 
 function ok(data: unknown) {
   return NextResponse.json({ success: true, data })
@@ -84,11 +85,38 @@ export async function DELETE(req: Request) {
   if (!conv) return fail('La conversación no existe.', 404, 'NOT_FOUND')
 
   if (erase === 'customer' && conv.customerId) {
+    // Rastro de auditoría SIN datos personales (solo ref/status, no nombre/contacto):
+    // borrar en cascada un lead no debe pasar desapercibido en el Panel de salud.
+    const dropped = await db
+      .select({ ref: leads.ref, status: leads.status })
+      .from(leads)
+      .innerJoin(conversations, eq(leads.conversationId, conversations.id))
+      .where(eq(conversations.customerId, conv.customerId))
+    if (dropped.length > 0) {
+      await logEvent(
+        'warning',
+        'compliance-delete',
+        `Borrado Habeas Data de cliente: se eliminaron ${dropped.length} lead(s) en cascada.`,
+        { leads: dropped },
+      )
+    }
     await db.delete(conversations).where(eq(conversations.customerId, conv.customerId)) // cascade
     await db.delete(customerProfiles).where(eq(customerProfiles.id, conv.customerId))
     return ok({ erased: 'customer' })
   }
 
+  const dropped = await db
+    .select({ ref: leads.ref, status: leads.status })
+    .from(leads)
+    .where(eq(leads.conversationId, id))
+  if (dropped.length > 0) {
+    await logEvent(
+      'warning',
+      'compliance-delete',
+      `Conversación borrada: se eliminó en cascada ${dropped.length} lead(s) asociado(s).`,
+      { conversationId: id, leads: dropped },
+    )
+  }
   await db.delete(conversations).where(eq(conversations.id, id))
   return ok({ erased: 'conversation' })
 }

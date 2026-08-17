@@ -157,14 +157,30 @@ export async function listConversations() {
       status: conversations.status,
       lastMessageAt: conversations.lastMessageAt,
       messageCount: sql<number>`count(${messages.id})::int`,
+      // Rol del ÚLTIMO mensaje de la conversación (subconsulta correlacionada,
+      // simple y suficiente para el tamaño de esta tabla).
+      lastRole: sql<
+        string | null
+      >`(select role from messages m2 where m2.conversation_id = ${conversations.id} order by m2.created_at desc limit 1)`,
     })
     .from(conversations)
     .leftJoin(messages, eq(messages.conversationId, conversations.id))
     .groupBy(conversations.id)
     .orderBy(desc(conversations.lastMessageAt));
-  return rows.map((r) => ({
+  const now = Date.now();
+  return rows.map(({ lastRole, ...r }) => ({
     ...r,
     lastMessageAt: r.lastMessageAt ? r.lastMessageAt.toISOString() : null,
+    // El bot no logró responder al último mensaje del cliente (y no es solo que
+    // el webhook siga procesando: ya pasaron varios minutos). Antes esto era
+    // indistinguible en el listado de una conversación normal en curso — el
+    // caso que motivó esta auditoría (error 551 de Meta) pasó 4+ horas sin que
+    // nadie lo notara.
+    needsAttention:
+      r.status === "bot_active" &&
+      lastRole === "user" &&
+      !!r.lastMessageAt &&
+      now - r.lastMessageAt.getTime() > 10 * 60 * 1000,
   }));
 }
 export type ConversationRow = Awaited<ReturnType<typeof listConversations>>[number];

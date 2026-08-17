@@ -14,6 +14,11 @@ const patchReq = (body: unknown) =>
   new Request('http://localhost', { method: 'PATCH', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) })
 const read = async (r: Response) => ({ status: r.status, body: await r.json() })
 
+// Horario por día (schedule[0..6] = domingo..sábado, null = cerrado) — esquema
+// vigente desde el PR #17 (antes era {days,open,close}, ya no existe).
+const WD = { open: '08:00', close: '18:00' }
+const schedule = [null, WD, WD, WD, WD, WD, WD]
+
 async function main() {
   const orig = (await read(await GET())).body.data
   assert(!!orig && orig.id === 1, 'config GET devuelve bot_config (id=1)')
@@ -25,7 +30,7 @@ async function main() {
         maxAutoDiscountPct: 7,
         retentionMonths: 24,
         channelsEnabled: { messenger: true, whatsapp: true, instagram: false },
-        businessHours: { days: [1, 2, 3, 4, 5, 6], open: '08:00', close: '18:00' },
+        businessHours: { schedule, holidays: [] },
       })),
     )
     assert(
@@ -33,11 +38,12 @@ async function main() {
         upd.body.data?.maxAutoDiscountPct === '7' &&
         upd.body.data?.retentionMonths === 24 &&
         upd.body.data?.channelsEnabled?.instagram === false &&
-        upd.body.data?.businessHours?.close === '18:00',
+        upd.body.data?.businessHours?.schedule?.[1]?.close === '18:00',
       'config PATCH actualiza nombre, descuento, retención, canales y horario',
     )
 
-    const badTime = await read(await PATCH(patchReq({ businessHours: { days: [1], open: '8am', close: '18:00' } })))
+    const badSchedule = [null, { open: '8am', close: '18:00' }, null, null, null, null, null]
+    const badTime = await read(await PATCH(patchReq({ businessHours: { schedule: badSchedule } })))
     assert(badTime.status === 400, 'config PATCH rechaza hora inválida (400)')
 
     const badDisc = await read(await PATCH(patchReq({ maxAutoDiscountPct: 150 })))
