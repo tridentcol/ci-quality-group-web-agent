@@ -54,8 +54,12 @@ export type LookupPriceResult =
 
 const num = (v: string | null | undefined) => (v == null ? null : Number(v))
 
-// Normaliza para comparar: sin acentos, minúsculas, espacios colapsados.
-function normalize(s: string): string {
+// Normaliza para comparar: sin acentos, minúsculas, espacios colapsados. Exportada
+// para que la importación masiva de precios (import/route.ts) haga el mismo
+// matching por nombre que lookup_price — antes comparaba solo con `.toLowerCase()`,
+// sin tocar acentos, y una reimportación con distinta acentuación creaba un
+// material duplicado en vez de actualizar el existente.
+export function normalize(s: string): string {
   return s
     .normalize('NFD')
     .replace(/[̀-ͯ]/g, '')

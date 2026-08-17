@@ -14,7 +14,10 @@ function fail(message: string, status = 400, code = 'VALIDATION') {
 }
 
 // numeric (COP) → se guarda como string; entrada acepta número o string.
-const money = z.coerce.number().nonnegative('El precio no puede ser negativo.')
+// > 0 (no solo "no negativo"): un precio en 0 es casi siempre un dato mal
+// cargado (campo dejado en blanco que se guardó como 0), no un precio real —
+// el bot lo cotizaría honestamente como "te lo damos gratis".
+const money = z.coerce.number().positive('El precio debe ser mayor a 0.')
 const moneyNullable = z
   .union([z.coerce.number().nonnegative('El valor no puede ser negativo.'), z.null()])
   .optional()
@@ -52,9 +55,13 @@ const updateSchema = z
   })
   .refine((d) => Object.keys(d).length > 1, 'Nada que actualizar.')
 
-// numeric de Drizzle se escribe como string; null se conserva.
+// numeric de Drizzle se escribe como string; null se conserva. 0 en estos campos
+// OPCIONALES (umbrales/precios mayoristas/mínimo de pedido) se normaliza a null:
+// mismo problema que el precio en 0, y sin esto el panel mostraba "$0" donde
+// debía mostrar "—" (pricing.ts ya trataba un umbral en 0 como "no hay umbral"
+// al LEER; esto lo evita de raíz al escribir).
 const toNum = (v: number | null | undefined) =>
-  v === undefined ? undefined : v === null ? null : String(v)
+  v === undefined ? undefined : v === null || v === 0 ? null : String(v)
 
 // GET — lista de materiales (consulta compartida con la página)
 export async function GET() {

@@ -24,13 +24,24 @@ const TOOLS = [
   'log_knowledge_gap',
 ] as const
 
-const expectationsSchema = z.object({
-  expectTools: z.array(z.enum(TOOLS)).optional(),
-  forbidTools: z.array(z.enum(TOOLS)).optional(),
-  expectContext: z.enum(['any', 'with', 'without']).optional(),
-  replyIncludes: z.string().trim().optional(),
-  replyExcludes: z.string().trim().optional(),
-})
+const expectationsSchema = z
+  .object({
+    expectTools: z.array(z.enum(TOOLS)).optional(),
+    forbidTools: z.array(z.enum(TOOLS)).optional(),
+    expectContext: z.enum(['any', 'with', 'without']).optional(),
+    replyIncludes: z.string().trim().optional(),
+    replyExcludes: z.string().trim().optional(),
+  })
+  // Sin esto, un escenario guardado sin ninguna expectativa real "pasa" siempre
+  // en silencio (nada que revise el resultado) — falsa sensación de cobertura.
+  // expectContext:'any' no cuenta como expectativa real: es el valor por
+  // defecto del editor, no una verificación.
+  .refine(
+    (e) =>
+      !!(e.expectTools?.length || e.forbidTools?.length || e.replyIncludes || e.replyExcludes) ||
+      (e.expectContext && e.expectContext !== 'any'),
+    'El escenario necesita al menos una expectativa real (tool esperada/prohibida, contexto con/sin, o texto de la respuesta) — si no, siempre "pasaría" sin verificar nada.',
+  )
 
 const bodySchema = z.object({
   name: z.string().trim().min(1),

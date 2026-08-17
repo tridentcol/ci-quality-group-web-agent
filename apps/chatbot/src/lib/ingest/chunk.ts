@@ -5,6 +5,13 @@
  */
 const CHARS_PER_TOKEN = 4
 
+// Marcador temporal (Unicode de área privada, nunca aparece en texto real) para
+// proteger el "." de miles del formato colombiano (ej. "$1.500.000") mientras se
+// parte por oración — sin esto, el separador de sentencias trataba cada
+// "1.500.000" como 3 "oraciones" ("1." / "500." / "000"), con riesgo real de que
+// un corte de chunk cayera justo en medio de un precio (RAG dañado para esa cifra).
+const NUMBER_DOT_MARKER = ''
+
 export interface ChunkOptions {
   /** Tamaño objetivo por chunk, en tokens (default 800). */
   maxTokens?: number
@@ -28,7 +35,10 @@ export function chunkText(text: string, opts: ChunkOptions = {}): string[] {
       units.push(p)
       continue
     }
-    const sentences = p.match(/[^.!?\n]+[.!?]+|\S[^.!?\n]*$/g) ?? [p]
+    const protectedP = p.replace(/(\d)\.(\d)/g, `$1${NUMBER_DOT_MARKER}$2`)
+    const sentences = (protectedP.match(/[^.!?\n]+[.!?]+|\S[^.!?\n]*$/g) ?? [protectedP]).map((s) =>
+      s.replaceAll(NUMBER_DOT_MARKER, '.'),
+    )
     let buf = ''
     for (const s of sentences) {
       if (buf && (buf.length + s.length) > maxChars) {

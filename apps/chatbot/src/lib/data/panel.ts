@@ -112,10 +112,17 @@ export async function listGaps(status: "open" | "resolved" | "all" = "open") {
     })
     .from(knowledgeGaps)
     .orderBy(desc(knowledgeGaps.createdAt));
+  // Nunca mostrar huecos de PRUEBA (generados desde el playground) mezclados con
+  // los reales de clientes.
   const rows =
     status === "all"
-      ? await base
-      : await base.where(eq(knowledgeGaps.status, status === "resolved" ? "resolved" : "open"));
+      ? await base.where(eq(knowledgeGaps.test, false))
+      : await base.where(
+          and(
+            eq(knowledgeGaps.status, status === "resolved" ? "resolved" : "open"),
+            eq(knowledgeGaps.test, false),
+          ),
+        );
   return rows.map((r) => ({
     ...r,
     status: r.status as "open" | "resolved",
