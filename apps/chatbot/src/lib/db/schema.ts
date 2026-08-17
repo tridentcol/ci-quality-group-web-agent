@@ -281,6 +281,11 @@ export const knowledgeGaps = pgTable('knowledge_gaps', {
   status: text('status').notNull().default('open'), // open|resolved
   resolvedAnswer: text('resolved_answer'),
   resolvedAt: timestamp('resolved_at', { withTimezone: true }),
+  // Hueco de PRUEBA (generado desde el playground): visible pero claramente
+  // marcado, filtrado en /gaps y en el Dashboard — mismo patrón que `leads.test`.
+  // Antes el playground SÍ contaminaba huecos reales pese a que la UI decía lo
+  // contrario (hallazgo de auditoría: 4/13 huecos abiertos venían de ahí).
+  test: boolean('test').notNull().default(false),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
 }, (t) => [
   index('gaps_conversation_idx').on(t.conversationId),

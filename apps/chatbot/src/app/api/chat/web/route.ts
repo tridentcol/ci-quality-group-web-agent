@@ -8,6 +8,7 @@ import { generateReply } from '@/lib/ai/generate'
 import { appendMessage, countMessages, loadMemory } from '@/lib/ai/memory'
 import { inngest } from '@/inngest/client'
 import { logEvent } from '@/lib/log'
+import { env } from '@/lib/env'
 
 interface ChatResult {
   status: number
@@ -35,7 +36,7 @@ const SUMMARIZE_EVERY = 5
 // Orígenes permitidos para CORS. Configurable con WEB_CHAT_ALLOWED_ORIGINS
 // (coma-separado); por defecto, el dominio del sitio + dev local de Astro.
 const ALLOWED_ORIGINS = (
-  process.env.WEB_CHAT_ALLOWED_ORIGINS ??
+  env.WEB_CHAT_ALLOWED_ORIGINS ??
   'https://ci-quality-group.com,https://www.ci-quality-group.com,http://localhost:4321'
 )
   .split(',')
@@ -43,9 +44,43 @@ const ALLOWED_ORIGINS = (
   .filter(Boolean)
 
 // Anti-abuso ligero por sesión: máx. de mensajes del usuario en una ventana.
-// (Endurecer con Vercel WAF/rate-limit a nivel plataforma para límites por IP.)
+// El límite por sesión NO es una barrera real por sí solo (el sessionId lo
+// genera el cliente; basta con crear uno nuevo para resetear el contador) — por
+// eso se complementa con un límite en memoria por IP (ipRateLimit, abajo). Ojo:
+// ese límite en memoria es por INSTANCIA de servidor (se reinicia en cold start,
+// no se comparte entre instancias) — ES UN COMPLEMENTO, no un reemplazo de un
+// rate-limit real a nivel de plataforma (Vercel Firewall), que sigue pendiente
+// de configurar en el dashboard (no es algo que se declare en vercel.json).
 const RATE_WINDOW_MS = 15_000
 const RATE_MAX_IN_WINDOW = 5
+
+// Límite adicional por IP, en memoria del proceso (ver nota arriba: es un
+// complemento al de sesión, no un rate-limit real de plataforma). Ventana más
+// amplia porque agrupa TODAS las sesiones que vengan de la misma IP — pensado
+// para frenar un script que rota sessionId en cada mensaje.
+const IP_RATE_WINDOW_MS = 60_000
+const IP_RATE_MAX_IN_WINDOW = 20
+const ipHits = new Map<string, number[]>()
+
+function clientIp(req: Request): string {
+  const fwd = req.headers.get('x-forwarded-for')
+  if (fwd) return fwd.split(',')[0].trim()
+  return req.headers.get('x-real-ip') ?? 'unknown'
+}
+
+function ipRateLimited(ip: string): boolean {
+  const now = Date.now()
+  const hits = (ipHits.get(ip) ?? []).filter((t) => now - t < IP_RATE_WINDOW_MS)
+  hits.push(now)
+  ipHits.set(ip, hits)
+  // Poda ocasional para no acumular memoria indefinidamente en una instancia longeva.
+  if (ipHits.size > 5000) {
+    for (const [k, v] of ipHits) {
+      if (v.every((t) => now - t >= IP_RATE_WINDOW_MS)) ipHits.delete(k)
+    }
+  }
+  return hits.length > IP_RATE_MAX_IN_WINDOW
+}
 
 function corsHeaders(origin: string | null): Record<string, string> {
   const allow = origin && ALLOWED_ORIGINS.includes(origin) ? origin : ''
@@ -108,6 +143,13 @@ export async function POST(req: Request) {
     return NextResponse.json(
       { success: false, error: { code: 'ORIGIN', message: 'Origin no permitido.' } },
       { status: 403 },
+    )
+  }
+
+  if (ipRateLimited(clientIp(req))) {
+    return NextResponse.json(
+      { success: false, error: { code: 'RATE_LIMIT', message: 'Vas muy rápido, espera un momento.' } },
+      { status: 429, headers: cors },
     )
   }
 

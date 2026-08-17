@@ -134,6 +134,13 @@
       "when": 1786934456449,
       "tag": "0018_yellow_cerebro",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1786936766583,
+      "tag": "0019_complete_luminals",
+      "breakpoints": true
     }
   ]
 }

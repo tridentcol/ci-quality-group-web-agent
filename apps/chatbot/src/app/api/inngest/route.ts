@@ -5,9 +5,10 @@ import { updateProfile } from '@/inngest/functions/update-profile'
 import { summarizeConversation } from '@/inngest/functions/summarize'
 import { retentionCleanup } from '@/inngest/functions/retention'
 import { idleMemorySync } from '@/inngest/functions/idle-memory-sync'
+import { staleIngestCheck } from '@/inngest/functions/stale-ingest-check'
 
 // Endpoint de Inngest (público; Inngest firma sus peticiones).
 export const { GET, POST, PUT } = serve({
   client: inngest,
-  functions: [ingestSource, updateProfile, summarizeConversation, retentionCleanup, idleMemorySync],
+  functions: [ingestSource, updateProfile, summarizeConversation, retentionCleanup, idleMemorySync, staleIngestCheck],
 })

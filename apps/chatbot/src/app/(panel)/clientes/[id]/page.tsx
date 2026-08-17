@@ -9,9 +9,20 @@ const STATUS_LABEL: Record<string, string> = {
   new: "Nuevo", contacted: "Contactado", quoted: "Cotizado", ready: "Por cerrar", won: "Ganado", lost: "Perdido",
 };
 
+// ¿Hay algo que mostrar? Cubre array vacío Y objeto vacío ({}) — este último es
+// un estado real que deja el cron de memoria cuando no encontró nada que guardar
+// (antes se mostraba igual la sección "Lo que el bot recuerda" con una lista
+// vacía debajo, como si fuera un glitch).
+function hasFacts(facts: unknown): boolean {
+  if (!facts) return false;
+  if (Array.isArray(facts)) return facts.length > 0;
+  if (typeof facts === "object") return Object.keys(facts).length > 0;
+  return true;
+}
+
 // Renderiza los "hechos" aprendidos (jsonb) de forma legible, sea array u objeto.
 function Facts({ facts }: { facts: unknown }) {
-  if (!facts || (Array.isArray(facts) && facts.length === 0)) return null;
+  if (!hasFacts(facts)) return null;
   const entries = Array.isArray(facts)
     ? facts.map((f) => String(f))
     : typeof facts === "object"
@@ -54,7 +65,7 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
       </div>
 
       {/* Memoria del bot */}
-      {profile.facts != null && (Array.isArray(profile.facts) ? profile.facts.length > 0 : true) && (
+      {hasFacts(profile.facts) && (
         <section className="mb-6 rounded-xl border border-border bg-card p-5 shadow-sm">
           <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-foreground"><Brain className="size-4 text-primary" /> Lo que el bot recuerda</h2>
           <Facts facts={profile.facts} />

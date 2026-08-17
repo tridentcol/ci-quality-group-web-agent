@@ -59,6 +59,9 @@ const envSchema = z.object({
 
   // App
   APP_URL: z.string().url().optional(),
+
+  // CORS del chat web público (Step 8): orígenes permitidos, coma-separados.
+  WEB_CHAT_ALLOWED_ORIGINS: z.string().optional(),
 })
 
 const parsed = envSchema.safeParse(process.env)

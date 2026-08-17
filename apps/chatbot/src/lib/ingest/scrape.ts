@@ -34,6 +34,18 @@ export async function scrapeUrl(url: string): Promise<string> {
   }
 
   const contentType = res.headers.get('content-type') ?? ''
+
+  // Si el link apunta a un binario (PDF, imagen, zip, video…) servido sin HTML,
+  // decodificarlo como texto UTF-8 producía "contenido" corrupto que se guardaba
+  // como si fuera texto válido, sin ningún error. Mejor fallar con un mensaje
+  // claro — para binarios reales existe la subida de archivo (parse.ts).
+  if (/^(image|audio|video|application)\//i.test(contentType) && !/\+xml|\/(xml|json)/i.test(contentType)) {
+    throw new Error(
+      `El enlace apunta a un archivo (${contentType || 'tipo desconocido'}), no a una página de texto. ` +
+        `Si es un documento, súbelo como archivo en vez de pegar el link.`,
+    )
+  }
+
   const body = await res.text()
 
   // Si no es HTML, devolver el texto tal cual (p. ej. text/plain).

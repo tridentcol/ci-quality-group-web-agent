@@ -2,6 +2,7 @@ import { eq, lt } from 'drizzle-orm'
 import { inngest } from '@/inngest/client'
 import { db } from '@/lib/db'
 import { botConfig, conversations, customerProfiles, webhookEvents } from '@/lib/db/schema'
+import { subtractMonths } from '@/lib/date-utils'
 
 /**
  * Retención de datos (blueprint §9 Step 13 · Ley 1581/2012). Corre por cron
@@ -25,8 +26,7 @@ export const retentionCleanup = inngest.createFunction(
       return cfg?.m ?? 12
     })
 
-    const cutoff = new Date()
-    cutoff.setMonth(cutoff.getMonth() - months)
+    const cutoff = subtractMonths(new Date(), months)
 
     const result = await step.run('delete-expired', async () => {
       const convs = await db
