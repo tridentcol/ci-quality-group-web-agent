@@ -1,49 +1,79 @@
 ---
 // Logos reales extraídos del brochure de la empresa.
+// Importados desde src/assets (no public/) para que astro:assets los optimice
+// y redimensione en el build: se muestran a ~42px de alto pero los originales
+// venían a resolución completa (hasta 480×313px, ~142 KB cada uno).
+import { Image } from 'astro:assets';
+
+import negratin from '../../assets/logos/clientes/negratin.png';
+import csp from '../../assets/logos/clientes/csp.png';
+import tecnicasReunidas from '../../assets/logos/clientes/tecnicas-reunidas.png';
+import ternium from '../../assets/logos/clientes/ternium.png';
+import termoCandelaria from '../../assets/logos/clientes/termo-candelaria.png';
+import hotelElPrado from '../../assets/logos/clientes/hotel-el-prado.png';
+import sanFranciscoInvestments from '../../assets/logos/clientes/san-francisco-investments.png';
+import prodesaCastelo from '../../assets/logos/clientes/prodesa-castelo.png';
+import cargill from '../../assets/logos/clientes/cargill.png';
+import servimantDelCaribe from '../../assets/logos/clientes/servimant-del-caribe.png';
+import powerchina from '../../assets/logos/clientes/powerchina.png';
+import puertoBahia from '../../assets/logos/clientes/puerto-bahia.png';
+
+import greenMetal from '../../assets/logos/aliados/green-metal.png';
+import sgi from '../../assets/logos/aliados/sgi.png';
+import coralAzul from '../../assets/logos/aliados/coral-azul.png';
+import sac from '../../assets/logos/aliados/sac.png';
+import fundacionAlianzasDelCaribe from '../../assets/logos/aliados/fundacion-alianzas-del-caribe.png';
+import bioger from '../../assets/logos/aliados/bioger.png';
+
+// Alto de salida 2× el alto mostrado en pantalla (~42px) para verse nítido en
+// retina; Astro calcula el ancho automáticamente a partir de la proporción
+// real de cada logo (no se deforma ninguno).
+const LOGO_HEIGHT = 84;
+
 const clients = [
-  { name: 'Negratín', src: '/images/logos/clientes/negratin.png' },
-  { name: 'CSP', src: '/images/logos/clientes/csp.png' },
-  { name: 'Técnicas Reunidas de Colombia', src: '/images/logos/clientes/tecnicas-reunidas.png' },
-  { name: 'Ternium', src: '/images/logos/clientes/ternium.png' },
-  { name: 'Termocandelaria', src: '/images/logos/clientes/termo-candelaria.png' },
-  { name: 'Hotel El Prado', src: '/images/logos/clientes/hotel-el-prado.png' },
-  { name: 'San Francisco Investments', src: '/images/logos/clientes/san-francisco-investments.png' },
-  { name: 'Prodesa Castelo', src: '/images/logos/clientes/prodesa-castelo.png' },
-  { name: 'Cargill', src: '/images/logos/clientes/cargill.png' },
-  { name: 'Servimant del Caribe', src: '/images/logos/clientes/servimant-del-caribe.png' },
-  { name: 'Powerchina', src: '/images/logos/clientes/powerchina.png' },
-  { name: 'Puerto Bahía', src: '/images/logos/clientes/puerto-bahia.png' },
+  { name: 'Negratín', img: negratin },
+  { name: 'CSP', img: csp },
+  { name: 'Técnicas Reunidas de Colombia', img: tecnicasReunidas },
+  { name: 'Ternium', img: ternium },
+  { name: 'Termocandelaria', img: termoCandelaria },
+  { name: 'Hotel El Prado', img: hotelElPrado },
+  { name: 'San Francisco Investments', img: sanFranciscoInvestments },
+  { name: 'Prodesa Castelo', img: prodesaCastelo },
+  { name: 'Cargill', img: cargill },
+  { name: 'Servimant del Caribe', img: servimantDelCaribe },
+  { name: 'Powerchina', img: powerchina },
+  { name: 'Puerto Bahía', img: puertoBahia },
 ];
 
 const aliados = [
-  { name: 'Green Metal', src: '/images/logos/aliados/green-metal.png' },
-  { name: 'SGI · Soluciones Generales Inmobiliaria', src: '/images/logos/aliados/sgi.png' },
-  { name: 'Coral Azul', src: '/images/logos/aliados/coral-azul.png' },
-  { name: 'SAC · Servicios Ambientales de Calidad', src: '/images/logos/aliados/sac.png' },
-  { name: 'Fundación Alianzas Ambientales del Caribe', src: '/images/logos/aliados/fundacion-alianzas-del-caribe.png' },
-  { name: 'Bioger', src: '/images/logos/aliados/bioger.png' },
+  { name: 'Green Metal', img: greenMetal },
+  { name: 'SGI · Soluciones Generales Inmobiliaria', img: sgi },
+  { name: 'Coral Azul', img: coralAzul },
+  { name: 'SAC · Servicios Ambientales de Calidad', img: sac },
+  { name: 'Fundación Alianzas Ambientales del Caribe', img: fundacionAlianzasDelCaribe },
+  { name: 'Bioger', img: bioger },
 ];
 ---
 
 <section class="ci-clients" aria-label="Clientes y referencias">
   <div class="ci-container">
-    <p class="ci-clients__title">Clientes y proveedores que confían en nosotros</p>
+    <h2 class="ci-clients__title">Clientes y proveedores que confían en nosotros</h2>
     <div class="ci-clients__row">
       {
         clients.map((c) => (
           <div class="ci-clients__plate">
-            <img src={c.src} alt={c.name} loading="lazy" />
+            <Image src={c.img} alt={c.name} height={LOGO_HEIGHT} loading="lazy" />
           </div>
         ))
       }
     </div>
 
-    <p class="ci-clients__title ci-clients__title--aliados">Nuestros aliados</p>
+    <h2 class="ci-clients__title ci-clients__title--aliados">Nuestros aliados</h2>
     <div class="ci-clients__row">
       {
         aliados.map((a) => (
           <div class="ci-clients__plate ci-clients__plate--aliado">
-            <img src={a.src} alt={a.name} loading="lazy" />
+            <Image src={a.img} alt={a.name} height={LOGO_HEIGHT} loading="lazy" />
           </div>
         ))
       }

@@ -40,42 +40,43 @@ siempre limpios (sin fragmentos `#`).
 **Rutas (10 páginas estáticas):**
 - `/` — portada: `Hero` + `Portal` (tarjetas → subpáginas) + footer
 - `/lineas` — índice de líneas (PageHero + `Lineas` con `hideHeading`)
-- `/manufactura`, `/valorizacion`, `/servicios-ambientales` — detalle de línea
-  (ruta dinámica `src/pages/[linea].astro` + `getStaticPaths` desde `data/lineas.ts`)
-- `/economia-circular` — diagrama del ciclo (PageHero + `EconomiaCircular` `hideHeading`)
+- `/manufactura`, `/valorizacion`, `/servicios-ambientales`, `/servicios-industriales` —
+  detalle de línea (ruta dinámica `src/pages/[linea].astro` + `getStaticPaths` desde `data/lineas.ts`)
 - `/clientes` — referencias (PageHero + `Clientes`)
 - `/nosotros`, `/contacto` — páginas dedicadas
 - `/404`
 
 ## Estructura
 
-- `src/pages/` — `index.astro`, `[linea].astro`, `nosotros.astro`, `contacto.astro`, `404.astro`
+- `src/pages/` — `index.astro`, `lineas.astro`, `[linea].astro`, `clientes.astro`,
+  `nosotros.astro`, `contacto.astro`, `404.astro`
 - `src/layouts/BaseLayout.astro` — `<head>`, meta/OG, JSON-LD `Organization`
 - `src/layouts/Page.astro` — BaseLayout + Header + `<main>` + Footer (para subpáginas)
-- `src/data/lineas.ts` — **contenido de las 3 líneas** (fuente única para portada y detalle)
+- `src/data/lineas.ts` — **contenido de las 4 líneas** (fuente única para portada y detalle)
 - `src/components/PageHero.astro` — hero de subpágina (media real o placeholder + migas)
 - `src/components/layout/` — `Header.astro` (nav con menú hamburguesa móvil), `Footer.astro`
-- `src/components/sections/` — `Hero`, `Lineas` (tarjetas → enlazan a las subpáginas),
-  `EconomiaCircular`, `Clientes`, `QuienesSomos`, `Contacto`
+- `src/components/sections/` — `Hero`, `Portal` (tarjetas de la portada → subpáginas),
+  `Lineas` (tarjetas → enlazan a las subpáginas de línea), `Clientes`, `Contacto`
 - `src/components/CircularArrow.astro` — ícono de marca
 - `src/components/chat/` — `ChatWidget.astro` (burbuja) + `chat-config.ts`
 - `src/styles/globals.css` — tokens de diseño + reset
 - `public/videos/` — `hero.mp4`/`hero.webm`/`hero-poster.jpg` (video del hero, entregado)
-- `public/images/` — fotos por página (PENDIENTES del cliente; hoy placeholders)
+- `public/images/` — fotos por página (algunas PENDIENTES del cliente; hoy placeholders)
 
-> Nav: enlaces absolutos (`/#lineas`, `/#circular`, `/nosotros`, `/contacto`) para
-> funcionar desde cualquier página. Cada subpágina usa `Page.astro` + `PageHero`.
+> Nav: enlaces absolutos y limpios (`/lineas`, `/clientes`, `/nosotros`, `/contacto`, sin
+> fragmentos `#`) para funcionar desde cualquier página. Cada subpágina usa `Page.astro` + `PageHero`.
 
-## Orden de secciones (handoff)
+## Orden de secciones
 
-Header sticky · Hero (video de fondo) · Líneas de negocio (3) · Economía circular
-(anillo SVG desktop / lista móvil) · Banda de clientes · Quiénes somos · Contacto · Footer.
+Portada (`/`): Header sticky · Hero (video de fondo) · Portal (tarjetas hacia `/lineas`,
+`/clientes`, `/nosotros`, `/contacto`) · Footer. Cada subpágina: Header · `PageHero` ·
+contenido propio de la sección · Footer.
 
 ## Breakpoints
 
 - ≤960px: footer 3→2 columnas
 - ≤900px: "Quiénes somos" y "Contacto" 2→1 columna
-- ≤720px: diagrama circular → lista vertical apilada
+- ≤720px: header → menú hamburguesa móvil
 - ≤640px: header se apila, paddings reducidos, footer 1 columna, imagen 300px
 - ≤430px: enlaces de nav a 12px
 
@@ -86,14 +87,13 @@ Header sticky · Hero (video de fondo) · Líneas de negocio (3) · Economía ci
 2. Una sección por componente en `components/sections`. Sin barrel exports.
 3. Astro estático por defecto. Este sitio **no usa React islands** todavía (sin JS de cliente).
 4. Media siempre optimizada antes de commitear.
-5. Coherencia de marca: verde `#3A8C2F`, Arial, layout máx 1220px, gutter 32px.
+5. Coherencia de marca: verde `#358024` (`--ci-green`), Arial, layout máx 1220px, gutter 32px.
 
 ## Pendientes de cliente (placeholders en el código)
 
 - **Video del hero** (`public/videos/hero.mp4|webm` + `hero-poster.jpg`). Ver
   `public/videos/README.md`.
-- **Foto "Quiénes somos"** (placeholder rayado en `QuienesSomos.astro`).
-- **Logos de clientes** (hoy en texto, en `Clientes.astro`).
+- **Foto "Quiénes somos"** (placeholder rayado en `src/pages/nosotros.astro`).
 - **Correo real** — `PUBLIC_CONTACT_EMAIL` (placeholder `contacto@ci-quality-group.com`).
 - **Dominio raíz** — `PUBLIC_SITE_URL` / `site` en `astro.config.mjs`.
 - **Página de privacidad (Ley 1581/2012)** — pendiente; añadir `/privacidad` + enlace en footer

@@ -7,7 +7,7 @@
 :root {
   /* Colores */
   --graphite: #0D0D0D;      /* texto principal, secciones oscuras, footer */
-  --ci-green: #3A8C2F;      /* marca, acentos, CTAs */
+  --ci-green: #358024;      /* marca, acentos, CTAs (oscurecido levemente: texto blanco encima daba 4.22:1, ahora ~4.9:1 WCAG AA) */
   --green-deep: #2E7025;    /* hover de botones / texto sobre verde pálido */
   --green-light: #7FD16F;   /* acentos sobre fondo oscuro (diagrama) */
   --green-pale: #EAF5E8;    /* fondos suaves, tarjetas, chips */
@@ -17,6 +17,7 @@
   --on-dark-1: #8FA089;     /* texto secundario sobre oscuro */
   --on-dark-2: #9AA894;
   --on-dark-3: #C9D3C6;
+  --muted-on-light: #526B4B; /* texto secundario/etiquetas sobre fondo CLARO (≥4.5:1 WCAG AA) */
   --pale-text: #EAF5E8;     /* texto claro sobre verde/oscuro */
   /* Texturas oscuras */
   --dark-1: #141414;
